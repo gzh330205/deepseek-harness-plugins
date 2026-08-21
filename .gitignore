@@ -45,3 +45,6 @@ Desktop.ini
 # Misc
 *.bak
 *.orig
+
+# Local-only plugin (kept out of the repository, sources stay on disk)
+dsh-oneway-usage-monitor/
