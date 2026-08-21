@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONE-WAY 用量监控 · 界面预览（示例数据）</title>
+<style>
+  :root {
+    color-scheme: light;
+    --dsw-alias-label-primary: #1c2230;
+    --dsw-alias-label-secondary: #4c5768;
+    --dsw-alias-label-tertiary: #8a94a6;
+    --dsw-alias-bg-layer-1: #f2f4f9;
+    --dsw-alias-bg-layer-2: #ffffff;
+    --dsw-alias-bg-layer-3: #f5f7fb;
+    --dsw-alias-border-l1: #e7ebf2;
+    --dsw-alias-border-l2: #dde3ec;
+    --dsw-alias-interactive-bg-hover: rgba(15, 23, 42, 0.05);
+    --dsw-alias-interactive-bg-hover-danger: rgba(214, 69, 61, 0.06);
+    --dsw-alias-bg-module-platform: rgba(15, 23, 42, 0.07);
+    --dsw-alias-bg-mask-1: rgba(15, 23, 42, 0.35);
+    --dsw-shadow-lv3: 0 14px 40px rgba(15, 23, 42, 0.14);
+    --dsw-alias-state-error-primary: #d6453d;
+    --dsw-alias-state-success-primary: #1f9d63;
+    --dsw-alias-state-warn-primary: #b97f10;
+    --dsw-static-neutral-bluish-100: #ebeef2;
+    --dsw-static-neutral-bluish-150: #e9ecf2;
+    --dsw-static-deepseek-400: #679efe;
+    --dsw-static-deepseek-500: #4176e6;
+    --dsw-alias-button-info-fill: #4176e6;
+    --dsw-alias-button-info-hover: #5686fe;
+    --dsw-alias-button-ghost-active-fill: #ebeef2;
+    --dsw-alias-button-ghost-active-hover: #e2e6ee;
+  }
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --dsw-alias-label-primary: #e7ebf4;
+    --dsw-alias-label-secondary: #a7b1c5;
+    --dsw-alias-label-tertiary: #6d788d;
+    --dsw-alias-bg-layer-1: #10131a;
+    --dsw-alias-bg-layer-2: #171c26;
+    --dsw-alias-bg-layer-3: #1e2531;
+    --dsw-alias-border-l1: #232b3a;
+    --dsw-alias-border-l2: #2c3547;
+    --dsw-alias-interactive-bg-hover: rgba(255, 255, 255, 0.06);
+    --dsw-alias-interactive-bg-hover-danger: rgba(242, 90, 90, 0.14);
+    --dsw-alias-bg-module-platform: rgba(255, 255, 255, 0.08);
+    --dsw-alias-bg-mask-1: rgba(4, 8, 16, 0.62);
+    --dsw-shadow-lv3: 0 14px 40px rgba(0, 0, 0, 0.42);
+    --dsw-alias-state-error-primary: #f26b64;
+    --dsw-alias-state-success-primary: #34c77b;
+    --dsw-alias-state-warn-primary: #e5b34b;
+    --dsw-static-neutral-bluish-100: #ebeef2;
+    --dsw-static-neutral-bluish-150: #e9ecf2;
+    --dsw-static-deepseek-400: #679efe;
+    --dsw-static-deepseek-500: #4176e6;
+    --dsw-alias-button-info-fill: #679efe;
+    --dsw-alias-button-info-hover: #4176e6;
+    --dsw-alias-button-ghost-active-fill: #2a3140;
+    --dsw-alias-button-ghost-active-hover: #343d50;
+  }
+  body { background: var(--dsw-alias-bg-layer-1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; margin: 0; }
+  .demo-note { position: fixed; left: 18px; top: 16px; z-index: 3000; font-size: 12px; color: var(--dsw-alias-label-tertiary); background: var(--dsw-alias-bg-layer-2); border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 6px 10px; }
+  .demo-actions { position: fixed; left: 18px; top: 52px; z-index: 3000; display: flex; flex-direction: column; gap: 6px; }
+  .demo-actions button { font: inherit; font-size: 12px; cursor: pointer; border: 1px solid var(--dsw-alias-border-l2); border-radius: 8px; padding: 6px 12px; color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-3); text-align: left; }
+  .demo-actions button[data-on="true"] { outline: 1px solid var(--dsw-static-deepseek-500); }
+
+
+      .owm{color:var(--dsw-alias-label-primary);font-size:13px}.owm *{box-sizing:border-box}
+      .owm h2,.owm h3,.owm p{margin:0}.owm-muted{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.55}
+      .owm-error{color:var(--dsw-alias-state-error-primary);font-size:12px;line-height:1.5}
+      .owm-empty{color:var(--dsw-alias-label-tertiary);font-size:12px;text-align:center;padding:22px 0}
+      /* theme-aware card surface: light = bluish-100, dark = layer-3 */
+      .owm-card{background:var(--dsw-static-neutral-bluish-100);border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:12px}
+      body[data-ds-dark-theme] .owm-card{background:var(--dsw-alias-bg-layer-3)}
+      .owm-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+      .owm-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+      /* buttons: ghost by default, primary = DSH info blue, secondary = ghost-active */
+      .owm button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:6px 12px;color:var(--dsw-alias-label-primary);background:transparent;transition:background .12s ease,color .12s ease}
+      .owm button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
+      .owm button:disabled{cursor:default;opacity:.5}
+      .owm-primary{background:var(--dsw-alias-button-info-fill)!important;border-color:transparent!important;color:#fff!important}
+      .owm-primary:hover:not(:disabled){background:var(--dsw-alias-button-info-hover)!important}
+      .owm-secondary{background:var(--dsw-alias-button-ghost-active-fill)}
+      .owm-secondary:hover:not(:disabled){background:var(--dsw-alias-button-ghost-active-hover)}
+      .owm-danger{color:var(--dsw-alias-state-error-primary)!important;border-color:transparent!important}
+      .owm-danger:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover-danger)!important}
+      .owm-badge{display:inline-block;background:var(--dsw-alias-bg-module-platform);border-radius:999px;color:var(--dsw-alias-label-secondary);font-size:11px;padding:2px 9px;white-space:nowrap}
+      /* ---------- floating widget card ---------- */
+      .owm-fab{position:fixed;right:18px;bottom:22px;z-index:1400;width:120px;padding:10px 12px 9px;border-radius:14px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb,var(--dsw-alias-bg-layer-2) 90%,transparent);box-shadow:var(--dsw-shadow-lv3);backdrop-filter:blur(12px);display:flex;flex-direction:column;gap:7px;transition:transform .15s ease,box-shadow .15s ease}
+      .owm-fab:hover{transform:translateY(-2px);box-shadow:var(--dsw-shadow-lv4,var(--dsw-shadow-lv3))}
+      .owm-fabHead{display:flex;align-items:center;justify-content:space-between;width:100%}
+      .owm-fabHeadTitle{font-size:10.5px;font-weight:700;color:var(--dsw-alias-label-primary);letter-spacing:.02em}
+      .owm-fabHeadDot{width:8px;height:8px;border-radius:999px;flex:none}
+      .owm-fabLegend{display:flex;flex-direction:column;gap:3px;width:100%}
+      .owm-fabRow{display:flex;align-items:center;gap:5px;font-size:10px;line-height:1.2;color:var(--dsw-alias-label-secondary);min-width:0}
+      .owm-fabRow .owm-fabSwatch{width:7px;height:7px;border-radius:999px;flex:none}
+      .owm-fabRowLabel{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .owm-fabRowValue{font-weight:700;color:var(--dsw-alias-label-primary);font-variant-numeric:tabular-nums;white-space:nowrap}
+      .owm-fabTip{position:fixed;z-index:1410;pointer-events:none;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);border-radius:8px;box-shadow:var(--dsw-shadow-lv3);padding:8px 10px;font-size:12px;white-space:nowrap;display:flex;flex-direction:column;gap:3px;color:var(--dsw-alias-label-secondary)}
+      .owm-tipRow{display:flex;align-items:center;gap:6px}.owm-tipSwatch{width:9px;height:9px;border-radius:999px;flex:none}
+      /* ---------- modal ---------- */
+      .owm-mask{position:fixed;inset:0;z-index:1500;background:var(--dsw-alias-bg-mask-1);display:flex;align-items:center;justify-content:center;padding:24px}
+      .owm-modal{width:min(1020px,100%);max-height:calc(100vh - 48px);display:flex;flex-direction:column;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);border-radius:16px;box-shadow:var(--dsw-shadow-lv3);overflow:hidden}
+      .owm-modalHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px 13px;border-bottom:1px solid var(--dsw-alias-border-l2);flex-wrap:wrap}
+      .owm-modalHead h2{margin:0;font-size:15px;font-weight:700}
+      .owm-modalTitle{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap}
+      .owm-modalBody{overflow:auto;padding:16px 20px 20px;display:flex;flex-direction:column;gap:16px}
+      .owm-close{font-size:16px!important;line-height:1;padding:3px 9px!important}
+      .owm-banner{display:flex;align-items:center;gap:8px;border:1px solid color-mix(in srgb,var(--dsw-alias-state-error-primary) 40%,transparent);background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 8%,transparent);color:var(--dsw-alias-state-error-primary);border-radius:10px;padding:9px 12px;font-size:12px;line-height:1.5}
+      /* ---------- summary (single column: token card, then 3 KPI cards) ---------- */
+      .owm-summary{display:grid;grid-template-columns:1fr;gap:10px}
+      .owm-ringsCard{background:var(--dsw-static-neutral-bluish-100);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+      body[data-ds-dark-theme] .owm-ringsCard{background:var(--dsw-alias-bg-layer-3)}
+      .owm-ringsHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+      .owm-ringsTitle{font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary)}
+      .owm-ringsLegend{display:flex;flex-direction:column;gap:8px;width:100%}
+      .owm-ringRow{display:flex;align-items:center;gap:10px;font-size:12.5px;min-width:0}
+      .owm-ringRow .owm-fabSwatch{width:9px;height:9px;border-radius:999px;flex:none}
+      .owm-ringRowLabel{flex:none;color:var(--dsw-alias-label-secondary);white-space:nowrap;width:52px}
+      .owm-ringRowValue{flex:none;font-weight:700;font-variant-numeric:tabular-nums;min-width:64px;text-align:right}
+      .owm-ringRowBar{flex:1;height:6px;border-radius:999px;background:var(--dsw-alias-bg-module-platform);overflow:hidden;min-width:60px}
+      .owm-ringRowBar>span{display:block;height:100%;border-radius:999px}
+      .owm-ringRowBar>span[data-color="h5"]{background:#10b981}
+      .owm-ringRowBar>span[data-color="today"]{background:#3b82f6}
+      .owm-ringRowBar>span[data-color="week"]{background:#8b5cf6}
+      .owm-ringRowPct{flex:none;color:var(--dsw-alias-label-tertiary);font-size:11.5px;font-variant-numeric:tabular-nums;width:44px;text-align:right}
+      /* ---------- kpi ---------- */
+      .owm-kpis{display:grid;grid-template-columns:1fr;gap:10px;min-width:0}
+      .owm-kpi{background:var(--dsw-static-neutral-bluish-100);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;padding:12px 16px 11px;display:flex;align-items:center;gap:18px;min-width:0}
+      body[data-ds-dark-theme] .owm-kpi{background:var(--dsw-alias-bg-layer-3)}
+      .owm-kpiTitle{font-size:12.5px;font-weight:600;color:var(--dsw-alias-label-primary);flex:none;width:76px}
+      .owm-kpiGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;flex:1;min-width:0}
+      .owm-kpiCell{display:flex;flex-direction:column;align-items:center;gap:4px;padding:2px 1px;min-width:0}
+      .owm-kpiCell + .owm-kpiCell{border-left:1px solid var(--dsw-alias-border-l1,var(--dsw-alias-border-l2))}
+      .owm-kpiLabel{font-size:10px;color:var(--dsw-alias-label-tertiary);white-space:nowrap}
+      .owm-kpiValue{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+      .owm-apiKeyRow{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--dsw-alias-label-secondary);flex-wrap:wrap;background:var(--dsw-static-neutral-bluish-100);border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:10px 14px;margin-top:2px}
+      body[data-ds-dark-theme] .owm-apiKeyRow{background:var(--dsw-alias-bg-layer-3)}
+      .owm-apiKeyRow code{font-size:12px;overflow-wrap:anywhere;color:var(--dsw-alias-label-primary)}
+      /* ---------- tabs ---------- */
+      .owm-tabs{display:flex;gap:2px;border-bottom:1px solid var(--dsw-alias-border-l2);flex-wrap:wrap}
+      .owm-tab{border:0!important;border-radius:8px 8px 0 0;padding:8px 16px;color:var(--dsw-alias-label-secondary)!important;border-bottom:2px solid transparent!important;font-size:13px}
+      .owm-tab:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .owm-tab[data-active="true"]{color:var(--dsw-alias-label-primary)!important;font-weight:600;border-bottom-color:var(--dsw-static-deepseek-500)!important}
+      /* ---------- tables ---------- */
+      .owm-tableWrap{overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:10px}
+      /* request-log table: fixed layout, task-priority widths, model column stretches */
+      .owm-logsTable{table-layout:fixed}
+      .owm-logsTable th:nth-child(1),.owm-logsTable td:nth-child(1){width:152px}
+      .owm-logsTable th:nth-child(2),.owm-logsTable td:nth-child(2){width:auto}
+      .owm-logsTable th:nth-child(3),.owm-logsTable td:nth-child(3){width:96px}
+      .owm-logsTable th:nth-child(4),.owm-logsTable td:nth-child(4){width:112px}
+      .owm-logsTable th:nth-child(5),.owm-logsTable td:nth-child(5){width:96px}
+      .owm-logsTable th:nth-child(6),.owm-logsTable td:nth-child(6){width:52px}
+      .owm-logsTable th:nth-child(7),.owm-logsTable td:nth-child(7){width:80px}
+      .owm-logsTable th:nth-child(8),.owm-logsTable td:nth-child(8){width:92px}
+      .owm-logsTable td{overflow:hidden;text-overflow:ellipsis}
+      .owm-logsTable .owm-cellModel{font-weight:600}
+      .owm table{border-collapse:collapse;width:100%;font-size:12px}
+      .owm th{position:sticky;top:0;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-secondary);font-weight:600;text-align:left!important;padding:9px 12px;border-bottom:1px solid var(--dsw-alias-border-l2);white-space:nowrap;z-index:1}
+      .owm td{padding:8px 12px;border-bottom:1px solid var(--dsw-alias-border-l1,var(--dsw-alias-border-l2));vertical-align:middle;white-space:nowrap}
+      .owm tbody tr:last-child td{border-bottom:0}
+      .owm tbody tr:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .owm-num{font-variant-numeric:tabular-nums;text-align:right}
+      .owm th.owm-num,.owm td.owm-num{text-align:right!important}
+      .owm-status{border-radius:999px;font-size:11px;padding:1px 8px;display:inline-block}
+      .owm-status-ok{background:color-mix(in srgb,var(--dsw-alias-state-success-primary) 13%,transparent);color:var(--dsw-alias-state-success-primary)}
+      .owm-status-err{background:color-mix(in srgb,var(--dsw-alias-state-error-primary) 13%,transparent);color:var(--dsw-alias-state-error-primary)}
+      .owm-status-warn{background:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 15%,transparent);color:var(--dsw-alias-state-warn-primary)}
+      .owm-status-other{background:var(--dsw-alias-bg-module-platform);color:var(--dsw-alias-label-secondary)}
+      .owm-limitCell{display:flex;align-items:center;gap:8px;min-width:130px}
+      .owm-bar{height:5px;border-radius:999px;background:var(--dsw-alias-bg-module-platform);overflow:hidden;min-width:56px;flex:1}
+      .owm-bar>span{display:block;height:100%;border-radius:999px;background:var(--dsw-static-deepseek-500)}
+      .owm-bar[data-warn="true"]>span{background:var(--dsw-alias-state-warn-primary)}
+      .owm-bar[data-full="true"]>span{background:var(--dsw-alias-state-error-primary)}
+      /* ---------- trend ---------- */
+      .owm-trend{display:flex;flex-direction:column;gap:16px}
+      .owm-trendBlock h3{font-size:13px;font-weight:600;margin:0 0 9px}
+      .owm-barList{display:flex;flex-direction:column;gap:2px;max-height:264px;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:6px 10px}
+      .owm-barRow{display:grid;grid-template-columns:128px 74px 84px 1fr;gap:10px;align-items:center;font-size:11.5px;padding:4px 2px;border-radius:6px}
+      .owm-barRow:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .owm-barTime{color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
+      .owm-barReqs{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}
+      .owm-barTokens{font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+      .owm-barTrack{height:7px;border-radius:999px;background:var(--dsw-alias-bg-module-platform);overflow:hidden}
+      .owm-barTrack>span{display:block;height:100%;border-radius:999px;background:var(--dsw-static-deepseek-500);opacity:.85}
+      /* ---------- logs toolbar & pager ---------- */
+      .owm-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .owm-input{border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}
+      .owm-pager{display:flex;align-items:center;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+      .owm-pagerInfo{font-size:12px;color:var(--dsw-alias-label-tertiary);font-variant-numeric:tabular-nums}
+      /* ---------- models ---------- */
+      .owm-modelGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+      .owm-chip{display:inline-block;font-size:11.5px;border-radius:999px;padding:3px 10px;background:color-mix(in srgb,var(--dsw-static-deepseek-500) 10%,transparent);color:var(--dsw-alias-label-secondary);margin:3px 3px 0 0}
+      /* ---------- login ---------- */
+      .owm-login{display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 12px;text-align:center;max-width:360px;margin:0 auto}
+      .owm-login h3{font-size:15px;font-weight:700}
+      .owm-loginDesc{font-size:12px;color:var(--dsw-alias-label-tertiary);line-height:1.55}
+      .owm-qrBox{border:1px solid var(--dsw-alias-border-l2);border-radius:14px;padding:12px;background:#fff}
+      .owm-qrBox img{width:196px;height:196px;display:block}
+      .owm-loginStatus{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+      .owm-loginHint{font-size:12px;color:var(--dsw-alias-label-tertiary)}
+      .owm-loading{display:flex;align-items:center;gap:8px;color:var(--dsw-alias-label-tertiary);font-size:12px;padding:18px 4px}
+      .owm-spin{width:14px;height:14px;border-radius:999px;border:2px solid var(--dsw-alias-border-l2);border-top-color:var(--dsw-static-deepseek-500);animation:owm-spin .8s linear infinite}
+      @keyframes owm-spin{to{transform:rotate(360deg)}}
+      /* ---------- settings ---------- */
+      .owm-form{display:flex;flex-direction:column;gap:10px;max-width:560px}
+      .owm-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dsw-alias-label-secondary)}
+      .owm-form .owm-input{width:100%}
+      .owm-rowWrap{display:flex;gap:10px;flex-wrap:wrap}.owm-rowWrap label{flex:1;min-width:140px}
+      @media (max-width:860px){
+        .owm-summary{grid-template-columns:1fr}
+        .owm-kpis{grid-template-columns:1fr}
+        .owm-barRow{grid-template-columns:96px 60px 70px 1fr}
+      }
+    </style>
+</head>
+<body>
+<div class="demo-note">界面预览 · 示例数据（非真实用量）</div>
+<div class="demo-actions">
+  <button id="demoModal" data-on="true">查看用量弹窗</button>
+  <button id="demoLogin">查看登录面板（未登录态）</button>
+  <button id="demoEmpty">查看空数据态（渠道/模型）</button>
+  <button id="demoLight" data-on="true">亮色模式</button>
+  <button id="demoDark">暗色模式</button>
+</div>
+
+<!-- ============ 悬浮窗卡片（右下角，真实位置） ============ -->
+<div class="owm-fab" role="button" tabindex="0" aria-label="ONE-WAY 用量监控">
+  <div class="owm-fabHead">
+    <span class="owm-fabHeadTitle">ONE-WAY</span>
+    <span class="owm-fabHeadDot" style="background: var(--dsw-alias-state-success-primary)"></span>
+  </div>
+  <div class="owm-fabLegend">
+    <div class="owm-fabRow"><span class="owm-fabSwatch" style="background:#10b981"></span><span class="owm-fabRowLabel">近5小时</span><span class="owm-fabRowValue">76.70M</span></div>
+    <div class="owm-fabRow"><span class="owm-fabSwatch" style="background:#3b82f6"></span><span class="owm-fabRowLabel">今日</span><span class="owm-fabRowValue">76.70M</span></div>
+    <div class="owm-fabRow"><span class="owm-fabSwatch" style="background:#8b5cf6"></span><span class="owm-fabRowLabel">本周</span><span class="owm-fabRowValue">5.44亿</span></div>
+  </div>
+</div>
+
+<!-- ============ 用量弹窗 ============ -->
+<div class="owm-mask" id="demoMask">
+  <section class="owm-modal" role="dialog" aria-modal="true" aria-label="ONE-WAY 用量监控">
+    <header class="owm-modalHead">
+      <div class="owm-modalTitle">
+        <h2>ONE-WAY 用量监控</h2>
+        <span class="owm-badge">郭增辉</span>
+        <span class="owm-muted">更新于 14:32</span>
+      </div>
+      <div class="owm-actions">
+        <button class="owm-secondary">刷新</button>
+        <button class="owm-danger">退出登录</button>
+        <button class="owm-close" aria-label="关闭">×</button>
+      </div>
+    </header>
+    <div class="owm-modalBody" id="demoBody">
+
+      <!-- 已登录态 -->
+      <div id="demoAuthed">
+        <div class="owm-summary">
+          <div class="owm-ringsCard">
+            <div class="owm-ringsHead"><span class="owm-ringsTitle">Token 用量</span><span class="owm-badge">近5小时 · 今日 · 本周</span></div>
+            <div class="owm-ringsLegend">
+              <div class="owm-ringRow"><span class="owm-fabSwatch" style="background:#10b981"></span><span class="owm-ringRowLabel">近5小时</span><span class="owm-ringRowValue">76.70M</span><div class="owm-ringRowBar"><span data-color="h5" style="width:14.1%"></span></div><span class="owm-ringRowPct">14.1%</span></div>
+              <div class="owm-ringRow"><span class="owm-fabSwatch" style="background:#3b82f6"></span><span class="owm-ringRowLabel">今日</span><span class="owm-ringRowValue">76.70M</span><div class="owm-ringRowBar"><span data-color="today" style="width:14.1%"></span></div><span class="owm-ringRowPct">14.1%</span></div>
+              <div class="owm-ringRow"><span class="owm-fabSwatch" style="background:#8b5cf6"></span><span class="owm-ringRowLabel">本周</span><span class="owm-ringRowValue">5.44亿</span><div class="owm-ringRowBar"><span data-color="week" style="width:100%"></span></div><span class="owm-ringRowPct">100%</span></div>
+            </div>
+          </div>
+          <div class="owm-kpis">
+            <div class="owm-kpi"><div class="owm-kpiTitle">Token 用量</div><div class="owm-kpiGrid">
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">近5小时</span><span class="owm-kpiValue">76.70M</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">今日</span><span class="owm-kpiValue">76.70M</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">本周</span><span class="owm-kpiValue">5.44亿</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">本月</span><span class="owm-kpiValue">20.51亿</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">本年</span><span class="owm-kpiValue">49.68亿</span></div>
+            </div></div>
+            <div class="owm-kpi"><div class="owm-kpiTitle">请求次数</div><div class="owm-kpiGrid">
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">近5小时</span><span class="owm-kpiValue">379</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">今日</span><span class="owm-kpiValue">379</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">本周</span><span class="owm-kpiValue">3,411</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">本月</span><span class="owm-kpiValue">16,255</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">本年</span><span class="owm-kpiValue">43,278</span></div>
+            </div></div>
+            <div class="owm-kpi"><div class="owm-kpiTitle">使用时长</div><div class="owm-kpiGrid">
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">近5小时</span><span class="owm-kpiValue">53.8分钟</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">今日</span><span class="owm-kpiValue">53.8分钟</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">本周</span><span class="owm-kpiValue">10.8小时</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">本月</span><span class="owm-kpiValue">72.9小时</span></div>
+              <div class="owm-kpiCell"><span class="owm-kpiLabel">本年</span><span class="owm-kpiValue">195.3小时</span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="owm-apiKeyRow"><span>API Key</span><code>ah-c0c12294d19e0da0bab39295eef232b669e939de4eb2e9959c5792a0af5d1bd2</code><button class="owm-secondary">复制</button></div>
+        <nav class="owm-tabs" role="tablist">
+          <button class="owm-tab" data-tab="logs" data-active="true" role="tab" aria-selected="true">请求日志</button>
+          <button class="owm-tab" data-tab="trend" role="tab" aria-selected="false">用量趋势</button>
+          <button class="owm-tab" data-tab="channels" role="tab" aria-selected="false">渠道用量 / 限额</button>
+          <button class="owm-tab" data-tab="models" role="tab" aria-selected="false">渠道与模型</button>
+        </nav>
+
+        <!-- 请求日志 -->
+        <div data-panel="logs">
+          <div class="owm-toolbar">
+            <input class="owm-input" type="date" value="2026-08-15"><span class="owm-muted">至</span><input class="owm-input" type="date" value="2026-08-21">
+            <select class="owm-input"><option>10 条/页</option><option>20 条/页</option><option>50 条/页</option></select>
+            <button class="owm-primary">查询</button>
+            <span class="owm-muted" style="margin-left:auto">默认近 7 天</span>
+          </div>
+          <div class="owm-tableWrap"><table class="owm-logsTable">
+            <thead><tr><th>时间</th><th>模型</th><th>所属 Key</th><th>渠道</th><th>状态</th><th>流式</th><th class="owm-num">延迟</th><th class="owm-num">Token</th></tr></thead>
+            <tbody>
+              <tr><td class="owm-muted">2026/08/21 11:47:37</td><td style="font-weight:600">deepseek-v4-flash</td><td>郭增辉</td><td>deepseek</td><td><span class="owm-status owm-status-ok">completed</span></td><td>是</td><td class="owm-num">9.42s</td><td class="owm-num">103.1K</td></tr>
+              <tr><td class="owm-muted">2026/08/21 11:47:34</td><td style="font-weight:600">gpt-5.4</td><td>郭增辉</td><td>gpt-onecore</td><td><span class="owm-status owm-status-err">failed</span></td><td>否</td><td class="owm-num">1.69s</td><td class="owm-num">92.0K</td></tr>
+              <tr><td class="owm-muted">2026/08/21 11:47:30</td><td style="font-weight:600">glm-4.7</td><td>郭增辉</td><td>智谱</td><td><span class="owm-status owm-status-warn">pending</span></td><td>是</td><td class="owm-num">2.75s</td><td class="owm-num">45.6K</td></tr>
+            </tbody>
+          </table></div>
+          <div class="owm-pager"><button class="owm-secondary">« 上一页</button><span class="owm-pagerInfo">第 1 / 39 页 · 共 385 条</span><button class="owm-secondary">下一页 »</button></div>
+        </div>
+
+        <!-- 用量趋势 -->
+        <div data-panel="trend" hidden>
+          <div class="owm-trend">
+            <div class="owm-trendBlock"><h3>最近 24 小时每小时用量</h3><div class="owm-barList">
+              <div class="owm-barRow"><span class="owm-barTime">2026-08-21 11:00</span><span class="owm-barReqs">254 次</span><span class="owm-barTokens">35.72M</span><div class="owm-barTrack"><span style="width:100%"></span></div></div>
+              <div class="owm-barRow"><span class="owm-barTime">2026-08-21 10:00</span><span class="owm-barReqs">46 次</span><span class="owm-barTokens">16.55M</span><div class="owm-barTrack"><span style="width:46%"></span></div></div>
+              <div class="owm-barRow"><span class="owm-barTime">2026-08-20 14:00</span><span class="owm-barReqs">230 次</span><span class="owm-barTokens">74.26M</span><div class="owm-barTrack"><span style="width:100%"></span></div></div>
+            </div></div>
+            <div class="owm-trendBlock"><h3>最近 30 天每日用量</h3><div class="owm-barList">
+              <div class="owm-barRow"><span class="owm-barTime">2026-08-21</span><span class="owm-barReqs">379 次</span><span class="owm-barTokens">76.70M</span><div class="owm-barTrack"><span style="width:28%"></span></div></div>
+              <div class="owm-barRow"><span class="owm-barTime">2026-08-20</span><span class="owm-barReqs">1,075 次</span><span class="owm-barTokens">255.27M</span><div class="owm-barTrack"><span style="width:95%"></span></div></div>
+              <div class="owm-barRow"><span class="owm-barTime">2026-08-19</span><span class="owm-barReqs">1,179 次</span><span class="owm-barTokens">118.83M</span><div class="owm-barTrack"><span style="width:44%"></span></div></div>
+            </div></div>
+          </div>
+        </div>
+
+        <!-- 渠道用量 / 限额 -->
+        <div data-panel="channels" hidden>
+          <div class="owm-tableWrap"><table class="owm-logsTable">
+            <thead><tr><th>渠道</th><th class="owm-num">近 5 小时</th><th>5h 限额</th><th class="owm-num">今日</th><th class="owm-num">本周</th><th>周限额</th><th class="owm-num">本月</th><th class="owm-num">本年</th></tr></thead>
+            <tbody>
+              <tr><td style="font-weight:600">gpt-onecore</td><td class="owm-num">12.52M</td><td><div class="owm-limitCell"><span class="owm-num">12.52M</span><div class="owm-bar"><span style="width:25%"></span></div><span class="owm-muted">/50.00M</span></div></td><td class="owm-num">12.52M</td><td class="owm-num">201.55M</td><td><span class="owm-muted">不限</span></td><td class="owm-num">1462.95M</td><td class="owm-num">2965.15M</td></tr>
+              <tr><td style="font-weight:600">deepseek</td><td class="owm-num">64.18M</td><td><span class="owm-muted">不限</span></td><td class="owm-num">64.18M</td><td class="owm-num">304.71M</td><td><div class="owm-limitCell"><span class="owm-num">304.71M</span><div class="owm-bar" data-warn="true"><span style="width:87%"></span></div><span class="owm-muted">/350.00M</span></div></td><td class="owm-num">485.11M</td><td class="owm-num">626.91M</td></tr>
+              <tr><td style="font-weight:600">智谱</td><td class="owm-num">0.00M</td><td><span class="owm-muted">不限</span></td><td class="owm-num">0.00M</td><td class="owm-num">37.53M</td><td><span class="owm-muted">不限</span></td><td class="owm-num">59.64M</td><td class="owm-num">59.64M</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+
+        <!-- 渠道与模型 -->
+        <div data-panel="models" hidden>
+          <div class="owm-modelGrid">
+            <div class="owm-card"><div class="owm-row"><span style="font-weight:600;font-size:13px">deepseek</span><span class="owm-badge">1 个模型</span></div><div style="margin-top:8px"><span class="owm-chip">deepseek-v4-flash</span></div></div>
+            <div class="owm-card"><div class="owm-row"><span style="font-weight:600;font-size:13px">gpt-onecore</span><span class="owm-badge">3 个模型</span></div><div style="margin-top:8px"><span class="owm-chip">gpt-5.4</span><span class="owm-chip">gpt-5.5</span><span class="owm-chip">gpt-image-1.5</span></div></div>
+            <div class="owm-card"><div class="owm-row"><span style="font-weight:600;font-size:13px">智谱</span><span class="owm-badge">2 个模型</span></div><div style="margin-top:8px"><span class="owm-chip">glm-4.7</span><span class="owm-chip">glm-5.2</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 登录面板（未登录态） -->
+      <div id="demoLoginPanel" hidden>
+        <div class="owm-login">
+          <h3>登录 ONE-WAY 中台</h3>
+          <p class="owm-loginDesc">使用企业微信扫码，授权后插件即可读取 Token 用量。会话 Cookie 只保存在本机 DSH 设置中。</p>
+          <div class="owm-qrBox"><img src="https://login.work.weixin.qq.com/wwlogin/sso/qrcode?key=preview" alt="企业微信登录二维码（示例）"></div>
+          <div class="owm-loginStatus">请使用企业微信扫码登录</div>
+          <p class="owm-loginHint">打开企业微信「扫一扫」，扫描左侧二维码</p>
+          <div class="owm-actions"><button class="owm-secondary">刷新二维码</button><button class="owm-secondary">取消</button></div>
+        </div>
+      </div>
+
+      <!-- 空数据态 -->
+      <div id="demoEmptyPanel" hidden>
+        <div class="owm-summary">
+          <div class="owm-ringsCard">
+            <div class="owm-ringsHead"><span class="owm-ringsTitle">Token 用量</span><span class="owm-badge">近5小时 · 今日 · 本周</span></div>
+            <div class="owm-ringsLegend">
+              <div class="owm-ringRow"><span class="owm-fabSwatch" style="background:#10b981"></span><span class="owm-ringRowLabel">近5小时</span><span class="owm-ringRowValue">—</span><div class="owm-ringRowBar"><span data-color="h5" style="width:0%"></span></div><span class="owm-ringRowPct">—</span></div>
+              <div class="owm-ringRow"><span class="owm-fabSwatch" style="background:#3b82f6"></span><span class="owm-ringRowLabel">今日</span><span class="owm-ringRowValue">—</span><div class="owm-ringRowBar"><span data-color="today" style="width:0%"></span></div><span class="owm-ringRowPct">—</span></div>
+              <div class="owm-ringRow"><span class="owm-fabSwatch" style="background:#8b5cf6"></span><span class="owm-ringRowLabel">本周</span><span class="owm-ringRowValue">—</span><div class="owm-ringRowBar"><span data-color="week" style="width:0%"></span></div><span class="owm-ringRowPct">—</span></div>
+            </div>
+          </div>
+          <div class="owm-kpis">
+            <div class="owm-kpi"><div class="owm-kpiTitle">Token 用量</div><div class="owm-kpiGrid"><div class="owm-kpiCell"><span class="owm-kpiLabel">近5小时</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">今日</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">本周</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">本月</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">本年</span><span class="owm-kpiValue">—</span></div></div></div>
+            <div class="owm-kpi"><div class="owm-kpiTitle">请求次数</div><div class="owm-kpiGrid"><div class="owm-kpiCell"><span class="owm-kpiLabel">近5小时</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">今日</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">本周</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">本月</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">本年</span><span class="owm-kpiValue">—</span></div></div></div>
+            <div class="owm-kpi"><div class="owm-kpiTitle">使用时长</div><div class="owm-kpiGrid"><div class="owm-kpiCell"><span class="owm-kpiLabel">近5小时</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">今日</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">本周</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">本月</span><span class="owm-kpiValue">—</span></div><div class="owm-kpiCell"><span class="owm-kpiLabel">本年</span><span class="owm-kpiValue">—</span></div></div></div>
+          </div>
+        </div>
+        <p class="owm-empty" style="grid-column:1/-1">暂无渠道与模型数据。</p>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<script>
+  const tabs = [...document.querySelectorAll('.owm-tab')];
+  const panels = (name) => [...document.querySelectorAll('[data-panel]')].find((p) => p.dataset.panel === name);
+  const setTab = (key) => {
+    tabs.forEach((tab) => {
+      const on = tab.dataset.tab === key;
+      tab.dataset.active = on;
+      tab.setAttribute('aria-selected', on);
+    });
+    Object.keys({ logs: 1, trend: 1, channels: 1, models: 1 }).forEach((name) => {
+      panels(name).hidden = name !== key;
+    });
+  };
+  tabs.forEach((tab) => tab.addEventListener('click', () => setTab(tab.dataset.tab)));
+
+  const authed = document.getElementById('demoAuthed');
+  const loginPanel = document.getElementById('demoLoginPanel');
+  const emptyPanel = document.getElementById('demoEmptyPanel');
+  const mask = document.getElementById('demoMask');
+  const show = (which) => {
+    authed.hidden = which !== 'authed';
+    loginPanel.hidden = which !== 'login';
+    emptyPanel.hidden = which !== 'empty';
+  };
+  document.getElementById('demoModal').addEventListener('click', () => { show('authed'); mask.style.display = 'flex'; });
+  document.getElementById('demoLogin').addEventListener('click', () => { show('login'); mask.style.display = 'flex'; });
+  document.getElementById('demoEmpty').addEventListener('click', () => { show('empty'); mask.style.display = 'flex'; });
+  mask.addEventListener('mousedown', (event) => { if (event.target === mask) mask.style.display = 'none'; });
+  document.querySelector('.owm-fab').addEventListener('click', () => { show('authed'); mask.style.display = 'flex'; });
+  document.querySelector('.owm-close').addEventListener('click', () => { mask.style.display = 'none'; });
+
+  // theme toggle
+  const setTheme = (theme) => {
+    document.body.dataset.theme = theme;
+    document.body.dataset.dsDarkTheme = theme === 'dark';
+    document.getElementById('demoLight').dataset.on = theme === 'light';
+    document.getElementById('demoDark').dataset.on = theme === 'dark';
+  };
+  document.getElementById('demoLight').addEventListener('click', () => setTheme('light'));
+  document.getElementById('demoDark').addEventListener('click', () => setTheme('dark'));
+  setTheme('light');
+</script>
+</body>
+</html>

@@ -8,6 +8,7 @@
 |---|---|---|
 | [`dsh-mcp-skill-manager`](./dsh-mcp-skill-manager) | 0.2.0 | 带 Web 设置页面的 MCP 与 Skills 统一管理器：管理 MCP 服务与 Skill 的新增、编辑、启停、删除，并支持从 Claude Code / Codex / OpenCode 一键导入 |
 | [`dsh-workspace-category-manager`](./dsh-workspace-category-manager) | 0.1.0 | 为 DSH 工作区添加逻辑分类，侧边栏以「分类文件夹 → 项目 → 会话」三级层级展示，支持拖拽归类与排序 |
+| [`dsh-oneway-usage-monitor`](./dsh-oneway-usage-monitor) | 0.1.0 | OneWay（oneway.eportyun.com）Token 用量监控：右下角 Apple Watch 三环悬浮窗展示近 5 小时/今日/本周用量，点击查看请求日志、渠道用量/限额与可用模型，支持企业微信扫码登录 |
 
 ## 安装
 
@@ -19,6 +20,9 @@ dsh plugin --profile web add ./dsh-mcp-skill-manager
 
 # 安装 Workspace Category Manager
 dsh plugin --profile web add ./dsh-workspace-category-manager
+
+# 安装 OneWay 用量监控
+dsh plugin --profile web add ./dsh-oneway-usage-monitor
 ```
 
 安装后**重启 DSH Web Host 一次**以装载 profile bundle，然后刷新浏览器页面。
@@ -27,6 +31,7 @@ dsh plugin --profile web add ./dsh-workspace-category-manager
 
 - **MCP & Skill Manager**：`设置 → 插件 → MCP` 与 `设置 → 插件 → Skills`
 - **Workspace Category Manager**：`设置 → 工作区分类`（侧边栏工作区区域直接呈现分类层级）
+- **OneWay 用量监控**：右下角三环悬浮窗（设置入口：`设置 → 插件 → OneWay 用量`）
 
 > ⚠️ 插件的 Host / client 文件都直接位于各自目录，DSH 通过 profile 依赖解析它们。请保留整个目录，不要仅复制 `cordis.patch.yml`。
 
@@ -46,6 +51,11 @@ dsh plugin --profile web add ./dsh-workspace-category-manager
 │   ├── client.js
 │   ├── cordis.patch.yml
 │   └── scripts/validate.mjs
+├── dsh-oneway-usage-monitor/       # OneWay Token 用量监控（三环悬浮窗）
+│   ├── index.js
+│   ├── client.js
+│   ├── cordis.patch.yml
+│   └── scripts/validate.mjs
 └── .gitignore
 ```
 
@@ -53,7 +63,7 @@ dsh plugin --profile web add ./dsh-workspace-category-manager
 
 ```bash
 # 安装依赖（任一插件目录）
-cd dsh-mcp-skill-manager   # 或 dsh-workspace-category-manager
+cd dsh-mcp-skill-manager   # 或 dsh-workspace-category-manager / dsh-oneway-usage-monitor
 pnpm install --ignore-scripts
 
 # 校验插件结构
@@ -70,6 +80,7 @@ node --check ./client.js
 
 - `dsh-mcp-skill-manager` 的外部 Harness 导入接口仅在 DSH Web 绑定 `127.0.0.1` 时启用；导入时会丢弃明文秘密，仅识别环境变量引用。
 - `dsh-workspace-category-manager` 为非破坏性插件，不会创建、移动、重命名或删除任何项目目录与会话。
+- `dsh-oneway-usage-monitor` 的网关会话 Cookie 仅保存在本机 DSH 设置文件，仅由 Host 端用于抓取 oneway.eportyun.com 页面；插件接口仅允许 `127.0.0.1` 同源访问。
 
 ## License
 

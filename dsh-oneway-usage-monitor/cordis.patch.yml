@@ -1,0 +1,5 @@
+# DSH profile bundle: OneWay usage monitor.
+# Adds a floating token-usage widget (Apple-Watch-style rings) to DSH Web.
+- insert:
+    - id: oneway-usage-monitor
+      name: dsh-oneway-usage-monitor
