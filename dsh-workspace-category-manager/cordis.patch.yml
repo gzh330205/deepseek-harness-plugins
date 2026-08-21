@@ -1,0 +1,7 @@
+# DSH profile bundle: workspace category manager.
+# Replace the stock single-occupant workspace browser with the categorised view.
+- id: ui-workspace
+  disabled: true
+- insert:
+    - id: workspace-category-manager
+      name: dsh-workspace-category-manager

@@ -1,0 +1,16 @@
+# DSH profile bundle: Settings-integrated MCP & Skill manager.
+#
+# Install this directory as a profile layer:
+#   dsh plugin --profile web add ./dsh-mcp-skill-manager
+#
+# The manager stores its user-owned MCP and Skill catalog in the normal DSH
+# Settings document under `mcp-skill-manager`. The browser UI contributes an
+# "MCP & Skills" tab inside Settings → Plugins.
+#
+# Adding, enabling, disabling, or removing records from the Settings UI does
+# not write this profile patch. Enabled MCP records are managed dynamically by
+# the Host plugin; disabled MCP records do not connect or register tools.
+
+- insert:
+    - id: mcp-skill-manager
+      name: dsh-mcp-skill-manager

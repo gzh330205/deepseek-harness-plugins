@@ -1,0 +1,24 @@
+# Copy one block into ../cordis.patch.yml and assign unique id/serverName values.
+
+# Local stdio server
+- id: mcp-example-local
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: example-local
+    transport: stdio
+    command: npx
+    args: ['-y', '@scope/example-mcp-server']
+    env:
+      EXAMPLE_TOKEN: !!js process.env.EXAMPLE_TOKEN
+    failOnStartupError: false
+
+# Remote Streamable HTTP server
+- id: mcp-example-remote
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: example-remote
+    transport: streamable-http
+    url: https://mcp.example.com/mcp
+    headers:
+      Authorization: !!js '`Bearer ${process.env.EXAMPLE_MCP_TOKEN}`'
+    failOnStartupError: false
