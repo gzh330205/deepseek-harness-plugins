@@ -1,0 +1,18 @@
+# dsh-web-auth: DSH Web 的 HTTP 认证网关（账户密码模式，profile bundle 补丁）。
+#
+# 安装（在本仓库根目录执行）：
+#   dsh plugin --profile web add ./dsh-web-auth
+#
+# 认证配置不在这里，而在 DSH 设置文档的 `web-auth` 命名空间：
+#   - 首次启动（无账户且未配置主令牌）：访问任意页面出现初始化引导页，
+#     创建第一个账户后引导页永久关闭；
+#   - 已登录用户：设置 → 插件 → 认证 管理账户（新增 / 删除 / 重置密码）；
+#   - 也可直接在 $DSH_HOME/settings.yaml 的 `web-auth` 下手写 users
+#     （hash 用 `node scripts/hash-password.mjs <密码>` 生成）。
+#
+# 可选的 `token`（主令牌）仍支持脚本自动化（Authorization: Bearer），
+# 但不再是唯一认证手段；本插件不再读取任何环境变量。
+
+- insert:
+    - id: web-auth
+      name: dsh-web-auth
