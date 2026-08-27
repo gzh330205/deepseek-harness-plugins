@@ -46,6 +46,8 @@ const ManagedMcpServer = z.object({
   env: z.dict(String).default({}),
   /** Maps MCP environment names to names already present in the DSH Host environment. */
   envVars: z.dict(String).default({}),
+  /** Literal HTTP header values supplied to a streamable HTTP MCP. */
+  headers: z.dict(String).default({}),
   /** Maps HTTP header names to names already present in the DSH Host environment. */
   headerEnvVars: z.dict(String).default({}),
   toolCallTimeoutMs: z.number().min(1).default(60000),
@@ -97,7 +99,7 @@ function mcpClientConfig(server) {
   const common = { serverName: server.serverName, toolCallTimeoutMs: server.toolCallTimeoutMs, failOnStartupError: false };
   return server.transport === 'stdio'
     ? { ...common, transport: 'stdio', command: server.command, args: server.args, ...(server.cwd.trim() === '' ? {} : { cwd: server.cwd }), env: { ...server.env, ...resolveEnvironment(server.envVars) } }
-    : { ...common, transport: 'streamable-http', url: server.url, headers: resolveEnvironment(server.headerEnvVars) };
+    : { ...common, transport: 'streamable-http', url: server.url, headers: { ...server.headers, ...resolveEnvironment(server.headerEnvVars) } };
 }
 
 function dshHome() { return resolve(process.env.DSH_HOME ?? join(homedir(), '.dsh')); }

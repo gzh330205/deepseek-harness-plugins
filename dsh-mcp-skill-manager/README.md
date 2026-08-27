@@ -53,6 +53,22 @@ JENKINS_ALLOW_SCRIPT_CONSOLE = true
 
 这些值会随该 MCP 记录写入 `$DSH_HOME/settings.yaml`，并在启用时传给 MCP 子进程；因此包含 Token 的值会以明文存在于本机 DSH Settings 文件中。若不希望将机密写入 Settings，请通过 `envVars` 配置引用启动 DSH 时已有的 Host 环境变量。
 
+手动新增或编辑 **Streamable HTTP MCP** 时，弹窗中有“HTTP 请求头”区域，可以配置认证头，例如：
+
+```text
+Authorization = Bearer <token>
+X-API-Key     = <key>
+```
+
+HTTP 请求头会随 DSH MCP client 请求发送。若使用环境变量引用，可在设置文件中配置：
+
+```yaml
+headerEnvVars:
+  Authorization: JENKINS_API_TOKEN
+```
+
+这样实际发送的是 `Authorization: <DSH 启动环境中的 JENKINS_API_TOKEN>`，不会把 Token 写入设置文件。
+
 ## Skills Tab
 
 打开 **设置 → 插件 → Skills**：
