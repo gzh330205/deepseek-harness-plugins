@@ -1,7 +1,8 @@
 # DSH profile bundle: workspace category manager.
-# Replace the stock single-occupant workspace browser with the categorised view.
-- id: ui-workspace
-  disabled: true
+# ui-workspace stays ENABLED: its client provides the `uiWorkspace` service
+# (startSession / pickDirectory) that the directory pickers and this plugin
+# depend on. This plugin shadows the stock browser in the sidebar slot at a
+# lower priority instead of replacing the package.
 - insert:
     - id: workspace-category-manager
       name: dsh-workspace-category-manager
