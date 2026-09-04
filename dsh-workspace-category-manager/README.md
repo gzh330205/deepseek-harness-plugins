@@ -54,10 +54,50 @@ workspace-category-manager:
 
 删除一个分类会自动移除其项目分配；项目目录、Workspace 本身及其会话不会受影响。
 
+## 开发与构建
+
+客户端是 TypeScript 源码，构建为 Dsh 模块表契约的单文件 bundle：
+
+```
+src/
+  index.ts                  # 客户端入口：样式注入 + 槽位注册
+  api.ts                    # DSH API 适配层（唯一接触 ctx）
+  constants.ts / utils.ts   # 常量与工具
+  components/               # TSX 组件（CategorySidebar/CategorySection/StateDot/dialogs/icons）
+  styles.css                # ← 独立的样式文件（源层面分离）
+scripts/build-client.mjs    # esbuild：src/client → lib/client.js（CSS 内联注入）
+lib/client.js               # 构建产物（不提交，prepare 自动构建）
+```
+
+```bash
+pnpm install        # 触发 prepare → 构建 lib/client.js
+pnpm build          # 手动重新构建（改 src/ 后）
+pnpm test           # 针对构建产物的 API 面测试（适配层现代/回退/降级）
+pnpm check-api      # 升级核对（见下）
+pnpm validate       # 结构校验
+```
+
 ## 验证
 
 ```bash
-node ./scripts/validate.mjs
+pnpm build && pnpm test
 node --check ./index.js
-node --check ./client.js
+node ./scripts/validate.mjs
 ```
+
+## 架构与升级稳健性
+
+插件对 DSH 的所有运行时访问都集中在 `src/client/api.ts` 的 **`createDshApi` 适配层**（唯一接触 `ctx` 的代码），组件只消费 `api` 对象：
+
+- **硬依赖**（inject 声明）：`slots` / `locale` / `settingsScope` / `workspaces` / `sessions`；
+- **软依赖**（`ctx.get` 探测，缺失即降级）：`uiWorkspace`——`startSession` 依次回退 `uiWorkspace.startSession` → `workspaces.startSession` → `sessions.create/open`；`pickDirectory` 回退 `uiWorkspace.pickDirectory` → `workspaces.pickDirectory`，都缺失时添加工作区按钮自动隐藏；
+- 组合层面：不禁用、不修改任何原生包；`cordis.patch.yml` 只插入自身；侧边栏以 `priority: -1` 遮蔽原生浏览器（原生条目保持注册，插件加载失败时原生浏览器自然兜底）；
+- 样式在 `src/client/styles.css` 独立维护，构建时内联为 `<style data-plugin-css>` 注入（与 Dsh 自家编译产物格式一致）。
+
+**DSH 升级后**运行：
+
+```bash
+node ./scripts/check-api.mjs <dshRoot可选>
+```
+
+它直接从 `src/client/` 源码提取适配层用到的服务/方法 token，逐项对照已安装 dsh 的客户端源码（46 项检查），输出缺失清单；缺失项只在 `api.ts`（`createDshApi`）加一条回退分支即可，UI 逻辑无需变更。
