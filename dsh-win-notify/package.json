@@ -1,0 +1,33 @@
+{
+  "name": "dsh-win-notify",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "DSH 会话执行完成时通知：Tauri 桌面壳/浏览器（客户端半部分）或 Windows 系统 Toast（宿主半部分）。",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "scripts": {
+    "validate": "node ./scripts/validate.mjs",
+    "test": "node ./scripts/unit-test.mjs && node ./scripts/client-unit-test.mjs"
+  }
+}

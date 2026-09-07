@@ -1,0 +1,10 @@
+# dsh-win-notify: 会话执行完成时发送 Windows 系统通知。
+# 一行即装即用；所有可调项走 schema 默认值，用户可在 profile 的
+# cordis.patch.yml 中按 id 覆盖：
+#
+#   - id: win-notify
+#     config:
+#       notifyKinds: [completed, error]
+- insert:
+    - id: win-notify
+      name: dsh-win-notify

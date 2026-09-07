@@ -9,6 +9,7 @@
 | [`dsh-web-auth`](./dsh-web-auth) | 0.2.0 | DSH Web 的 HTTP 认证网关（账号密码模式）：访问 `http://<host>:<port>` 先登录，支持账户管理、首次部署引导（有网页端设置页）；服务器部署走反向代理/SSH 隧道（DSH 禁止 0.0.0.0 绑定） |
 | [`dsh-mcp-skill-manager`](./dsh-mcp-skill-manager) | 0.2.0 | 带 Web 设置页面的 MCP 与 Skills 统一管理器：管理 MCP 服务与 Skill 的新增、编辑、启停、删除，并支持从 Claude Code / Codex / OpenCode 一键导入 |
 | [`dsh-workspace-category-manager`](./dsh-workspace-category-manager) | 0.1.0 | 为 DSH 工作区添加逻辑分类，侧边栏以「分类文件夹 → 项目 → 会话」三级层级展示，支持拖拽归类与排序 |
+| [`dsh-win-notify`](./dsh-win-notify) | 0.2.0 | 会话执行完成 / 需要人工干预（审批、提问）时弹通知：Tauri 桌面壳原生通知或浏览器 Notification（客户端路线），可选 Windows 系统 Toast（宿主路线，零依赖） |
 
 ## 安装
 
