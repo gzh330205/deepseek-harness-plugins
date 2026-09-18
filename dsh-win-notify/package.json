@@ -1,9 +1,9 @@
 {
   "name": "dsh-win-notify",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
-  "description": "DSH 会话执行完成时通知：Tauri 桌面壳/浏览器（客户端半部分）或 Windows 系统 Toast（宿主半部分）。",
+  "description": "DSH 会话执行完成 / 需要人工干预时通知：Tauri 桌面壳/浏览器（客户端半部分）或 Windows 系统 Toast（宿主半部分）。",
   "main": "./index.js",
   "exports": {
     ".": "./index.js",
@@ -20,7 +20,11 @@
       "patch": "./cordis.patch.yml"
     },
     "client": {
-      "platform": "web"
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-ui-session"
+      ]
     }
   },
   "dependencies": {

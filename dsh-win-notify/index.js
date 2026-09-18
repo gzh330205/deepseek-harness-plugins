@@ -342,6 +342,8 @@ export function apply(ctx, config) {
             maxMessageLength: config.maxMessageLength,
             interventions: config.interventions,
             interventionTitle: config.interventionTitle,
+            // 客户端同样需要 verbose 才能打印 [dsh-win-notify][client] 日志。
+            verbose: config.verbose,
           });
         },
       });

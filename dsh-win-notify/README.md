@@ -13,7 +13,24 @@ DSH **会话执行完成 / 需要人工干预时弹通知**的 profile 插件，
 - **权限审批**（agent 要调工具、需要你允许/拒绝）→ `approval/request`；
 - **向用户提问**（`ask_user_question` / 计划审查）→ `user-questions/request`。
 
-客户端观察官方 UI 的 pending-interaction 快照（`ctx.uiSession.pendingInteractions`，审批与提问都会登记，按 interaction key 去重）；宿主侧用 `prepend` 透传监听器（副作用 + 立即 `next()`，绝不短接审批/提问链路）。`interventions: false` 可关闭。
+客户端观察官方 UI 的 pending-interaction 快照（审批与提问都会登记，按 interaction key 去重）；宿主侧用 `prepend` 透传监听器（副作用 + 立即 `next()`，绝不短接审批/提问链路）。`interventions: false` 可关闭。
+
+## 版本兼容（重要）
+
+DSH 版本间客户端 API 有变动，本插件做了双路兼容与降级：
+
+| DSH 版本 | 干预信号来源 | 完成信号来源 |
+|---|---|---|
+| **0.1.6+**（当前） | `ctx.uiSession.sessionStatus` 快照的 `pendingInteraction`（该 store 同时给出 `running` / `completionUnread`） | `sessions.list` 行 `running: true → false` |
+| ≤ 0.1.2 | `ctx.uiSession.pendingInteractions` 快照 | 同上 |
+
+0.1.6 起 Web boot 对客户端插件 **fail-loud**：任何 entry 未 `active`（apply 抛错或等待服务）都会让整页报
+`web boot: N entry did not activate` 而无法进入界面。因此本插件：
+
+- `apply()` 全程 try/catch，**绝不向外抛错**；
+- 服务与快照接口一律特性探测，缺失时只降级并打印一行警告；
+- 只 `inject: ['sessions']`，`uiSession` 用动态 `inject` 等待——即使该服务被改名/移除也不会卡住激活；
+- `dsh.client.inject` 声明 provider 模块（`@deepseek-ai/dsh-api-session-controller`、`@deepseek-ai/dsh-client-ui-session`）保证加载顺序。
 
 ## 客户端是怎么检测"会话跑完了"的
 
@@ -107,13 +124,14 @@ tauri::Builder::default()
 | `notifyKinds` | `['completed','error']` | **仅宿主侧**：哪些 turn 结束原因要通知 |
 | `includeSubagents` | `false` | 是否通知 subagent 子会话（两侧共用） |
 | `backend` | `powershell-toast` | **仅宿主侧**后端；`none` 关闭 |
-| `shellPath` / `appId` / `sound` / `duration` / `maxMessageLength` / `verbose` | 见上 | 仅宿主侧 PowerShell 参数 |
+| `shellPath` / `appId` / `sound` / `duration` / `maxMessageLength` | 见上 | 仅宿主侧 PowerShell 参数 |
+| `verbose` | `false` | 两侧通用：宿主打印 `[dsh-win-notify]`，客户端（浏览器 F12）打印 `[dsh-win-notify][client]` |
 
 ## 自检
 
 ```sh
 node ./scripts/unit-test.mjs           # 宿主逻辑 25 项断言（含干预文案与 waterfall 透传）
-node ./scripts/client-unit-test.mjs    # 客户端逻辑 18 项断言（桩 Tauri/Notification/pending interactions）
+node ./scripts/client-unit-test.mjs    # 客户端逻辑 24 项断言（桩 Tauri/Notification/sessionStatus，含降级不抛错回归）
 node ./scripts/validate.mjs --toast    # 宿主侧真实弹一条自检 Toast
 ```
 
