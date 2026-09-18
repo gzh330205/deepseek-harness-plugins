@@ -1,6 +1,6 @@
 import React from 'react';
 import { createElement as h } from 'react';
-import { useScope, useWorkspaceSnapshot, configOf, workspaceId, workspaceLabel } from '../utils.js';
+import { useScope, useWorkspaceSnapshot, configOf, workspaceId, workspaceLabel, errText } from '../utils.js';
 import { Dialog, CategoryForm, Confirm } from './dialogs.jsx';
 function CategorySection({ api, t }) {
       const scope = api.settingsScope; const settings = useScope(scope); const list = useWorkspaceSnapshot(api.workspacesList).items ?? []; const config = configOf(scope); const [dialog, setDialog] = React.useState(null); const [failure, setFailure] = React.useState('');

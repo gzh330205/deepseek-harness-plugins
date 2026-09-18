@@ -60,14 +60,28 @@ assert(plugin.apply && plugin.inject, 'module face must export apply+inject');
 assert(!plugin.inject.includes('uiWorkspace'), 'uiWorkspace must be soft');
 assert(['workspaces', 'sessions', 'settingsScope', 'slots', 'locale'].every((n) => plugin.inject.includes(n)), 'hard injects regressed');
 
+/* Service stubs for the two client generations this adapter supports.
+ *   modern (withUiWorkspace === true): 0.1.6+ — uiWorkspace owns selection
+ *     (openSession) and the New Session flow, `sessions` has no open(),
+ *     uiSession.sessionStatus carries {running, pendingInteraction,
+ *     completionUnread}.
+ *   legacy (false): <=0.1.2 — no uiWorkspace, sessions.open() switches the
+ *     view, uiSession.pendingInteractions carries {kind}, list rows carry
+ *     current/completed. */
+const store = (snapshot) => ({ getSnapshot: () => snapshot, subscribe: () => () => {} });
 const servicesFor = (withUiWorkspace) => {
+  const modern = withUiWorkspace === true;
+  const statuses = new Map();
+  const pending = new Map();
+  let list = { byId: { s1: { id: 's1', displayTitle: 'Conv 1', blank: false, running: true } }, current: 's1', ids: ['s1'] };
+  const rename = (id, title) => { calls.push(['session.rename', id, title]); return Promise.resolve({ ok: true }); };
   const sessions = {
-    list: { subscribe: () => () => {}, getSnapshot: () => ({ byId: { s1: { id: 's1', displayTitle: 'Conv 1', blank: false, running: true } }, current: 's1', ids: ['s1'] }) },
-    open: (id) => calls.push(['sessions.open', id]),
+    list: { subscribe: () => () => {}, getSnapshot: () => list },
     create: (opts) => { calls.push(['sessions.create', opts]); return Promise.resolve('new1'); },
     fork: (opts) => { calls.push(['sessions.fork', opts]); return Promise.resolve('child1'); },
-    binding: (id) => ({ session: { rename: (title) => { calls.push(['session.rename', id, title]); return Promise.resolve({ ok: true }); } } }),
   };
+  if (modern) sessions.using = (id, options, operation) => { calls.push(['sessions.using', id, options]); return Promise.resolve(operation({ binding: { session: { rename: (title) => rename(id, title) } } })); };
+  else { sessions.open = (id) => calls.push(['sessions.open', id]); sessions.binding = (id) => ({ session: { rename: (title) => rename(id, title) } }); }
   const workspaces = {
     list: { subscribe: () => () => {}, getSnapshot: () => ({ items: [{ workspaceId: 'a', title: 'Proj A', path: 'C:\\a', sessionIds: ['s1'] }], archivedSessionIds: [] }) },
     create: (input) => { calls.push(['workspaces.create', input]); return Promise.resolve({ workspaceId: 'n1' }); },
@@ -76,10 +90,11 @@ const servicesFor = (withUiWorkspace) => {
     insertBefore: (id, before) => { calls.push(['workspaces.insertBefore', id, before ?? null]); return Promise.resolve(); },
     archiveSession: (id) => { calls.push(['workspaces.archiveSession', id]); return Promise.resolve(); },
   };
-  const uiWorkspace = withUiWorkspace
-    ? { startSession: (id) => calls.push(['uiWorkspace.startSession', id]), pickDirectory: () => { calls.push(['uiWorkspace.pickDirectory']); return Promise.resolve('/tmp/n'); } }
+  const uiWorkspace = modern
+    ? { openSession: (id) => calls.push(['uiWorkspace.openSession', id]), startSession: (id) => calls.push(['uiWorkspace.startSession', id]), archiveSession: (id) => { calls.push(['uiWorkspace.archiveSession', id]); return Promise.resolve(); }, pickDirectory: () => { calls.push(['uiWorkspace.pickDirectory']); return Promise.resolve('/tmp/n'); } }
     : {};
-  return { workspaces, sessions, uiWorkspace };
+  const uiSession = modern ? { sessionStatus: store(statuses) } : { pendingInteractions: store(pending) };
+  return { workspaces, sessions, uiWorkspace, uiSession, statuses, pending, setList: (next) => { list = next; } };
 };
 const bindScope = () => ({ subscribe: () => () => {}, getSnapshot: () => ({ value: state, status: 'ready', writable: true }), set: (k, v) => { calls.push(['scope.set', k, v]); state[k] = v; return Promise.resolve(); } });
 const entriesFor = (withUiWorkspace) => {
@@ -168,7 +183,13 @@ assert(collectSimple(secTree).some((r) => r.cls === 'wcm'), 'settings section sh
 calls.length = 0;
 const apiD = props['sidebar.workspaces'].api;
 await Promise.all([apiD.renameWorkspace('a', 'N'), apiD.deleteWorkspace('a'), apiD.insertWorkspaceBefore('a', 'b'), apiD.archiveSession('s1')]);
-assert(calls.some(([k]) => k === 'workspaces.rename') && calls.some(([k]) => k === 'workspaces.delete') && calls.some(([k]) => k === 'workspaces.insertBefore') && calls.some(([k]) => k === 'workspaces.archiveSession'), 'adapter passthrough broken');
+assert(calls.some(([k]) => k === 'workspaces.rename') && calls.some(([k]) => k === 'workspaces.delete') && calls.some(([k]) => k === 'workspaces.insertBefore'), 'adapter passthrough broken');
+// archive is a view-owner action in 0.1.6+ (it must clear the panel of the archived current session)
+assert(calls.some(([k, id]) => k === 'uiWorkspace.archiveSession' && id === 's1'), 'modern archive must go through uiWorkspace');
+const legacyD = entriesFor(false)['sidebar.workspaces'].api;
+calls.length = 0;
+await legacyD.archiveSession('s1');
+assert(calls.some(([k, id]) => k === 'workspaces.archiveSession' && id === 's1'), 'legacy archive must stay on the workspaces controller');
 assert(props._reg.priority === -1, 'sidebar priority must be -1');
 assert(props._reg.children === undefined, 'children must not be declared');
 
@@ -250,4 +271,130 @@ assert(!raceApi.canPickDirectory(), 'should start without pick capability');
 raceSvc.uiWorkspace = { startSession: () => {}, pickDirectory: () => Promise.resolve('/x') };
 assert(raceApi.canPickDirectory(), 'capability must flip once uiWorkspace appears');
 
-console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace');
+// G: management actions moved to context menus — no visible buttons remain
+props = entriesFor(true);
+hookState = [];
+hookIndex = 0;
+rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+assert(!rows.some((r) => r.cls.includes('MenuBtn') || r.cls.includes('wcm-folderDissolve')), 'management buttons must be removed');
+const menuTexts = (rs) => rs.filter((r) => r.cls === 'wcm-menuText').map((r) => r.el.props.children);
+// project row right-click → rename + delete
+rows.find((r) => r.cls === 'wcm-projectRow').el.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 40, clientY: 50 });
+hookIndex = 0;
+rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+let texts = menuTexts(rows);
+assert(texts.includes('rename') && texts.includes('deleteWorkspace'), 'project context menu should offer rename + delete');
+// folder row right-click → dissolve
+rows.find((r) => r.cls.startsWith('wcm-folderRow') && r.el.props.title === '客户项目').el.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 40, clientY: 50 });
+hookIndex = 0;
+rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+texts = menuTexts(rows);
+assert(texts.length === 1 && texts[0] === 'dissolveCategory', 'folder context menu should offer dissolve');
+// session row right-click → rename + fork + archive
+const projToExpand = rows.find((r) => r.cls === 'wcm-projectRow');
+projToExpand.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+hookIndex = 0;
+rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+rows.find((r) => r.cls.split(' ').includes('wcm-session')).el.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 40, clientY: 50 });
+hookIndex = 0;
+rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+texts = menuTexts(rows);
+assert(texts.includes('rename') && texts.includes('fork') && texts.includes('archive'), 'session context menu should offer rename + fork + archive');
+
+// H: waiting-for-human sessions must show AMBER, overriding running.
+// 0.1.6+ shape: uiSession.sessionStatus → { running, pendingInteraction, completionUnread }
+const svcH = servicesFor(true);
+svcH.statuses.set('s1', { running: true, pendingInteraction: { kind: 'approval' }, completionUnread: false });
+const propsH = (() => { const out = {}; const settingsScopeSvc = { bind: () => bindScope() };
+  plugin.apply({
+    effect: () => () => {},
+    locale: { register: () => {}, bind: () => (k) => k },
+    get: (name) => name === 'settingsScope' ? settingsScopeSvc : svcH[name],
+    settingsScope: { bind: () => bindScope() },
+    slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
+  });
+  return out; })();
+hookState = [];
+hookIndex = 0;
+rows = collectSimple(propsH['component:sidebar.workspaces']({ api: propsH['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+assert(rows.filter((r) => r.cls.includes('wcm-wsBadge') && r.cls.includes('wcm-ws-warning')).length >= 2, 'waiting-for-human must show amber badges on category + project rows');
+assert(!rows.some((r) => r.cls.includes('wcm-ws-running')), 'warning must override the running (blue) state');
+const projWait = rows.find((r) => r.cls === 'wcm-projectRow');
+projWait.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+hookIndex = 0;
+rows = collectSimple(propsH['component:sidebar.workspaces']({ api: propsH['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+assert(rows.filter((r) => r.cls === 'wcm-wsDot wcm-ws-warning').length >= 1, 'waiting session row must show the amber halo dot');
+
+// H2: legacy shape (<=0.1.2 pendingInteractions {kind}) must still surface AMBER
+const svcH2 = servicesFor(false);
+svcH2.pending.set('s1', { kind: 'question' });
+const propsH2 = (() => { const out = {}; const settingsScopeSvc = { bind: () => bindScope() };
+  plugin.apply({
+    effect: () => () => {},
+    locale: { register: () => {}, bind: () => (k) => k },
+    get: (name) => name === 'settingsScope' ? settingsScopeSvc : svcH2[name],
+    settingsScope: { bind: () => bindScope() },
+    slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
+  });
+  return out; })();
+hookState = [];
+hookIndex = 0;
+rows = collectSimple(propsH2['component:sidebar.workspaces']({ api: propsH2['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+assert(rows.filter((r) => r.cls.includes('wcm-wsBadge') && r.cls.includes('wcm-ws-warning')).length >= 2, 'legacy pendingInteractions must still show amber badges');
+
+// I: regression (0.1.6) — selecting a Session navigates through the view owner.
+// sessions.open() only set controller-local selection and stopped switching the
+// visible Conversation, so uiWorkspace.openSession must be the modern call.
+props = entriesFor(true);
+hookState = [];
+hookIndex = 0;
+rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+rows.find((r) => r.cls === 'wcm-projectRow').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+hookIndex = 0;
+rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+const sessionRow = rows.find((r) => r.cls.split(' ').includes('wcm-session'));
+assert(sessionRow, 'session row must render once the project is expanded');
+calls.length = 0;
+sessionRow.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+assert(calls.some(([k, id]) => k === 'uiWorkspace.openSession' && id === 's1'), 'session click must call uiWorkspace.openSession');
+assert(!calls.some(([k]) => k === 'sessions.open'), 'modern path must not fall back to the removed sessions.open');
+// legacy ends: sessions.open is still the navigation call
+const legacyApi = entriesFor(false)['sidebar.workspaces'].api;
+calls.length = 0;
+legacyApi.openSession('s1');
+assert(calls.some(([k, id]) => k === 'sessions.open' && id === 's1'), 'legacy path must keep sessions.open');
+
+// J: current-session highlight — 0.1.6 drops list `current` and exposes the
+// main-view retention count on the row instead.
+const svcJ = servicesFor(true);
+svcJ.setList({ byId: { s1: { id: 's1', displayTitle: 'Conv 1', blank: false, running: false, retainedBy: { mainView: 1 } } }, ids: ['s1'] });
+const propsJ = (() => { const out = {}; const settingsScopeSvc = { bind: () => bindScope() };
+  plugin.apply({
+    effect: () => () => {},
+    locale: { register: () => {}, bind: () => (k) => k },
+    get: (name) => name === 'settingsScope' ? settingsScopeSvc : svcJ[name],
+    settingsScope: { bind: () => bindScope() },
+    slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
+  });
+  return out; })();
+hookState = [];
+hookIndex = 0;
+rows = collectSimple(propsJ['component:sidebar.workspaces']({ api: propsJ['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+rows.find((r) => r.cls === 'wcm-projectRow').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+hookIndex = 0;
+rows = collectSimple(propsJ['component:sidebar.workspaces']({ api: propsJ['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+assert(rows.some((r) => r.cls.split(' ').includes('wcm-current')), 'a mainView-retained session must render as current');
+
+// K: session rename — 0.1.6 only hands out a live binding while retained, so
+// the adapter must acquire a reference around the operation.
+calls.length = 0;
+await entriesFor(true)['sidebar.workspaces'].api.renameSession('s1', 'Renamed');
+assert(calls.some(([k, id]) => k === 'sessions.using' && id === 's1'), 'modern rename must acquire a session reference');
+assert(calls.some(([k, id, title]) => k === 'session.rename' && id === 's1' && title === 'Renamed'), 'modern rename must reach the session face');
+calls.length = 0;
+await entriesFor(false)['sidebar.workspaces'].api.renameSession('s1', 'Renamed');
+assert(calls.some(([k, id, title]) => k === 'session.rename' && title === 'Renamed'), 'legacy rename must use the resolved binding');
+assert(!calls.some(([k]) => k === 'sessions.using'), 'legacy services must not be asked for sessions.using');
+
+console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename');
+

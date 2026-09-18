@@ -41,34 +41,44 @@ var styles_default = `
       .wcm-sidebar{display:flex;flex-direction:column;min-height:0;gap:6px;padding:0 8px 12px}.wcm-sidebarHead{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 2px;color:var(--dsw-alias-label-secondary);font-size:13px}.wcm-sidebarAdd{width:28px;height:28px;padding:0!important;border:0!important;border-radius:8px!important;font-size:18px!important;line-height:1!important}.wcm-group{margin:0;padding:0}.wcm-group>summary{display:flex;align-items:center;gap:6px;min-height:30px;cursor:pointer;list-style:none;color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:600;user-select:none}.wcm-group>summary::-webkit-details-marker{display:none}.wcm-group>summary::before{content:'\u203A';display:inline-block;color:var(--dsw-alias-label-tertiary);font-size:17px;line-height:1;transform:rotate(0deg);transition:transform .12s}.wcm-group[open]>summary::before{transform:rotate(90deg)}.wcm-groupDot{width:8px;height:8px;border-radius:50%;flex:none}.wcm-groupCount{margin-left:auto;color:var(--dsw-alias-label-tertiary);font-weight:400}.wcm-projects{display:flex;flex-direction:column;gap:2px;padding:0 0 5px 14px}.wcm-project{display:flex;align-items:center;gap:7px;width:100%;min-width:0;padding:7px 8px;border:0!important;border-radius:7px!important;text-align:left;font-size:13px!important}.wcm-project:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-folder{color:var(--dsw-alias-label-tertiary);font-size:15px;line-height:1}.wcm-projectLabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcm-sidebarRail{padding:4px}.wcm-sidebarRail .wcm-sidebarHead{display:none}.wcm-sidebarRail .wcm-group>summary{justify-content:center;font-size:0}.wcm-sidebarRail .wcm-group>summary::before{display:none}.wcm-sidebarRail .wcm-groupCount{display:none}.wcm-sidebarRail .wcm-projects{padding:0}.wcm-sidebarRail .wcm-project{justify-content:center;padding:7px 0}.wcm-sidebarRail .wcm-projectLabel{display:none}.wcm-sidebarRail .wcm-folder{font-size:18px}
 
 
-      .wcm-chips{display:flex;flex-wrap:wrap;gap:4px;padding:0 2px 4px}.wcm-chip{border:1px solid var(--dsw-alias-border-l2)!important;border-radius:999px!important;padding:3px 10px!important;font-size:12px!important;color:var(--dsw-alias-label-secondary)!important;background:transparent}.wcm-chip:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-chipOn{color:#fff!important;background:var(--dsw-alias-brand-primary)!important;border-color:var(--dsw-alias-brand-primary)!important}.wcm-projectRow{display:flex;flex-direction:column;min-width:0;position:relative;cursor:pointer;user-select:none}.wcm-projectLine{position:relative;display:flex;align-items:center;gap:2px;height:34px;box-sizing:border-box;min-width:0;border-radius:7px}.wcm-projectLine:hover{background:var(--dsw-alias-interactive-bg-hover)}.wcm-project{flex:1;min-width:0}.wcm-projectLabel{flex:1;min-width:0}.wcm-rowIconSlot{position:relative;flex:none;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center}.wcm-rowIcon{display:inline-flex;align-items:center;justify-content:center;color:var(--dsw-alias-label-tertiary)}.wcm-rowChevron{position:absolute;inset:0;display:inline-flex;align-items:center;justify-content:center;visibility:hidden;color:var(--dsw-alias-label-secondary);transition:transform .12s}.wcm-folderRow:hover .wcm-rowChevron,.wcm-projectLine:hover .wcm-rowChevron{visibility:visible}.wcm-folderRow:hover .wcm-rowIcon,.wcm-projectLine:hover .wcm-rowIcon{visibility:hidden}.wcm-folderRow.wcm-open .wcm-rowChevron,.wcm-projectRow.wcm-open .wcm-rowChevron{transform:rotate(90deg)}.wcm-projectAdd{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px!important;height:24px!important;padding:0!important;border:0!important;border-radius:6px!important;opacity:0;color:var(--dsw-alias-label-secondary)!important;background:transparent!important}.wcm-projectLine:hover .wcm-projectAdd,.wcm-projectLine:focus-within .wcm-projectAdd{opacity:1}.wcm-projectAdd:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-sessions{display:flex;flex-direction:column;gap:1px;margin-left:10px;padding:2px 0 6px 8px;border-left:1px solid var(--dsw-alias-border-l2)}.wcm-session{display:flex;align-items:center;gap:2px;width:100%;height:34px;box-sizing:border-box;min-width:0;padding:0;border:0!important;border-radius:7px!important;text-align:left;font:inherit;font-size:13px!important;color:var(--dsw-alias-label-secondary)!important;background:transparent}.wcm-session:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-sessionStatus{flex:none;display:inline-flex;align-items:center;justify-content:center;width:14px}.wcm-sessionTitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcm-session.wcm-current{color:var(--dsw-alias-label-primary)!important;background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-dot{position:relative;display:inline-block;flex:none}.wcm-dot:before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:50%;background:currentColor;opacity:.1}.wcm-dot:after{content:"";position:absolute;top:20%;right:20%;bottom:20%;left:20%;border-radius:50%;background:currentColor}.wcm-dot[data-state=done]{color:var(--dsw-alias-state-success-primary)}.wcm-dot[data-state=warning]{color:var(--dsw-alias-state-warn-primary)}.wcm-dot[data-state=error]{color:var(--dsw-alias-state-error-primary)}.wcm-dotMatrix{flex:none;color:var(--dsw-static-deepseek-450,#4f8cff)}.wcm-dotCell{fill:currentColor;opacity:.15;animation:wcm-state-chase 1s infinite}@keyframes wcm-state-chase{0%,12.4%{opacity:1}12.5%,24.9%{opacity:.6}25%,37.4%{opacity:.35}37.5%,to{opacity:.15}}.wcm-empty{margin:6px 8px;font-size:12px;color:var(--dsw-alias-label-tertiary)}.wcm-sidebarActions{position:relative;display:flex;align-items:center;gap:2px}.wcm-iconBtn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0!important;border:0!important;border-radius:6px!important;color:var(--dsw-alias-label-secondary)!important;background:transparent}.wcm-iconBtn:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-wsDot.wcm-wsBadge{position:absolute;top:0;right:0;width:8px;height:8px}.wcm-wsDot{position:relative;width:10px;height:10px;flex:none}.wcm-wsDot::before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:50%;background:currentColor;opacity:.14}.wcm-wsDot::after{content:"";position:absolute;top:25%;right:25%;bottom:25%;left:25%;border-radius:50%;background:currentColor}.wcm-ws-running{color:var(--dsw-static-deepseek-450,#4f8cff)}.wcm-ws-warning{color:var(--dsw-alias-state-warn-primary)}.wcm-ws-done{color:var(--dsw-alias-state-success-primary)}.wcm-projectRow.wcm-dragging{opacity:.55}.wcm-projectRow.wcm-dropBefore .wcm-projectLine{box-shadow:inset 0 2px 0 0 var(--dsw-alias-brand-primary)}.wcm-projectRow.wcm-dropAfter .wcm-projectLine{box-shadow:inset 0 -2px 0 0 var(--dsw-alias-brand-primary)}.wcm-folders{display:flex;flex-direction:column;gap:2px;padding:0 4px 8px 4px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}.wcm-sidebar{flex:1;min-height:0}.wcm-folderWrap{display:flex;flex-direction:column;min-width:0}.wcm-folderRow{display:flex;align-items:center;gap:2px;height:34px;box-sizing:border-box;padding:0;border-radius:7px;cursor:pointer;user-select:none;font-size:13px;font-weight:600;color:var(--dsw-alias-label-secondary);position:relative}.wcm-folderRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.wcm-folderLabel{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcm-folderCount{flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary)}.wcm-folderDissolve{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px!important;height:24px!important;padding:0!important;border:0!important;border-radius:6px!important;opacity:0;color:var(--dsw-alias-label-tertiary)!important;background:transparent!important}.wcm-folderRow:hover .wcm-folderDissolve,.wcm-folderRow:focus-within .wcm-folderDissolve{opacity:1}.wcm-folderDissolve:hover{background:var(--dsw-alias-interactive-bg-hover)!important;color:var(--dsw-alias-state-error-primary)!important}.wcm-folderDissolveSlot{flex:none;width:24px}.wcm-folderProjects{display:flex;flex-direction:column;gap:2px;margin-left:13px;padding:0 0 4px 9px;border-left:1px solid var(--dsw-alias-border-l2)}.wcm-folderRow.wcm-dragging{opacity:.55}.wcm-folderRow.wcm-dropBefore{box-shadow:inset 0 2px 0 0 var(--dsw-alias-brand-primary)}.wcm-folderRow.wcm-dropAfter{box-shadow:inset 0 -2px 0 0 var(--dsw-alias-brand-primary)}.wcm-folderRow.wcm-dropInto{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px var(--dsw-alias-brand-primary)}.wcm-menuMask{position:fixed;inset:0;z-index:1199}.wcm-menu{position:absolute;z-index:1200;top:calc(100% + 4px);right:0;min-width:180px;padding:4px;display:flex;flex-direction:column;gap:0;border:1px solid var(--dsw-alias-border-inverted);border-radius:10px;background:var(--dsw-specific-menu);box-shadow:var(--dsw-shadow-lv3)}.wcm-menuLabel{padding:4px 8px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}.wcm-menuItem{display:flex;align-items:center;gap:8px;width:100%;min-height:26px;padding:3px 8px;border:0!important;border-radius:6px!important;font-size:12px!important;text-align:left;color:var(--dsw-alias-label-primary)!important;background:transparent}.wcm-menuItem:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-menuItemOn{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-menuText{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcm-menuCheck{flex:none;color:var(--dsw-alias-label-primary)}.wcm-menuDanger{color:var(--dsw-alias-state-error-primary)!important}.wcm-menuCompact{width:max-content;min-width:0;max-width:260px}.wcm-colorRow{display:flex;align-items:center;gap:8px}.wcm-actions{justify-content:flex-end}.wcm-dialog button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent}.wcm-dialog button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.wcm-dialog button:disabled{cursor:default;opacity:.5}.wcm-form button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent}.wcm-form button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.wcm-form button:disabled{cursor:default;opacity:.5}.wcm-randomColor{white-space:nowrap}.wcm-form-field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dsw-alias-label-secondary);margin-bottom:10px}.wcm-selectFull{width:100%;min-width:0;box-sizing:border-box}.wcm-dirRow{display:flex;align-items:center;gap:6px}.wcm-dirInput{flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:7px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.wcm-dirInput::placeholder{color:var(--dsw-alias-label-tertiary)}.wcm-gap{height:2px}.wcm-groupList{display:flex;flex-direction:column;gap:2px;margin-top:4px}.wcm-groupOption{display:flex;align-items:center;gap:8px;width:100%;padding:6px 4px;border:0!important;border-radius:7px!important;font-size:13px!important;text-align:left;color:var(--dsw-alias-label-primary)!important;background:transparent!important}.wcm-groupOption:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-groupDot{width:10px;height:10px;border-radius:50%;flex:none}.wcm-groupName{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcm-projectMenuBtn,.wcm-sessionMenuBtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px!important;height:24px!important;padding:0!important;border:0!important;border-radius:6px!important;opacity:0;color:var(--dsw-alias-label-secondary)!important;background:transparent!important}.wcm-projectLine:hover .wcm-projectMenuBtn,.wcm-projectLine:focus-within .wcm-projectMenuBtn,.wcm-session:hover .wcm-sessionMenuBtn,.wcm-session:focus-within .wcm-sessionMenuBtn{opacity:1}.wcm-projectMenuBtn:hover,.wcm-sessionMenuBtn:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-session{position:relative;cursor:pointer;user-select:none}.wcm-renameInput{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:6px 8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.wcm-sidebarRail .wcm-chips{display:none}.wcm-sidebarRail .wcm-folders{padding:0}.wcm-sidebarRail .wcm-folderRow{justify-content:center;padding:7px 0;font-size:0}.wcm-sidebarRail .wcm-rowChevron,.wcm-sidebarRail .wcm-folderLabel,.wcm-sidebarRail .wcm-folderCount,.wcm-sidebarRail .wcm-folderDissolve,.wcm-sidebarRail .wcm-folderDissolveSlot{display:none}.wcm-sidebarRail .wcm-rowIconSlot{width:22px;height:22px}.wcm-sidebarRail .wcm-projectAdd,.wcm-sidebarRail .wcm-projectMenuBtn,.wcm-sidebarRail .wcm-sessionMenuBtn{display:none}.wcm-sidebarRail .wcm-projectLine{justify-content:center;padding:7px 0}.wcm-sidebarRail .wcm-sessions{display:none}`;
+      .wcm-chips{display:flex;flex-wrap:wrap;gap:4px;padding:0 2px 4px}.wcm-chip{border:1px solid var(--dsw-alias-border-l2)!important;border-radius:999px!important;padding:3px 10px!important;font-size:12px!important;color:var(--dsw-alias-label-secondary)!important;background:transparent}.wcm-chip:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-chipOn{color:#fff!important;background:var(--dsw-alias-brand-primary)!important;border-color:var(--dsw-alias-brand-primary)!important}.wcm-projectRow{display:flex;flex-direction:column;min-width:0;position:relative;cursor:pointer;user-select:none}.wcm-projectLine{position:relative;display:flex;align-items:center;gap:2px;height:34px;box-sizing:border-box;min-width:0;border-radius:7px}.wcm-projectLine:hover{background:var(--dsw-alias-interactive-bg-hover)}.wcm-project{flex:1;min-width:0}.wcm-projectLabel{flex:1;min-width:0}.wcm-rowIconSlot{position:relative;flex:none;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center}.wcm-rowIcon{display:inline-flex;align-items:center;justify-content:center;color:var(--dsw-alias-label-tertiary)}.wcm-rowChevron{position:absolute;inset:0;display:inline-flex;align-items:center;justify-content:center;visibility:hidden;color:var(--dsw-alias-label-secondary);transition:transform .12s}.wcm-folderRow:hover .wcm-rowChevron,.wcm-projectLine:hover .wcm-rowChevron{visibility:visible}.wcm-folderRow:hover .wcm-rowIcon,.wcm-projectLine:hover .wcm-rowIcon{visibility:hidden}.wcm-folderRow.wcm-open .wcm-rowChevron,.wcm-projectRow.wcm-open .wcm-rowChevron{transform:rotate(90deg)}.wcm-projectAdd{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px!important;height:24px!important;padding:0!important;border:0!important;border-radius:6px!important;opacity:0;color:var(--dsw-alias-label-secondary)!important;background:transparent!important}.wcm-projectLine:hover .wcm-projectAdd,.wcm-projectLine:focus-within .wcm-projectAdd{opacity:1}.wcm-projectAdd:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-sessions{display:flex;flex-direction:column;gap:1px;margin-left:10px;padding:2px 0 6px 8px;border-left:1px solid var(--dsw-alias-border-l2)}.wcm-session{display:flex;align-items:center;gap:2px;width:100%;height:34px;box-sizing:border-box;min-width:0;padding:0;border:0!important;border-radius:7px!important;text-align:left;font:inherit;font-size:13px!important;color:var(--dsw-alias-label-secondary)!important;background:transparent}.wcm-session:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-sessionStatus{flex:none;display:inline-flex;align-items:center;justify-content:center;width:14px}.wcm-sessionTitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcm-session.wcm-current{color:var(--dsw-alias-label-primary)!important;background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-dot{position:relative;display:inline-block;flex:none}.wcm-dot:before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:50%;background:currentColor;opacity:.1}.wcm-dot:after{content:"";position:absolute;top:20%;right:20%;bottom:20%;left:20%;border-radius:50%;background:currentColor}.wcm-dot[data-state=done]{color:var(--dsw-alias-state-success-primary)}.wcm-dot[data-state=warning]{color:var(--dsw-alias-state-warn-primary)}.wcm-dot[data-state=error]{color:var(--dsw-alias-state-error-primary)}.wcm-dotMatrix{flex:none;color:var(--dsw-static-deepseek-450,#4f8cff)}.wcm-dotCell{fill:currentColor;opacity:.15;animation:wcm-state-chase 1s infinite}@keyframes wcm-state-chase{0%,12.4%{opacity:1}12.5%,24.9%{opacity:.6}25%,37.4%{opacity:.35}37.5%,to{opacity:.15}}.wcm-empty{margin:6px 8px;font-size:12px;color:var(--dsw-alias-label-tertiary)}.wcm-sidebarActions{position:relative;display:flex;align-items:center;gap:2px}.wcm-iconBtn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0!important;border:0!important;border-radius:6px!important;color:var(--dsw-alias-label-secondary)!important;background:transparent}.wcm-iconBtn:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-wsDot.wcm-wsBadge{position:absolute;top:0;right:0;width:8px;height:8px}.wcm-wsDot{position:relative;width:10px;height:10px;flex:none}.wcm-wsDot::before{content:"";position:absolute;top:0;right:0;bottom:0;left:0;border-radius:50%;background:currentColor;opacity:.14}.wcm-wsDot::after{content:"";position:absolute;top:25%;right:25%;bottom:25%;left:25%;border-radius:50%;background:currentColor}.wcm-ws-running{color:var(--dsw-static-deepseek-450,#4f8cff)}.wcm-ws-warning{color:var(--dsw-alias-state-warn-primary)}.wcm-ws-done{color:var(--dsw-alias-state-success-primary)}.wcm-projectRow.wcm-dragging{opacity:.55}.wcm-projectRow.wcm-dropBefore .wcm-projectLine{box-shadow:inset 0 2px 0 0 var(--dsw-alias-brand-primary)}.wcm-projectRow.wcm-dropAfter .wcm-projectLine{box-shadow:inset 0 -2px 0 0 var(--dsw-alias-brand-primary)}.wcm-folders{display:flex;flex-direction:column;gap:2px;padding:0 4px 8px 4px;flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}.wcm-sidebar{flex:1;min-height:0}.wcm-folderWrap{display:flex;flex-direction:column;min-width:0}.wcm-folderRow{display:flex;align-items:center;gap:2px;height:34px;box-sizing:border-box;padding:0;border-radius:7px;cursor:pointer;user-select:none;font-size:13px;font-weight:600;color:var(--dsw-alias-label-secondary);position:relative}.wcm-folderRow:hover{background:var(--dsw-alias-interactive-bg-hover)}.wcm-folderLabel{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcm-folderCount{flex:none;font-size:11px;color:var(--dsw-alias-label-tertiary)}.wcm-folderProjects{display:flex;flex-direction:column;gap:2px;margin-left:13px;padding:0 0 4px 9px;border-left:1px solid var(--dsw-alias-border-l2)}.wcm-folderRow.wcm-dragging{opacity:.55}.wcm-folderRow.wcm-dropBefore{box-shadow:inset 0 2px 0 0 var(--dsw-alias-brand-primary)}.wcm-folderRow.wcm-dropAfter{box-shadow:inset 0 -2px 0 0 var(--dsw-alias-brand-primary)}.wcm-folderRow.wcm-dropInto{background:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 1px var(--dsw-alias-brand-primary)}.wcm-menuMask{position:fixed;inset:0;z-index:1199}.wcm-menu{position:absolute;z-index:1200;top:calc(100% + 4px);right:0;min-width:180px;padding:4px;display:flex;flex-direction:column;gap:0;border:1px solid var(--dsw-alias-border-inverted);border-radius:10px;background:var(--dsw-specific-menu);box-shadow:var(--dsw-shadow-lv3)}.wcm-menuLabel{padding:4px 8px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}.wcm-menuItem{display:flex;align-items:center;gap:8px;width:100%;min-height:26px;padding:3px 8px;border:0!important;border-radius:6px!important;font-size:12px!important;text-align:left;color:var(--dsw-alias-label-primary)!important;background:transparent}.wcm-menuItem:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-menuItemOn{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-menuText{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcm-menuCheck{flex:none;color:var(--dsw-alias-label-primary)}.wcm-menuDanger{color:var(--dsw-alias-state-error-primary)!important}.wcm-menuCompact{width:max-content;min-width:0;max-width:260px}.wcm-menuFixed{position:fixed;z-index:1201}.wcm-colorRow{display:flex;align-items:center;gap:8px}.wcm-actions{justify-content:flex-end}.wcm-dialog button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent}.wcm-dialog button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.wcm-dialog button:disabled{cursor:default;opacity:.5}.wcm-form button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent}.wcm-form button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.wcm-form button:disabled{cursor:default;opacity:.5}.wcm-randomColor{white-space:nowrap}.wcm-form-field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dsw-alias-label-secondary);margin-bottom:10px}.wcm-selectFull{width:100%;min-width:0;box-sizing:border-box}.wcm-dirRow{display:flex;align-items:center;gap:6px}.wcm-dirInput{flex:1;min-width:0;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:7px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.wcm-dirInput::placeholder{color:var(--dsw-alias-label-tertiary)}.wcm-gap{height:2px}.wcm-groupList{display:flex;flex-direction:column;gap:2px;margin-top:4px}.wcm-groupOption{display:flex;align-items:center;gap:8px;width:100%;padding:6px 4px;border:0!important;border-radius:7px!important;font-size:13px!important;text-align:left;color:var(--dsw-alias-label-primary)!important;background:transparent!important}.wcm-groupOption:hover{background:var(--dsw-alias-interactive-bg-hover)!important}.wcm-groupDot{width:10px;height:10px;border-radius:50%;flex:none}.wcm-groupName{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wcm-session{position:relative;cursor:pointer;user-select:none}.wcm-renameInput{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:6px 8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}.wcm-sidebarRail .wcm-chips{display:none}.wcm-sidebarRail .wcm-folders{padding:0}.wcm-sidebarRail .wcm-folderRow{justify-content:center;padding:7px 0;font-size:0}.wcm-sidebarRail .wcm-rowChevron,.wcm-sidebarRail .wcm-folderLabel,.wcm-sidebarRail .wcm-folderCount{display:none}.wcm-sidebarRail .wcm-rowIconSlot{width:22px;height:22px}.wcm-sidebarRail .wcm-projectAdd{display:none}.wcm-sidebarRail .wcm-projectLine{justify-content:center;padding:7px 0}.wcm-sidebarRail .wcm-sessions{display:none}`;
 
 // src/client/constants.ts
 var NS = "settings.workspaceCategories";
-var SETTINGS_NAMESPACE2 = "workspace-category-manager";
+var SETTINGS_NAMESPACE = "workspace-category-manager";
 
 // src/client/api.ts
 function createDshApi(ctx) {
   const workspaces = ctx.get("workspaces");
   const sessions = ctx.get("sessions");
   const uiWorkspace = () => ctx.get("uiWorkspace");
+  const sessionStatus = () => {
+    const ui = ctx.get("uiSession");
+    return ui?.sessionStatus ?? ui?.pendingInteractions;
+  };
   const has = (obj, method) => obj !== void 0 && obj !== null && typeof obj[method] === "function";
   const hasUi = (method) => has(uiWorkspace(), method);
+  const openSession = (sessionId) => {
+    const uw = uiWorkspace();
+    if (has(uw, "openSession")) return uw.openSession(sessionId);
+    if (has(sessions, "open")) return sessions.open(sessionId);
+    return void 0;
+  };
   const startSession = (workspaceId2) => {
     const uw = uiWorkspace();
     if (has(uw, "startSession")) return uw.startSession(workspaceId2);
     if (has(workspaces, "startSession")) return workspaces.startSession(workspaceId2);
-    if (has(sessions, "create") && has(sessions, "open")) {
+    if (has(sessions, "create")) {
       const workspace = workspaces.list.getSnapshot().items.find((item) => item.workspaceId === workspaceId2);
       const snapshot = sessions.list.getSnapshot();
       const archived = workspaces.list.getSnapshot().archivedSessionIds ?? [];
       const blank = workspace === void 0 ? void 0 : snapshot.ids.map((id) => snapshot.byId[id]).find((s) => s !== void 0 && s.blank && s.cwd === workspace.path && workspace.sessionIds.includes(s.id) && !archived.includes(s.id));
       if (blank !== void 0) {
-        sessions.open(blank.id);
+        openSession(blank.id);
         return Promise.resolve();
       }
       return sessions.create({ workspaceId: workspaceId2 }).then((sessionId) => {
-        sessions.open(sessionId);
+        openSession(sessionId);
       });
     }
     return Promise.reject(new Error("startSession unavailable"));
@@ -79,22 +89,39 @@ function createDshApi(ctx) {
     if (has(workspaces, "pickDirectory")) return workspaces.pickDirectory();
     return Promise.reject(new Error("directory picking unavailable"));
   };
+  const renameSession = async (sessionId, title) => {
+    if (has(sessions, "using")) {
+      const result2 = await sessions.using(sessionId, { source: "workspaceOperation" }, (reference) => reference.binding.session.rename(title));
+      if (result2 !== void 0 && result2 !== null && result2.ok === false) throw new Error(result2.error.message);
+      return;
+    }
+    const face = has(sessions, "binding") ? sessions.binding(sessionId)?.session : void 0;
+    if (face === void 0) throw new Error("unknown session");
+    const result = await face.rename(title);
+    if (result.ok === false) throw new Error(result.error.message);
+  };
+  const archiveSession = (sessionId) => {
+    const uw = uiWorkspace();
+    if (has(uw, "archiveSession")) return uw.archiveSession(sessionId);
+    return workspaces.archiveSession(sessionId);
+  };
   return {
     startSession,
     pickDirectory,
     // Evaluated at render time — the button appears once the service is up.
     canPickDirectory: () => hasUi("pickDirectory") || has(workspaces, "pickDirectory"),
-    openSession: (sessionId) => sessions.open(sessionId),
+    sessionStatus,
+    openSession,
     forkSession: (opts) => sessions.fork(opts),
-    sessionBinding: (sessionId) => sessions.binding(sessionId),
+    renameSession,
     createWorkspace: (input) => workspaces.create(input),
     renameWorkspace: (workspaceId2, title) => workspaces.rename(workspaceId2, title),
     deleteWorkspace: (workspaceId2) => workspaces.delete(workspaceId2),
     insertWorkspaceBefore: (workspaceId2, beforeWorkspaceId) => workspaces.insertBefore(workspaceId2, beforeWorkspaceId),
-    archiveSession: (sessionId) => workspaces.archiveSession(sessionId),
+    archiveSession,
     workspacesList: workspaces.list,
     sessionsList: sessions.list,
-    settingsScope: ctx.get("settingsScope").bind({ namespace: SETTINGS_NAMESPACE2 })
+    settingsScope: ctx.get("settingsScope").bind({ namespace: SETTINGS_NAMESPACE })
   };
 }
 
@@ -116,6 +143,16 @@ function useSessionsSnapshot(list) {
 function configOf(scope) {
   return scope.getSnapshot().value ?? { categories: [], assignments: {} };
 }
+function currentSessionId(state) {
+  if (state?.current != null) return state.current;
+  const rows = state?.byId ?? {};
+  const ids = state?.ids ?? Object.keys(rows);
+  for (const id of ids) {
+    const row = rows[id];
+    if (row !== void 0 && (row.retainedBy?.mainView ?? 0) > 0) return id;
+  }
+  return void 0;
+}
 var FOLDER_STATE_KEY = "dsh-workspace-category-manager:folderOpen";
 var loadFolderState = () => {
   try {
@@ -133,7 +170,7 @@ var saveFolderState = (state) => {
   } catch (error) {
   }
 };
-function errText2(error) {
+function errText(error) {
   return error instanceof Error ? error.message : String(error);
 }
 function workspaceId(workspace) {
@@ -235,8 +272,6 @@ var IconTriangleRightFill14 = () => (0, import_react6.createElement)("svg", { wi
 var IconPlusOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { d: "M8.64453 1.5V7.34961H14.5V8.65039H8.64453V14.5H7.34473V8.65039H1.5V7.34961H7.34473V1.5H8.64453Z", fill: "currentColor" }));
 var IconPersonalizationOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { transform: "translate(1.292 1.3)", d: "M10.3232 9.18164C11.2868 9.18164 12.0985 9.82833 12.3506 10.7109L13.415 10.7109L13.415 11.8711L12.3496 11.8711C12.0971 12.7532 11.2864 13.3994 10.3232 13.3994C9.36031 13.3992 8.55012 12.7531 8.29785 11.8711L0 11.8711L0 10.7109L8.29688 10.7109C8.54876 9.82845 9.35988 9.18186 10.3232 9.18164ZM10.3232 10.3418C9.7999 10.3421 9.37534 10.7667 9.375 11.29C9.375 11.8137 9.79969 12.239 10.3232 12.2393C10.847 12.2393 11.2725 11.8138 11.2725 11.29C11.2721 10.7666 10.8468 10.3418 10.3232 10.3418ZM12.4326 11.291C12.4326 11.3549 12.4284 11.418 12.4229 11.4805C12.4287 11.4181 12.4326 11.355 12.4326 11.291ZM8.21484 11.2832C8.21484 11.2856 8.21484 11.2886 8.21484 11.291L8.21484 11.29C8.21484 11.2878 8.21484 11.2855 8.21484 11.2832ZM3.08301 4.59082C4.04605 4.59095 4.85696 5.23717 5.10938 6.11914L13.415 6.11914L13.415 7.2793L5.11035 7.2793C4.85833 8.16202 4.04648 8.80846 3.08301 8.80859C2.11972 8.80843 1.30963 8.16179 1.05762 7.2793L0 7.2793L0 6.11914L1.05762 6.11914C1.30994 5.23728 2.12006 4.59098 3.08301 4.59082ZM3.08301 5.75098C2.55962 5.75117 2.13512 6.17587 2.13477 6.69922C2.13477 7.22287 2.5594 7.64824 3.08301 7.64844C3.60665 7.64828 4.03223 7.2229 4.03223 6.69922C4.03187 6.17585 3.60643 5.75113 3.08301 5.75098ZM5.19238 6.69922C5.19238 6.763 5.18816 6.82633 5.18262 6.88867C5.18846 6.82629 5.19238 6.76313 5.19238 6.69922C5.19236 6.63495 5.18853 6.57152 5.18262 6.50879C5.18826 6.57154 5.19236 6.635 5.19238 6.69922ZM0.982422 6.52344C0.977382 6.58136 0.97463 6.63999 0.974609 6.69922C0.974609 6.75775 0.977496 6.81579 0.982422 6.87305C0.977758 6.81579 0.974609 6.75767 0.974609 6.69922C0.974628 6.64 0.977618 6.58142 0.982422 6.52344ZM10.3232 0C11.2869 0 12.0986 0.646596 12.3506 1.5293L13.415 1.5293L13.415 2.68945L12.3496 2.68945C12.363 2.64266 12.3754 2.59488 12.3857 2.54688C12.1838 3.50118 11.3376 4.21777 10.3232 4.21777C9.36037 4.21756 8.55018 3.57139 8.29785 2.68945L0 2.68945L0 1.5293L8.29688 1.5293C8.5487 0.646717 9.35981 0.00021854 10.3232 0ZM10.3232 1.16016C9.79984 1.16042 9.37524 1.58499 9.375 2.1084C9.375 2.63201 9.79969 3.05735 10.3232 3.05762C10.847 3.05762 11.2725 2.63217 11.2725 2.1084C11.2722 1.58483 10.8469 1.16016 10.3232 1.16016ZM12.4229 2.29883C12.4287 2.23641 12.4326 2.17331 12.4326 2.10938C12.4326 2.17327 12.4284 2.23638 12.4229 2.29883ZM8.21484 2.10938L8.21484 2.1084L8.21484 2.10938ZM8.22266 1.93359C8.21785 1.98897 8.21506 2.04499 8.21484 2.10156C8.21503 2.04501 8.2181 1.98902 8.22266 1.93359ZM8.22266 11.1162C8.2179 11.1713 8.21507 11.227 8.21484 11.2832C8.21504 11.227 8.21814 11.1713 8.22266 11.1162Z", fill: "currentColor" }));
 var IconProjectAddOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { transform: "translate(9.52 2.52)", d: "M3.55246 0L3.55246 2.44252L6 2.44252L6 3.55748L3.55246 3.55748L3.55246 6L2.43834 6L2.43834 3.55748L0 3.55748L0 2.44252L2.43834 2.44252L2.43834 0L3.55246 0Z", fill: "currentColor" }), (0, import_react6.createElement)("path", { transform: "translate(0.3496 2.35)", d: "M4.76367 0C5.36861 1.80598e-05 5.93113 0.310294 6.25488 0.821289L6.78027 1.64941C6.79685 1.67558 6.81791 1.69775 6.83887 1.71973C6.72186 2.15521 6.65702 2.61192 6.65137 3.08301C6.25601 2.96045 5.90909 2.70478 5.68164 2.3457L5.15723 1.5166C5.07183 1.38189 4.92318 1.3008 4.76367 1.30078L2.32422 1.30078C1.7589 1.30078 1.30078 1.7589 1.30078 2.32422L1.30078 10.1338C1.30078 10.6991 1.7589 11.1572 2.32422 11.1572L11.9766 11.1572C12.5419 11.1572 13 10.6991 13 10.1338L13 8.58398C13.4545 8.5135 13.8903 8.38748 14.3008 8.21289L14.3008 10.1338C14.3008 11.4171 13.2598 12.458 11.9766 12.458L2.32422 12.458C1.04093 12.458 0 11.4171 0 10.1338L0 2.32422C0 1.04093 1.04093 0 2.32422 0L4.76367 0Z", fill: "currentColor" }));
-var IconEllipsisOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { d: "M4.55146 8.00001C4.55146 8.63513 4.03659 9.15001 3.40146 9.15001C2.76634 9.15001 2.25146 8.63513 2.25146 8.00001C2.25146 7.36488 2.76634 6.85001 3.40146 6.85001C4.03659 6.85001 4.55146 7.36488 4.55146 8.00001Z", fill: "currentColor" }), (0, import_react6.createElement)("path", { d: "M9.1476 8.00001C9.1476 8.63513 8.63273 9.15001 7.9976 9.15001C7.36248 9.15001 6.8476 8.63513 6.8476 8.00001C6.8476 7.36488 7.36248 6.85001 7.9976 6.85001C8.63273 6.85001 9.1476 7.36488 9.1476 8.00001Z", fill: "currentColor" }), (0, import_react6.createElement)("path", { d: "M13.7486 8.00001C13.7486 8.63513 13.2338 9.15001 12.5986 9.15001C11.9635 9.15001 11.4486 8.63513 11.4486 8.00001C11.4486 7.36488 11.9635 6.85001 12.5986 6.85001C13.2338 6.85001 13.7486 7.36488 13.7486 8.00001Z", fill: "currentColor" }));
-var IconTrashOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { d: "M14.4782 4.84067L14.2138 10.1152C14.1102 12.1872 14.067 13.0115 13.3866 13.9607C13.1044 14.3546 12.7498 14.6912 12.3424 14.9535C11.8239 15.2872 11.2415 15.4316 10.5585 15.4998C9.88727 15.5668 9.04946 15.5656 7.99998 15.5656C6.95051 15.5656 6.1127 15.5668 5.44142 15.4998C4.75851 15.4316 4.17602 15.2872 3.65753 14.9535C3.25012 14.6912 2.89559 14.3546 2.61332 13.9607C1.93296 13.0115 1.88979 12.1872 1.78619 10.1152L1.52179 4.84067L2.89006 4.77277L3.15343 10.0463C3.26221 12.2218 3.32452 12.6015 3.72646 13.1624C3.90825 13.4161 4.13686 13.6334 4.39927 13.8023C4.66204 13.9714 5.00263 14.0792 5.57825 14.1367C6.16562 14.1953 6.92298 14.1963 7.99998 14.1963C9.07699 14.1963 9.83434 14.1953 10.4217 14.1367C10.9973 14.0792 11.3379 13.9714 11.6007 13.8023C11.8631 13.6334 12.0917 13.4161 12.2735 13.1624C12.6755 12.6015 12.7378 12.2218 12.8465 10.0463L13.1099 4.77277L14.4782 4.84067ZM5.43011 6.22849H6.7994V11.3909H5.43011V6.22849ZM9.20056 6.22849H10.5699V11.3909H9.20056V6.22849ZM8.53597 0.434431C9.17976 0.434431 9.6522 0.426926 10.0966 0.571258C10.2357 0.616451 10.3717 0.672554 10.502 0.738948C10.9182 0.951107 11.2464 1.29099 11.7015 1.74612L12.4978 2.54136H15.3742V3.91169H0.625732V2.54136H3.50218L4.29845 1.74612C4.75358 1.29099 5.08174 0.951107 5.49801 0.738948C5.62831 0.672554 5.76425 0.616451 5.90334 0.571258C6.34776 0.426926 6.82021 0.434431 7.46399 0.434431H8.53597ZM7.46399 1.80476C6.73208 1.80476 6.51641 1.81187 6.32617 1.87369C6.25545 1.89667 6.18668 1.92533 6.12041 1.95907C5.96398 2.03878 5.82348 2.16253 5.44142 2.54136H10.5585C10.1765 2.16253 10.036 2.03878 9.87955 1.95907C9.81329 1.92533 9.74452 1.89667 9.6738 1.87369C9.48356 1.81187 9.26789 1.80476 8.53597 1.80476H7.46399Z", fill: "currentColor" }));
 var IconTagOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { fill: "currentColor", fillRule: "evenodd", d: "M2 6.5V3a1 1 0 0 1 1-1h3.5a1 1 0 0 1 .707.293l5.5 5.5a1 1 0 0 1 0 1.414l-3.5 3.5a1 1 0 0 1-1.414 0L2.293 7.207A1 1 0 0 1 2 6.5Zm3.2-2.6a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2Z" }));
 
 // src/client/components/StateDot.tsx
@@ -254,7 +289,24 @@ function StateDot({ state }) {
 }
 
 // src/client/components/CategorySidebar.tsx
-var sessionStatus = (summary) => summary.pendingInteraction !== void 0 ? "warning" : summary.running ? "running" : summary.completed === true ? "done" : void 0;
+var EMPTY_STATUSES = /* @__PURE__ */ new Map();
+var useSessionStatuses = (api) => import_react9.default.useSyncExternalStore(
+  (listener) => {
+    const source = api.sessionStatus();
+    return source === void 0 ? () => {
+    } : source.subscribe(listener);
+  },
+  () => api.sessionStatus()?.getSnapshot() ?? EMPTY_STATUSES,
+  () => api.sessionStatus()?.getSnapshot() ?? EMPTY_STATUSES
+);
+var visiblePendingKind = (kind) => kind === "approval" || kind === "plan-review" || kind === "question" ? kind : void 0;
+var sessionStatusOf = (summary, statuses) => {
+  const raw = statuses.get(summary.id);
+  const pendingKind = visiblePendingKind(raw?.kind ?? raw?.pendingInteraction?.kind);
+  const running = raw?.running ?? summary.running === true;
+  const completed = raw?.completionUnread ?? summary.completed === true;
+  return pendingKind !== void 0 ? "warning" : running ? "running" : completed ? "done" : void 0;
+};
 function CategorySidebar({ api, wide, expandSidebar, t }) {
   const scope = api.settingsScope;
   const snapshot = useScope(scope);
@@ -286,7 +338,8 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const dragRef = import_react9.default.useRef({ kind: null, id: null, el: null, over: null });
   const list = workspaceState.items ?? [];
   const byId = sessionState.byId ?? {};
-  const currentId = sessionState.current;
+  const currentId = currentSessionId(sessionState);
+  const sessionStatuses = useSessionStatuses(api);
   const startSession = (workspace) => api.startSession(workspaceId(workspace));
   const openSession = (sessionId) => api.openSession(sessionId);
   const toggleProject = (id) => setExpandedIds((previous) => ({ ...previous, [id]: !previous[id] }));
@@ -302,7 +355,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const runningOf = (workspace) => (workspace.sessionIds ?? []).some((id) => byId[id]?.running === true);
   const statusOfWorkspace = (workspace) => {
     const rows = sessionsOf(workspace);
-    const statuses = rows.map(sessionStatus).filter((s) => s !== void 0);
+    const statuses = rows.map((s) => sessionStatusOf(s, sessionStatuses)).filter((s) => s !== void 0);
     if (statuses.includes("warning")) return "warning";
     if (statuses.includes("running")) return "running";
     if (statuses.includes("done")) return "done";
@@ -341,7 +394,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       const path = await api.pickDirectory();
       setAddDraft((draft) => ({ ...draft, path }));
     } catch (error) {
-      setAddFormError(errText2(error));
+      setAddFormError(errText(error));
     } finally {
       setAddBusy(false);
     }
@@ -362,7 +415,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       setAddOpen(false);
       api.startSession(wid);
     } catch (error) {
-      setAddFormError(errText2(error));
+      setAddFormError(errText(error));
     } finally {
       setAddBusy(false);
     }
@@ -387,7 +440,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       if (targetCat === void 0) delete assignments[activeId];
       else assignments[activeId] = targetCat;
       scope.set("assignments", assignments).catch((reason) => {
-        setFailure(errText2(reason));
+        setFailure(errText(reason));
       });
     }
     api.insertWorkspaceBefore(activeId, anchor).catch((reason) => {
@@ -408,7 +461,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
     const insertAt = anchor === void 0 ? next.length : next.findIndex((category) => category.id === anchor);
     next.splice(insertAt === -1 ? next.length : insertAt, 0, cats[sourceIndex]);
     scope.set("categories", next).catch((reason) => {
-      setFailure(errText2(reason));
+      setFailure(errText(reason));
     });
   };
   const commitAssign = (projectId, folderId) => {
@@ -417,13 +470,13 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       const assignments = { ...config.assignments };
       delete assignments[projectId];
       scope.set("assignments", assignments).catch((reason) => {
-        setFailure(errText2(reason));
+        setFailure(errText(reason));
       });
     } else {
       if (config.assignments[projectId] === folderId) return;
       const assignments = { ...config.assignments, [projectId]: folderId };
       scope.set("assignments", assignments).catch((reason) => {
-        setFailure(errText2(reason));
+        setFailure(errText(reason));
       });
     }
   };
@@ -490,7 +543,11 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
     setMenuFor(null);
     setMenuOpen(false);
   };
-  const toggleMenuFor = (kind, id) => setMenuFor(menuFor !== null && menuFor.kind === kind && menuFor.id === id ? null : { kind, id });
+  const openMenuAt = (kind, id, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMenuFor({ kind, id, x: event.clientX, y: event.clientY });
+  };
   const confirmRename = async () => {
     if (renameTarget === null || renameBusy) return;
     const title = renameDraft.trim();
@@ -499,15 +556,10 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
     setRenameError("");
     try {
       if (renameTarget.kind === "workspace") await api.renameWorkspace(renameTarget.id, title);
-      else {
-        const session = api.sessionBinding(renameTarget.id)?.session;
-        if (session === void 0) throw new Error("unknown session");
-        const result = await session.rename(title);
-        if (!result.ok) throw new Error(result.error.message);
-      }
+      else await api.renameSession(renameTarget.id, title);
       setRenameTarget(null);
     } catch (error) {
-      setRenameError(errText2(error));
+      setRenameError(errText(error));
     } finally {
       setRenameBusy(false);
     }
@@ -520,7 +572,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       await api.deleteWorkspace(deleteTarget.id);
       setDeleteTarget(null);
     } catch (error) {
-      setDeleteError(errText2(error));
+      setDeleteError(errText(error));
     } finally {
       setDeleteBusy(false);
     }
@@ -538,7 +590,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       await scope.set("categories", config.categories.filter((category) => category.id !== dissolveTarget.id));
       setDissolveTarget(null);
     } catch (error) {
-      setDissolveError(errText2(error));
+      setDissolveError(errText(error));
     } finally {
       setDissolveBusy(false);
     }
@@ -559,6 +611,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
     onPick();
   } }, (0, import_react10.createElement)("span", { className: "wcm-menuText" }, label));
   const popover = (...items) => [(0, import_react10.createElement)("div", { className: "wcm-menuMask", key: "mask", onClick: closeMenus }), (0, import_react10.createElement)("div", { className: "wcm-menu wcm-menuCompact", key: "menu" }, ...items)];
+  const popoverAt = (x, y, ...items) => [(0, import_react10.createElement)("div", { className: "wcm-menuMask", key: "mask", onClick: closeMenus }), (0, import_react10.createElement)("div", { className: "wcm-menu wcm-menuCompact wcm-menuFixed", key: "menu", style: { left: x, top: y } }, ...items)];
   const project = (workspace) => {
     const id = workspaceId(workspace);
     const rows = sessionsOf(workspace);
@@ -575,19 +628,15 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
         event.preventDefault();
         act();
       }
-    }, onDragStart: wide ? dragStart("project", id) : void 0, onDragOver: wide ? dragOverProject(id) : void 0, onDrop: wide ? dropOnProject(id) : void 0, onDragEnd: wide ? dragEnd : void 0 }, (0, import_react10.createElement)("div", { className: "wcm-projectLine" }, statusIconSlot(wsStatus, expanded ? (0, import_react10.createElement)(IconFolderOpen16) : (0, import_react10.createElement)(IconFolderClose16)), (0, import_react10.createElement)("span", { className: "wcm-projectLabel" }, label), wide ? (0, import_react10.createElement)("button", { className: "wcm-projectAdd", title: t("newSession"), onClick: (event) => {
+    }, onDragStart: wide ? dragStart("project", id) : void 0, onDragOver: wide ? dragOverProject(id) : void 0, onDrop: wide ? dropOnProject(id) : void 0, onDragEnd: wide ? dragEnd : void 0, onContextMenu: wide ? (event) => openMenuAt("workspace", id, event) : void 0 }, (0, import_react10.createElement)("div", { className: "wcm-projectLine" }, statusIconSlot(wsStatus, expanded ? (0, import_react10.createElement)(IconFolderOpen16) : (0, import_react10.createElement)(IconFolderClose16)), (0, import_react10.createElement)("span", { className: "wcm-projectLabel" }, label), wide ? (0, import_react10.createElement)("button", { className: "wcm-projectAdd", title: t("newSession"), onClick: (event) => {
       event.stopPropagation();
       startSession(workspace);
-    } }, (0, import_react10.createElement)(IconPlusOutline16)) : null, wide ? (0, import_react10.createElement)("button", { className: "wcm-projectMenuBtn", title: t("workspaceMenu"), "aria-label": t("workspaceMenu"), onClick: (event) => {
-      event.stopPropagation();
-      setMenuOpen(false);
-      toggleMenuFor("workspace", id);
-    } }, (0, import_react10.createElement)(IconEllipsisOutline16)) : null), wsMenuOpen ? popover(menuItem(t("rename"), false, () => {
+    } }, (0, import_react10.createElement)(IconPlusOutline16)) : null), wsMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t("rename"), false, () => {
       setRenameTarget({ kind: "workspace", id, title: label });
       setRenameDraft(label);
       setRenameError("");
     }), menuItem(t("deleteWorkspace"), true, () => setDeleteTarget({ id, label }))) : null, wide && expanded ? (0, import_react10.createElement)("div", { className: "wcm-sessions" }, rows.map((summary) => {
-      const status = sessionStatus(summary);
+      const status = sessionStatusOf(summary, sessionStatuses);
       const showStatus = status !== void 0;
       const title = summary.blank ? t("newSession") : summary.displayTitle ?? summary.title ?? summary.id;
       const openIt = () => {
@@ -602,11 +651,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
           event.preventDefault();
           openIt();
         }
-      } }, (0, import_react10.createElement)("span", { className: "wcm-sessionStatus" }, showStatus ? sessionStatusDot(status) : null), (0, import_react10.createElement)("span", { className: "wcm-sessionTitle" }, title), (0, import_react10.createElement)("button", { className: "wcm-sessionMenuBtn", title: t("sessionMenu"), "aria-label": t("sessionMenu"), onClick: (event) => {
-        event.stopPropagation();
-        setMenuOpen(false);
-        toggleMenuFor("session", summary.id);
-      } }, (0, import_react10.createElement)(IconEllipsisOutline16)), sessMenuOpen ? popover(menuItem(t("rename"), false, () => {
+      }, onContextMenu: (event) => openMenuAt("session", summary.id, event) }, (0, import_react10.createElement)("span", { className: "wcm-sessionStatus" }, showStatus ? sessionStatusDot(status) : null), (0, import_react10.createElement)("span", { className: "wcm-sessionTitle" }, title), sessMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t("rename"), false, () => {
         setRenameTarget({ kind: "session", id: summary.id, title });
         setRenameDraft(title);
         setRenameError("");
@@ -626,10 +671,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
         event.preventDefault();
         onToggle();
       }
-    }, onDragStart: wide && !isUncategorized ? dragStart("folder", f.id) : void 0, onDragOver: wide ? dragOverFolder(f.id) : void 0, onDrop: wide ? dropOnFolder(f.id) : void 0, onDragEnd: wide ? dragEnd : void 0 }, statusIconSlot(status, (0, import_react10.createElement)("span", { className: "wcm-rowIcon wcm-rowIconCategory", style: { color: f.color } }, (0, import_react10.createElement)(IconTagOutline16))), (0, import_react10.createElement)("span", { className: "wcm-folderLabel" }, f.name), (0, import_react10.createElement)("span", { className: "wcm-folderCount" }, f.projects.length), !isUncategorized ? (0, import_react10.createElement)("button", { className: "wcm-folderDissolve", title: t("dissolveCategory"), "aria-label": t("dissolveCategory"), onClick: (event) => {
-      event.stopPropagation();
-      setDissolveTarget({ id: f.id, name: f.name });
-    } }, (0, import_react10.createElement)(IconTrashOutline16)) : (0, import_react10.createElement)("span", { className: "wcm-folderDissolveSlot" })), open ? (0, import_react10.createElement)("div", { className: "wcm-folderProjects" }, f.projects.map(project)) : null);
+    }, onDragStart: wide && !isUncategorized ? dragStart("folder", f.id) : void 0, onDragOver: wide ? dragOverFolder(f.id) : void 0, onDrop: wide ? dropOnFolder(f.id) : void 0, onDragEnd: wide ? dragEnd : void 0, onContextMenu: wide && !isUncategorized ? (event) => openMenuAt("folder", f.id, event) : void 0 }, statusIconSlot(status, (0, import_react10.createElement)("span", { className: "wcm-rowIcon wcm-rowIconCategory", style: { color: f.color } }, (0, import_react10.createElement)(IconTagOutline16))), (0, import_react10.createElement)("span", { className: "wcm-folderLabel" }, f.name), (0, import_react10.createElement)("span", { className: "wcm-folderCount" }, f.projects.length), menuFor !== null && menuFor.kind === "folder" && menuFor.id === f.id ? popoverAt(menuFor.x, menuFor.y, menuItem(t("dissolveCategory"), true, () => setDissolveTarget({ id: f.id, name: f.name }))) : null), open ? (0, import_react10.createElement)("div", { className: "wcm-folderProjects" }, f.projects.map(project)) : null);
   };
   const sortItem = (mode, label) => (0, import_react10.createElement)("button", { className: `wcm-menuItem${orderBy === mode ? " wcm-menuItemOn" : ""}`, onClick: () => {
     setOrderBy(mode);
@@ -660,7 +702,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       return;
     }
     scope.set("categories", [...config.categories, category]).catch((reason) => {
-      setFailure(errText2(reason));
+      setFailure(errText(reason));
     });
     setAddCategoryOpen(false);
   } })) : null;
