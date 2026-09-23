@@ -99,7 +99,7 @@ const results = [];
 const check = (label, ok, hint = '') => results.push({ label, ok, hint });
 
 // 1. Hard-injected services must have a provider.
-for (const svc of ['workspaces', 'sessions', 'settingsScope', 'slots', 'locale']) {
+for (const svc of ['workspaces', 'sessions', 'configForms', 'slots', 'locale']) {
   check(`service "${svc}" provided`, providerOf.has(svc), `expected provider package for ${svc}`);
 }
 
@@ -110,7 +110,7 @@ const readPlugin = (rel) => readFileSync(join(pluginRoot, rel), 'utf8');
 const pluginApiSrc = readPlugin('src/client/api.ts') + '\n' + readPlugin('src/client/index.ts');
 const serviceTokens = new Set([...pluginApiSrc.matchAll(/ctx\.get\('([a-z][A-Za-z]+)'\)/g)].map((m) => m[1]));
 const methodTokens = new Map(); // service -> Set(methods)
-for (const m of pluginApiSrc.matchAll(/\b(uiWorkspace|workspaces|sessions|settingsScope)\.([a-zA-Z]+)\(/g)) {
+for (const m of pluginApiSrc.matchAll(/\b(uiWorkspace|workspaces|sessions)\.([a-zA-Z]+)\(/g)) {
   if (!methodTokens.has(m[1])) methodTokens.set(m[1], new Set());
   methodTokens.get(m[1]).add(m[2]);
 }

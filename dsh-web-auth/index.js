@@ -48,17 +48,27 @@ const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, keylen: 32 };
 
 const scrypt = promisify(scryptCallback);
 
-/** web-auth 设置命名空间的 schema（账户 + 可选主令牌 + 会话参数）。 */
+/**
+ * web-auth 设置 schema（账户 + 可选主令牌 + 会话参数）。
+ *
+ * DSH 0.1.7：插件不再自己注册设置命名空间，本 schema 就是设置面 —— 条目 id
+ * （见 `cordis.patch.yml` 的 `id: web-auth`，与 `SETTINGS_NAMESPACE` 同值）兼作
+ * 命名空间，只有 `.volatile()` 字段会出现在设置面板里，写入落进 profile 补丁。
+ *
+ * 四个字段都是 volatile 而非「只有用户改的才 volatile」：宿主运行时会自己写
+ * `users`（增删账户、改密码）。Loader 只对**全部落在 volatile 字段**的改动做原地
+ * 提交，否则会把整个插件卸载重挂 —— 那会在一半的账户写操作里拆掉正在服务的网关。
+ */
 export const SettingsConfig = z.object({
   users: z.array(z.object({
     username: z.string().required().pattern(USERNAME_PATTERN),
     /** scrypt$N$r$p$saltBase64$hashBase64 — 只存哈希，永不存明文。 */
     hash: z.string().required().pattern(/^scrypt\$\d+\$\d+\$\d+\$[A-Za-z0-9+/=]+\$[A-Za-z0-9+/=]+$/).role('secret'),
-  })).default([]),
+  })).default([]).volatile(),
   /** 可选主令牌：任何访客用「用户名+密码」外的备选钥匙（脚本用 Bearer）。留空禁用。 */
-  token: z.string().default('').role('secret'),
-  cookieName: z.string().pattern(COOKIE_NAME_PATTERN).default('dsh_web_auth'),
-  sessionTtlSeconds: z.number().min(300).max(30 * 24 * 3600).default(43200),
+  token: z.string().default('').role('secret').volatile(),
+  cookieName: z.string().pattern(COOKIE_NAME_PATTERN).default('dsh_web_auth').volatile(),
+  sessionTtlSeconds: z.number().min(300).max(30 * 24 * 3600).default(43200).volatile(),
 });
 
 function validateSettings(config) {
@@ -271,6 +281,10 @@ class AuthRuntime {
   }
 
   apply(next) {
+    // 跨字段校验（用户名重复、主令牌字符集）schemastery 表达不了，旧的
+    // `settings.register(..., { validate })` 写入前钩子也没有对应物，所以放在
+    // 这里：抛错会被 `sync()` 捕获并记日志，`this.config` 保持上一份有效值。
+    validateSettings(next);
     const previous = this.config;
     this.config = next;
     // 用户删除 / 密码变更 → 撤销对应会话；其余配置变更不影响已发会话。
@@ -862,21 +876,46 @@ function gateUpgrade(req, socket, head, runtime, nextUpgrade, fencePort) {
 
 // ── 插件入口 ──────────────────────────────────────────────────────────────
 
-export function apply(ctx) {
+/**
+ * 把 volatile Config 引用包成旧 `settings.register()` scope 的 `get()/update()`
+ * 形态，让 `AuthRuntime` 的调用点保持原样。
+ *
+ * `get()` 直接读引用（引用始终是最新解析值），`update(patch)` 只合并列出的键 ——
+ * 不能整体替换 config，否则会把 `token` / `cookieName` / `sessionTtlSeconds`
+ * 一起冲掉。
+ */
+function createSettingsScope(ctx, config) {
+  return {
+    get: () => ({
+      users: config.users.get() ?? [],
+      token: config.token.get() ?? '',
+      cookieName: config.cookieName.get() ?? 'dsh_web_auth',
+      sessionTtlSeconds: config.sessionTtlSeconds.get() ?? 43200,
+    }),
+    update: async (patch) => {
+      const entry = ctx.fiber.entry;
+      const editor = ctx.get('configEditor');
+      if (entry === undefined || editor === undefined) throw new Error('当前部署不支持写入配置。');
+      await editor.edit(entry, (current) => ({ ...current, ...patch }));
+    },
+  };
+}
+
+export function apply(ctx, config) {
   ctx.inject(['settings'], (settingsCtx) => {
-    const scope = settingsCtx.settings.register(SETTINGS_NAMESPACE, SettingsConfig, {
-      base: {},
-      applies: 'live',
-      validate: validateSettings,
-    });
-    const runtime = new AuthRuntime(settingsCtx, scope);
+    settingsCtx.effect(() => settingsCtx.settings.configure({ auto: false }, ctx.fiber), 'web-auth settings presentation');
+  });
+  {
+    const scope = createSettingsScope(ctx, config);
+    const runtime = new AuthRuntime(ctx, scope);
     runtime.sync(scope.get());
-    const unwatch = scope.watch((next) => runtime.sync(next));
-    settingsCtx.effect(() => async () => {
-      unwatch();
+    // volatile 字段被原地提交后 Loader 才发这个事件；回调里重新读引用即可拿到
+    // 已解析的新值（`Volatile<T>` 没有 subscribe，只有 `get()`）。
+    ctx.on('loader/volatile-update', () => { void runtime.sync(scope.get()); });
+    ctx.effect(() => async () => {
       await runtime.dispose();
     }, 'web-auth runtime');
-    settingsCtx.inject(['webServer'], (webCtx) => {
+    ctx.inject(['webServer'], (webCtx) => {
       const log = webCtx.logger;
       log.info(`web-auth: 认证网关就绪（${runtime.mode === 'disabled' ? '未配置账户/令牌，开放访问' : runtime.mode + ' 模式，' + String(runtime.config.users.length) + ' 个账户'}）。`);
       webCtx.effect(() => {
@@ -905,9 +944,13 @@ export function apply(ctx) {
         };
       }, 'web-auth gate');
     });
-  });
+  }
 }
 
-apply.inject = [];
-
-export default apply;
+/**
+ * 本插件不硬依赖任何服务：`settings` / `configEditor` / `webServer` 都是可选探测
+ * （见 `createSettingsScope` 与 `ctx.inject(...)`）。注意不要再写 `export default
+ * apply` —— cordis-plugin-loader 的 `unwrapExports()` 遇到 default 会把整个模块
+ * 命名空间丢掉，连 `Config` 一起，条目就再也读不到 volatile 字段。
+ */
+export const inject = [];

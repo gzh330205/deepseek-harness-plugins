@@ -53,7 +53,9 @@ if (host.includes('DSH_WEB_AUTH_TOKEN')) {
 }
 
 const client = readFileSync(resolve(root, 'client.js'), 'utf8');
-if (!client.includes("id: 'dsh-web-auth'") || !client.includes("settings.plugins.tab") || !client.includes("/__auth__/users")) {
+// The tab builds its endpoints from AUTH_BASE, so assert the prefix + the users
+// route constant rather than a spelled-out "/__auth__/users" (never present).
+if (!client.includes("id: 'dsh-web-auth'") || !client.includes('settings.plugins.tab') || !client.includes("const AUTH_BASE = '/__auth__'") || !client.includes('USERS_API')) {
   console.error('client.js must register the auth settings tab wired to the users API.');
   process.exit(1);
 }

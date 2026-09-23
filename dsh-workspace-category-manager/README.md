@@ -14,7 +14,7 @@
 - **拖拽**：项目可拖入其它分类文件夹改变归属（也可拖到“未分类”移出分类），拖到项目行上可调整顺序（跨文件夹时同时改归属）；分类文件夹之间可拖拽排序（持久化到分类顺序）；
 - 项目行不显示文件夹图标（窄轨道模式保留），**运行中的项目在行外侧**（左侧留白处）显示追逐动画，不占行宽、完整显示项目名；
 - **右键**项目行 / 会话行弹出管理菜单：项目支持**重命名 / 删除工作区**，会话支持**重命名 / 分叉 / 归档**；
-- 分类和分配关系持久化到 `$DSH_HOME/settings.yaml` 中的 `workspace-category-manager` namespace；
+- 分类和分配关系持久化到本插件 Loader 条目的 `Config`（DSH 0.1.7+ 落进 profile 补丁 `$DSH_HOME/profiles/<profile>/cordis.patch.yml`，旧的 `$DSH_HOME/settings.yaml` 命名空间已随 0.1.7 移除，见「版本兼容」）；
 - 使用稳定的 Workspace ID，而不是目录路径，因此重命名显示标题不会丢失分类。
 
 ## 安全与限制
@@ -118,21 +118,24 @@ node ./scripts/validate.mjs
 
 DSH 版本间客户端 API 有变动，本插件在 `src/client/api.ts` 内做双路兼容：
 
-| 能力 | DSH 0.1.6+（当前） | DSH ≤ 0.1.2 |
-|---|---|---|
-| 打开会话（点击后右侧切换） | `uiWorkspace.openSession(id)`：保留为 mainView 并显示会话面板 | `sessions.open(id)` |
-| 归档当前会话 | `uiWorkspace.archiveSession(id)`：归档后同时清空会话面板 | `workspaces.archiveSession(id)` |
-| “当前会话”高亮 | 列表行 `retainedBy.mainView > 0` | 列表快照 `current` |
-| 执行中 / 完成 / 等待人工 | `uiSession.sessionStatus`（`Map<id, {running, pendingInteraction, completionUnread}>`） | `uiSession.pendingInteractions`（`Map<id, {kind}>`），`running/completed` 取自列表行 |
-| 会话重命名 | `sessions.using(id, …)` 取得引用后重命名（未持有引用时 `binding` 返回 undefined） | `sessions.binding(id).session.rename()` |
+| 能力 | DSH 0.1.7+（当前） | DSH 0.1.6+ | DSH ≤ 0.1.2 |
+|---|---|---|---|
+| 读取/写入插件设置 | `ctx.configForms.get('workspace-category-manager')`（条目 id 即命名空间，快照仍是 `{status, value, writable}` + `subscribe`/`set`） | `ctx.settingsScope.bind({ namespace })` | 同左 |
+| 打开会话（点击后右侧切换） | `uiWorkspace.openSession(id)`：保留为 mainView 并显示会话面板 | 同左 | `sessions.open(id)` |
+| 归档当前会话 | `uiWorkspace.archiveSession(id)`：归档后同时清空会话面板 | 同左 | `workspaces.archiveSession(id)` |
+| “当前会话”高亮 | 列表行 `retainedBy.mainView > 0` | 同左 | 列表快照 `current` |
+| 执行中 / 完成 / 等待人工 | `uiSession.sessionStatus`（`Map<id, {running, pendingInteraction, completionUnread}>`） | 同左 | `uiSession.pendingInteractions`（`Map<id, {kind}>`），`running/completed` 取自列表行 |
+| 会话重命名 | `sessions.using(id, …)` 取得引用后重命名（未持有引用时 `binding` 返回 undefined） | 同左 | `sessions.binding(id).session.rename()` |
 
 0.1.6 起“选择会话”变成**视图所有者**的动作：单独调用 `sessions.open()` 只改控制器内部选中项，不再切换右侧会话页，必须走 `uiWorkspace.openSession()`。
+
+0.1.7 起**插件不能再自己注册设置命名空间**（客户端 `settingsScope` 服务与宿主 `ctx.settings.register()` 均已移除）：设置面 = 本插件 Loader 条目的 `Config`，只有标了 `.volatile()` 的字段可被设置面板编辑，条目 id 兼作命名空间。因此 `cordis.patch.yml` 里的 `id: workspace-category-manager` 必须与 `index.js` 的 `SETTINGS_NAMESPACE`、客户端 `ctx.configForms.get(...)` 的入参三处一致。数据落点也随之从 `$DSH_HOME/settings.yaml` 变为 **profile 补丁** `$DSH_HOME/profiles/<profile>/cordis.patch.yml`。
 
 ## 架构与升级稳健性
 
 插件对 DSH 的所有运行时访问都集中在 `src/client/api.ts` 的 **`createDshApi` 适配层**（唯一接触 `ctx` 的代码），组件只消费 `api` 对象：
 
-- **硬依赖**（inject 声明）：`slots` / `locale` / `settingsScope` / `workspaces` / `sessions`；
+- **硬依赖**（inject 声明）：`slots` / `locale` / `configForms` / `workspaces` / `sessions`；
 - **软依赖**（`ctx.get` 探测，缺失即降级）：
   - `uiWorkspace`：`openSession` / `startSession` / `pickDirectory`——缺失时回退旧路径 `sessions.open`、`workspaces.startSession`、`sessions.create`、`workspaces.pickDirectory`，目录选择都不存在时“添加工作区”按钮自动隐藏；
   - `uiSession`：状态源按 `sessionStatus` → `pendingInteractions` 两代探测，都缺失时仅保留列表行的执行中标记；

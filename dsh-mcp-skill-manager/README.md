@@ -51,7 +51,7 @@ JENKINS_API_TOKEN            = <token>
 JENKINS_ALLOW_SCRIPT_CONSOLE = true
 ```
 
-这些值会随该 MCP 记录写入 `$DSH_HOME/settings.yaml`，并在启用时传给 MCP 子进程；因此包含 Token 的值会以明文存在于本机 DSH Settings 文件中。若不希望将机密写入 Settings，请通过 `envVars` 配置引用启动 DSH 时已有的 Host 环境变量。
+这些值会随该 MCP 记录写入 DSH 配置文件（DSH 0.1.7+ 为 profile 补丁 `$DSH_HOME/profiles/<profile>/cordis.patch.yml`，见「设置数据」），并在启用时传给 MCP 子进程；因此包含 Token 的值会以明文存在于该文件中。若不希望将机密写入配置，请通过 `envVars` 配置引用启动 DSH 时已有的 Host 环境变量。
 
 手动新增或编辑 **Streamable HTTP MCP** 时，弹窗中有“HTTP 请求头”区域，可以配置认证头，例如：
 
@@ -110,14 +110,24 @@ C:\Users\gzh33\.dsh\skills\hatch-pet
 
 ## 设置数据
 
-本插件使用 `$DSH_HOME/settings.yaml` 的单个命名空间：
+DSH 0.1.7 起设置不再由插件自己注册命名空间（`settingsScope` / `ctx.settings.register` 均已移除），
+而是由本插件 Loader 条目的 `Config` 承担：条目 id（`cordis.patch.yml` 里的 `id: mcp-skill-manager`）
+即命名空间，`mcpServers` / `skills` / `skillLinks` 三个字段都标了 `.volatile()` 因此可由设置页编辑。
+写入落进 **profile 补丁**：
 
 ```yaml
-mcp-skill-manager:
-  mcpServers: []
-  skills: []
-  skillLinks: []
+# $DSH_HOME/profiles/<profile>/cordis.patch.yml
+- id: mcp-skill-manager
+  name: dsh-mcp-skill-manager
+  config:
+    mcpServers: []
+    skills: []
+    skillLinks: []
 ```
+
+从 0.1.6 及更早升级时，这三个数组原本在 `$DSH_HOME/settings.yaml` 的 `mcp-skill-manager` 段里；
+该文件在首次升级后已被 DSH 重命名为 `settings.yaml.imported`，把其中的 `mcp-skill-manager` 段
+搬成上面这样的补丁行（**只搬这一段**，`settings.yaml.imported` 里其余段落属于别的插件）即可。
 
 `skillLinks` 仅保存由插件创建的链接元数据。请不要直接编辑 profile 的 `cordis.patch.yml` 来添加动态 MCP；该文件只负责挂载 manager。
 

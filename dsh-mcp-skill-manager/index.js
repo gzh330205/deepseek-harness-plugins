@@ -6,7 +6,12 @@ import { lstat, mkdir, readFile, realpath, symlink, unlink } from 'node:fs/promi
 import { homedir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 
-/** Persistent settings namespace owned by the manager. */
+/**
+ * Settings namespace owned by the manager. DSH 0.1.7 keys configuration forms by
+ * Loader entry id, so this must stay equal to the `id` of this plugin's row in
+ * `cordis.patch.yml`; the browser half resolves the same string through
+ * `ctx.configForms.get(SETTINGS_NAMESPACE)`.
+ */
 export const SETTINGS_NAMESPACE = 'mcp-skill-manager';
 const IMPORT_ROUTE = '/dsh-mcp-skill-manager/v1';
 const TOKEN_TTL_MS = 5 * 60 * 1000;
@@ -54,11 +59,19 @@ const ManagedMcpServer = z.object({
   importedFrom: z.object({ source: z.string(), sourceKey: z.string(), sourcePath: z.string() }),
 });
 
+/**
+ * DSH 0.1.7 replaces plugin-registered settings namespaces: this entry's own Config IS
+ * the settings surface, keyed by the Loader entry id (see `SETTINGS_NAMESPACE` and
+ * `cordis.patch.yml`), and only `.volatile()` fields are editable. Host-side writes
+ * (the import/unlink routes) commit through `configEditor.edit`; ordinary — non-volatile
+ * — fields would instead send the whole plugin through Loader's remount path and tear
+ * down every running MCP child on each catalog edit.
+ */
 export const Config = z.object({
-  mcpServers: z.array(ManagedMcpServer).default([]),
-  skills: z.array(ManagedSkill).default([]),
+  mcpServers: z.array(ManagedMcpServer).default([]).volatile(),
+  skills: z.array(ManagedSkill).default([]).volatile(),
   /** Links physically materialized below $DSH_HOME/skills, never copied Skill content. */
-  skillLinks: z.array(ImportedSkillLink).default([]),
+  skillLinks: z.array(ImportedSkillLink).default([]).volatile(),
 });
 
 export const inject = ['tools', 'skills'];
@@ -418,15 +431,51 @@ function installImportRoutes(ctx, scope) {
   }});
 }
 
-/** Install the Host half. Import endpoints exist only on the Web composition. */
-export function apply(ctx) {
-  ctx.inject(['settings'], (settingsCtx) => {
-    const scope = settingsCtx.settings.register(SETTINGS_NAMESPACE, Config, { base: {}, applies: 'live', validate: validateConfiguration });
-    const runtime = new ManagerRuntime(settingsCtx);
-    runtime.sync(scope.get());
-    const unwatch = scope.watch((next) => runtime.sync(next));
-    settingsCtx.effect(() => async () => { unwatch(); await runtime.dispose(); }, 'mcp-skill-manager runtime');
-    settingsCtx.inject(['webServer'], (webCtx) => installImportRoutes(webCtx, scope));
-  });
+/**
+ * Wrap the volatile Config refs in the `get()/update()` shape the runtime and the
+ * import routes already consume. `get()` reads the refs directly (always the latest
+ * resolved value); `update(patch)` merges only the listed keys — replacing the whole
+ * config would drop the other two catalogs.
+ *
+ * @param ctx - Host plugin context.
+ * @param config - Validated plugin config whose volatile fields are live refs.
+ * @returns The settings face this plugin's runtime reads and writes.
+ */
+function createSettingsScope(ctx, config) {
+  return {
+    get: () => ({
+      mcpServers: config.mcpServers.get() ?? [],
+      skills: config.skills.get() ?? [],
+      skillLinks: config.skillLinks.get() ?? [],
+    }),
+    update: async (patch) => {
+      const entry = ctx.fiber.entry;
+      const editor = ctx.get('configEditor');
+      if (entry === undefined || editor === undefined) throw new Error('当前部署不支持写入配置。');
+      await editor.edit(entry, (current) => ({ ...current, ...patch }));
+    },
+  };
 }
-export default apply;
+
+/** Install the Host half. Import endpoints exist only on the Web composition. */
+export function apply(ctx, config) {
+  ctx.inject(['settings'], (settingsCtx) => {
+    settingsCtx.effect(() => settingsCtx.settings.configure({ auto: false }, ctx.fiber), 'mcp-skill-manager settings presentation');
+  });
+
+  const scope = createSettingsScope(ctx, config);
+  const runtime = new ManagerRuntime(ctx);
+  const sync = () => {
+    const next = scope.get();
+    // 跨字段校验（重复 id / serverName / Skill 名）：schemastery 表达不了，旧的
+    // `settings.register(..., { validate })` 写入前钩子在新模型里没有对应物，改由
+    // 这里守住 —— 不合法就保持上一份已生效的目录，只记日志。
+    try { validateConfiguration(next); } catch (error) { ctx.logger.warn('mcp-skill-manager: 目录配置无效，已忽略本次变更'); ctx.logger.warn(error); return; }
+    void runtime.sync(next);
+  };
+  sync();
+  // volatile 字段原地提交后 Loader 才发这个事件；回调里重新读引用即可。
+  ctx.on('loader/volatile-update', sync);
+  ctx.effect(() => async () => { await runtime.dispose(); }, 'mcp-skill-manager runtime');
+  ctx.inject(['webServer'], (webCtx) => installImportRoutes(webCtx, scope));
+}

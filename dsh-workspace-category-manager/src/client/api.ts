@@ -7,6 +7,10 @@ import { SETTINGS_NAMESPACE } from './constants.js';
  * tokens below against the installed dsh before shipping.
  *
  * Version map (see README "版本兼容"):
+ *   0.1.7+ : settings are an entry's volatile Config. The `settingsScope`
+ *            service is gone; the form comes from ctx.configForms.get(entryId),
+ *            where entryId doubles as the settings namespace. Same snapshot
+ *            shape (status/value/writable) and same subscribe/set methods.
  *   0.1.6+ : selection is a view-owner action — uiWorkspace.openSession
  *            retains the Session as the main view and reveals the panel;
  *            sessions.open is gone. Human-intervention/running/completion
@@ -139,6 +143,9 @@ export function createDshApi(ctx) {
         cloneRepository,
         workspacesList: workspaces.list,
         sessionsList: sessions.list,
-        settingsScope: ctx.get('settingsScope').bind({ namespace: SETTINGS_NAMESPACE }),
+        // 0.1.7: settings are an entry's volatile Config; the entry id is the
+        // namespace. ConfigForms.get() hands back the same shared form per entry,
+        // so holding it here is equivalent to the old per-namespace binding.
+        configForms: ctx.get('configForms').get(SETTINGS_NAMESPACE),
       };
     }

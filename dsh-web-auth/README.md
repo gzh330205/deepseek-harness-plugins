@@ -84,19 +84,27 @@ ssh -L 3080:127.0.0.1:3080 user@server   # 本地浏览器打开 http://127.0.0.
 - **网页端**：登录后进入 `设置 → 插件 → 认证`，可新增账户、删除账户
   （至少保留一个）、重置任意账户密码。修改/删除账户会**立即撤销**该
   账户的所有会话。
-- **配置文件**：`$DSH_HOME/settings.yaml` 的 `web-auth` 命名空间：
+- **配置文件**：DSH 0.1.7 起设置由本插件 Loader 条目的 `Config` 承担（条目 id
+  `web-auth` 即命名空间，`.role('secret')` 字段不对浏览器公开），写入落进 profile
+  补丁 `$DSH_HOME/profiles/<profile>/cordis.patch.yml`：
 
   ```yaml
-  web-auth:
-    users:
-      - username: admin
-        hash: scrypt$16384$8$1$<salt>#<hash>      # 用 node scripts/hash-password.mjs 生成
-    token: ""                                      # 可选主令牌（留空禁用）
-    cookieName: dsh_web_auth
-    sessionTtlSeconds: 43200
+  - id: web-auth
+    name: dsh-web-auth
+    config:
+      users:
+        - username: admin
+          hash: scrypt$16384$8$1$<salt>$<hash>     # 用 node scripts/hash-password.mjs 生成
+      token: ""                                    # 可选主令牌（留空禁用）
+      cookieName: dsh_web_auth
+      sessionTtlSeconds: 43200
   ```
 
-  哈希生成：`node scripts/hash-password.mjs <密码>`。修改设置文件后，
+  （DSH ≤ 0.1.6 时同一份配置写在本机 `$DSH_HOME/settings.yaml` 的 `web-auth`
+  段；升级后该文件被重命名为 `settings.yaml.imported`，把 `web-auth` 段搬成上面
+  的补丁行即可，**只搬这一段**。）
+
+  哈希生成：`node scripts/hash-password.mjs <密码>`。修改配置后，
   外部变更会被热发布（无账户变更时已发会话不受影响；密码/账户变更会
   撤销对应会话）。
 

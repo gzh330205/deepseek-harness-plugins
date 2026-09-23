@@ -8,8 +8,23 @@
 |---|---|---|
 | [`dsh-web-auth`](./dsh-web-auth) | 0.2.0 | DSH Web 的 HTTP 认证网关（账号密码模式）：访问 `http://<host>:<port>` 先登录，支持账户管理、首次部署引导（有网页端设置页）；服务器部署走反向代理/SSH 隧道（DSH 禁止 0.0.0.0 绑定） |
 | [`dsh-mcp-skill-manager`](./dsh-mcp-skill-manager) | 0.2.0 | 带 Web 设置页面的 MCP 与 Skills 统一管理器：管理 MCP 服务与 Skill 的新增、编辑、启停、删除，并支持从 Claude Code / Codex / OpenCode 一键导入 |
-| [`dsh-workspace-category-manager`](./dsh-workspace-category-manager) | 0.2.0 | 为 DSH 工作区添加逻辑分类，侧边栏以「分类文件夹 → 项目 → 会话」三级层级展示，支持拖拽归类与排序；支持按 Git 地址克隆并导入项目；兼容 DSH 0.1.6（`uiWorkspace.openSession` 会话切换、`uiSession.sessionStatus` 状态点） |
-| [`dsh-win-notify`](./dsh-win-notify) | 0.2.1 | 会话执行完成 / 需要人工干预（审批、提问）时弹通知：Tauri 桌面壳原生通知或浏览器 Notification（客户端路线），可选 Windows 系统 Toast（宿主路线，零依赖）；兼容 DSH 0.1.6（`uiSession.sessionStatus`），客户端降级不抛错 |
+| [`dsh-workspace-category-manager`](./dsh-workspace-category-manager) | 0.2.0 | 为 DSH 工作区添加逻辑分类，侧边栏以「分类文件夹 → 项目 → 会话」三级层级展示，支持拖拽归类与排序；支持按 Git 地址克隆并导入项目；兼容 DSH 0.1.7 / 0.1.6（`configForms` 设置、`uiWorkspace.openSession` 会话切换、`uiSession.sessionStatus` 状态点） |
+| [`dsh-win-notify`](./dsh-win-notify) | 0.2.1 | 会话执行完成 / 需要人工干预（审批、提问）时弹通知：Tauri 桌面壳原生通知或浏览器 Notification（客户端路线），可选 Windows 系统 Toast（宿主路线，零依赖）；兼容 DSH 0.1.6+（`uiSession.sessionStatus`），客户端降级不抛错 |
+
+## DSH 版本兼容（0.1.7 破坏性变更）
+
+DSH 0.1.7 移除了「插件自己注册设置命名空间」这套 API，本仓库的插件已按新模型迁移：
+
+| 旧（≤ 0.1.6） | 新（0.1.7+） |
+|---|---|
+| 客户端 `inject: ['settingsScope']` + `ctx.settingsScope.bind({ namespace })` | `inject: ['configForms']` + `ctx.configForms.get('<条目 id>')`（快照形状与 `subscribe`/`set` 未变） |
+| 宿主 `ctx.settings.register(ns, Config, { validate })` | 插件的 Loader 条目 `Config` schema，可编辑字段标 `.volatile()`；宿主写入走 `ctx.configEditor.edit()`，宿主响应变更走 `ctx.on('loader/volatile-update', …)` |
+| 数据存 `$DSH_HOME/settings.yaml` | 数据存 profile 补丁 `$DSH_HOME/profiles/<profile>/cordis.patch.yml` |
+
+两条容易踩的坑，改插件前务必知道：
+
+1. **不要写 `export default apply`。** `cordis-plugin-loader` 的 `unwrapExports()` 遇到 default 会把整个模块命名空间丢掉，同级的具名 `Config` / `inject` 一起失效 —— 条目就再也读不到 volatile 字段，客户端 `configForms.get()` 会一直停在 `unavailable`。用官方的 `export { Config, apply, inject }` 形式（模块命名空间对象本身就是合法的 plugin entrypoint）。
+2. **`@deepseek-ai/schemastery` 必须是 `~3.18.4`**（`.volatile()` 从 3.18.4 才有，DSH 0.1.7 自带的正是这个版本）。插件的本地 `node_modules` 会优先于 DSH 自带的那份，低版本会让插件在 import 阶段就抛 `TypeError: z.…volatile is not a function`。
 
 ## 安装
 

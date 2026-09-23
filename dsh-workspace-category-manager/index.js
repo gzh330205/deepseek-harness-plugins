@@ -5,6 +5,12 @@ import { existsSync, statSync } from 'node:fs';
 import { rm } from 'node:fs/promises';
 import { isAbsolute, join, resolve } from 'node:path';
 
+/**
+ * Settings namespace. DSH 0.1.7 keys configuration forms by Loader entry id, so
+ * this value must stay equal to the `id` of this plugin's row in
+ * `cordis.patch.yml` — the browser half resolves the same string through
+ * `ctx.configForms.get(SETTINGS_NAMESPACE)`.
+ */
 export const SETTINGS_NAMESPACE = 'workspace-category-manager';
 const CATEGORY_ID = /^[a-z][a-z0-9-]{0,31}$/;
 
@@ -14,26 +20,19 @@ const Category = z.object({
   color: z.string().default('#4f8cff'),
 });
 
+/* Both fields are volatile: DSH 0.1.7 projects an entry's volatile Config fields
+ * into the settings form, and the browser page (this plugin's client half) is the
+ * only writer. A field left non-volatile would send every write down Loader's
+ * ordinary lifecycle path — a full plugin remount — instead of committing in place.
+ * The entry id (see cordis.patch.yml) doubles as the settings namespace the client
+ * resolves through `ctx.configForms.get(...)`. */
 export const Config = z.object({
-  categories: z.array(Category).default([]),
+  categories: z.array(Category).default([]).volatile(),
   /** Workspace ids are intentionally independent of workspace filesystem paths. */
-  assignments: z.dict(z.string()).default({}),
+  assignments: z.dict(z.string()).default({}).volatile(),
 });
 
 export const inject = [];
-
-function validate(config) {
-  const ids = new Set();
-  for (const category of config.categories) {
-    if (ids.has(category.id)) throw new Error(`Workspace category id "${category.id}" is duplicated.`);
-    if (category.name.trim() === '') throw new Error(`Workspace category "${category.id}" needs a name.`);
-    ids.add(category.id);
-  }
-  for (const [workspaceId, categoryId] of Object.entries(config.assignments)) {
-    if (workspaceId.trim() === '') throw new Error('Workspace assignment contains an empty workspace id.');
-    if (!ids.has(categoryId)) throw new Error(`Workspace assignment references missing category "${categoryId}".`);
-  }
-}
 
 /* ==================== Git import (Host half) ====================
  * The browser cannot run git, so "import a project from Git" is a Host
@@ -286,16 +285,21 @@ function installGitRoutes(ctx) {
   });
 }
 
-/** Registers settings and (on a loopback Web server) the Git import route. */
+/**
+ * Install the Host half.
+ *
+ * DSH 0.1.7 deprecated plugin-registered settings namespaces: the entry's own
+ * `Config` (above) IS the settings surface now, so there is nothing to register
+ * here — the browser half reads and writes it through `configForms`.
+ *
+ * `configure({ auto: false })` opts out of the auto-generated configuration page,
+ * which would otherwise duplicate the sidebar and section this plugin ships.
+ *
+ * @param ctx - Host plugin context.
+ */
 export function apply(ctx) {
-  ctx.inject(['settings'], (settingsCtx) => {
-    settingsCtx.settings.register(SETTINGS_NAMESPACE, Config, {
-      base: {},
-      applies: 'live',
-      validate,
-    });
+  ctx.inject(['settings'], (child) => {
+    child.effect(() => child.settings.configure({ auto: false }, ctx.fiber));
   });
   ctx.inject(['webServer'], (webCtx) => installGitRoutes(webCtx));
 }
-
-export default apply;

@@ -58,7 +58,7 @@ const plugin = captured.factory((name) => {
 });
 assert(plugin.apply && plugin.inject, 'module face must export apply+inject');
 assert(!plugin.inject.includes('uiWorkspace'), 'uiWorkspace must be soft');
-assert(['workspaces', 'sessions', 'settingsScope', 'slots', 'locale'].every((n) => plugin.inject.includes(n)), 'hard injects regressed');
+assert(['workspaces', 'sessions', 'configForms', 'slots', 'locale'].every((n) => plugin.inject.includes(n)), 'hard injects regressed');
 
 /* Service stubs for the two client generations this adapter supports.
  *   modern (withUiWorkspace === true): 0.1.6+ — uiWorkspace owns selection
@@ -100,12 +100,12 @@ const bindScope = () => ({ subscribe: () => () => {}, getSnapshot: () => ({ valu
 const entriesFor = (withUiWorkspace) => {
   const svc = servicesFor(withUiWorkspace);
   const props = {};
-  const settingsScopeSvc = { bind: () => bindScope() };
+  const configFormsSvc = { get: () => bindScope() };
   plugin.apply({
     effect: () => () => {},
     locale: { register: () => {}, bind: () => (k) => k },
-    get: (name) => name === 'settingsScope' ? settingsScopeSvc : svc[name],
-    settingsScope: { bind: () => bindScope() },
+    get: (name) => name === 'configForms' ? configFormsSvc : svc[name],
+    configForms: { get: () => bindScope() },
     slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { props[opts.name] = opts.inject ? opts.inject() : {}; props['component:' + opts.name] = Component; props._reg = opts; return () => {}; } },
   });
   return props;
@@ -221,12 +221,12 @@ const doneProps = { ...props };
 // flip the session to done via service stub mutation: replace sessions stub
 const svc2 = servicesFor(true);
 svc2.sessions.list.getSnapshot = () => ({ byId: { s1: { id: 's1', displayTitle: 'Conv 1', blank: false, running: false, completed: true } }, current: 's1', ids: ['s1'] });
-const propsDone = (() => { const out = {}; const settingsScopeSvc = { bind: () => bindScope() };
+const propsDone = (() => { const out = {}; const configFormsSvc = { get: () => bindScope() };
   plugin.apply({
     effect: () => () => {},
     locale: { register: () => {}, bind: () => (k) => k },
-    get: (name) => name === 'settingsScope' ? settingsScopeSvc : svc2[name],
-    settingsScope: { bind: () => bindScope() },
+    get: (name) => name === 'configForms' ? configFormsSvc : svc2[name],
+    configForms: { get: () => bindScope() },
     slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
   });
   return out; })();
@@ -242,12 +242,12 @@ assert(rows.filter((r) => r.cls === 'wcm-wsDot wcm-ws-done').length >= 1, 'sessi
 // viewed: completed=false → markers disappear everywhere
 const svc3 = servicesFor(true);
 svc3.sessions.list.getSnapshot = () => ({ byId: { s1: { id: 's1', displayTitle: 'Conv 1', blank: false, running: false, completed: false } }, current: 's1', ids: ['s1'] });
-const propsViewed = (() => { const out = {}; const settingsScopeSvc = { bind: () => bindScope() };
+const propsViewed = (() => { const out = {}; const configFormsSvc = { get: () => bindScope() };
   plugin.apply({
     effect: () => () => {},
     locale: { register: () => {}, bind: () => (k) => k },
-    get: (name) => name === 'settingsScope' ? settingsScopeSvc : svc3[name],
-    settingsScope: { bind: () => bindScope() },
+    get: (name) => name === 'configForms' ? configFormsSvc : svc3[name],
+    configForms: { get: () => bindScope() },
     slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
   });
   return out; })();
@@ -262,8 +262,8 @@ const raceOut = {};
 plugin.apply({
   effect: () => () => {},
   locale: { register: () => {}, bind: () => (k) => k },
-  get: (name) => name === 'settingsScope' ? { bind: () => bindScope() } : raceSvc[name],
-  settingsScope: { bind: () => bindScope() },
+  get: (name) => name === 'configForms' ? { get: () => bindScope() } : raceSvc[name],
+  configForms: { get: () => bindScope() },
   slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { raceOut[opts.name] = opts.inject ? opts.inject() : {}; raceOut['component:' + opts.name] = Component; return () => {}; } },
 });
 const raceApi = raceOut['sidebar.workspaces'].api;
@@ -305,12 +305,12 @@ assert(texts.includes('rename') && texts.includes('fork') && texts.includes('arc
 // 0.1.6+ shape: uiSession.sessionStatus → { running, pendingInteraction, completionUnread }
 const svcH = servicesFor(true);
 svcH.statuses.set('s1', { running: true, pendingInteraction: { kind: 'approval' }, completionUnread: false });
-const propsH = (() => { const out = {}; const settingsScopeSvc = { bind: () => bindScope() };
+const propsH = (() => { const out = {}; const configFormsSvc = { get: () => bindScope() };
   plugin.apply({
     effect: () => () => {},
     locale: { register: () => {}, bind: () => (k) => k },
-    get: (name) => name === 'settingsScope' ? settingsScopeSvc : svcH[name],
-    settingsScope: { bind: () => bindScope() },
+    get: (name) => name === 'configForms' ? configFormsSvc : svcH[name],
+    configForms: { get: () => bindScope() },
     slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
   });
   return out; })();
@@ -328,12 +328,12 @@ assert(rows.filter((r) => r.cls === 'wcm-wsDot wcm-ws-warning').length >= 1, 'wa
 // H2: legacy shape (<=0.1.2 pendingInteractions {kind}) must still surface AMBER
 const svcH2 = servicesFor(false);
 svcH2.pending.set('s1', { kind: 'question' });
-const propsH2 = (() => { const out = {}; const settingsScopeSvc = { bind: () => bindScope() };
+const propsH2 = (() => { const out = {}; const configFormsSvc = { get: () => bindScope() };
   plugin.apply({
     effect: () => () => {},
     locale: { register: () => {}, bind: () => (k) => k },
-    get: (name) => name === 'settingsScope' ? settingsScopeSvc : svcH2[name],
-    settingsScope: { bind: () => bindScope() },
+    get: (name) => name === 'configForms' ? configFormsSvc : svcH2[name],
+    configForms: { get: () => bindScope() },
     slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
   });
   return out; })();
@@ -368,12 +368,12 @@ assert(calls.some(([k, id]) => k === 'sessions.open' && id === 's1'), 'legacy pa
 // main-view retention count on the row instead.
 const svcJ = servicesFor(true);
 svcJ.setList({ byId: { s1: { id: 's1', displayTitle: 'Conv 1', blank: false, running: false, retainedBy: { mainView: 1 } } }, ids: ['s1'] });
-const propsJ = (() => { const out = {}; const settingsScopeSvc = { bind: () => bindScope() };
+const propsJ = (() => { const out = {}; const configFormsSvc = { get: () => bindScope() };
   plugin.apply({
     effect: () => () => {},
     locale: { register: () => {}, bind: () => (k) => k },
-    get: (name) => name === 'settingsScope' ? settingsScopeSvc : svcJ[name],
-    settingsScope: { bind: () => bindScope() },
+    get: (name) => name === 'configForms' ? configFormsSvc : svcJ[name],
+    configForms: { get: () => bindScope() },
     slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
   });
   return out; })();

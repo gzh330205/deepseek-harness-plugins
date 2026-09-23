@@ -238,7 +238,9 @@ window.__ModuleLoader__.load({
       unavailable: 'Failed to load status.',
     };
 
-    const inject = ['slots', 'locale', 'connection', 'remote', 'settingsScope'];
+    // 账号管理页只走本插件自己的 /__auth__ 路由，不读 DSH 设置服务；0.1.7 移除
+    // `settingsScope` 后这里不需要替代品（旧代码也从没消费过它）。
+    const inject = ['slots', 'locale', 'connection', 'remote'];
 
     function apply(ctx) {
       ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'dsh-web-auth: dictionaries');

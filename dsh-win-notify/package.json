@@ -28,7 +28,7 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.1"
+    "@deepseek-ai/schemastery": "~3.18.4"
   },
   "scripts": {
     "validate": "node ./scripts/validate.mjs",
