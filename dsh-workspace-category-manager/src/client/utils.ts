@@ -14,6 +14,21 @@ function useScope(scope) { return React.useSyncExternalStore((listener) => scope
     const loadFolderState = () => { try { const raw = localStorage.getItem(FOLDER_STATE_KEY); if (raw === null) return {}; const parsed = JSON.parse(raw); return parsed !== null && typeof parsed === 'object' ? parsed : {}; } catch (error) { return {}; } };
     const saveFolderState = (state) => { try { localStorage.setItem(FOLDER_STATE_KEY, JSON.stringify(state)); } catch (error) { /* storage unavailable */ } };
     function errText(error) { return error instanceof Error ? error.message : String(error); }
+    /* Preview mirror of index.js `repoNameFromUrl`: the Host derives the
+     * authoritative folder name when the field is left empty, so this copy
+     * only feeds the "will clone into …" hint. Keep the two in sync. */
+    function repoNameFromUrl(value) {
+      let url = typeof value === 'string' ? value.trim() : '';
+      if (url === '') return '';
+      url = url.replace(/[?#][\s\S]*$/, '').replace(/[/\\]+$/, '');
+      const scp = /^[^/@\s]+@[^/:\s]+:([\s\S]+)$/.exec(url);
+      const tail = scp !== null ? scp[1] : url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
+      const segments = tail.split(/[/\\]/).filter((segment) => segment !== '');
+      let name = segments.length === 0 ? '' : segments[segments.length - 1];
+      if (name.toLowerCase().endsWith('.git')) name = name.slice(0, -4);
+      return name;
+    }
+    function joinDisplayPath(parent, name) { const base = String(parent ?? '').replace(/[/\\]+$/, ''); const separator = /\\/.test(base) && !/\//.test(base) ? '\\' : '/'; return `${base}${separator}${name}`; }
     function workspaceId(workspace) { return workspace.workspaceId; }
     function workspaceLabel(workspace) { return workspace.title || workspace.path?.replace(/.*[\\/]/, '') || workspace.workspaceId; }
-export { useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, workspaceId, workspaceLabel, errText, loadFolderState, saveFolderState };
+export { useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, repoNameFromUrl, joinDisplayPath, workspaceId, workspaceLabel, errText, loadFolderState, saveFolderState };

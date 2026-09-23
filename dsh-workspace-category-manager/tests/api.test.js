@@ -136,7 +136,7 @@ addBtn.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
 // dialog with group select + directory browse + save
 hookIndex = 0;
 rows = collectSimple(props['component:sidebar.workspaces']({ api: sidebarApi, wide: true, t: (k) => k, expandSidebar: () => {} }));
-const dirInput = rows.find((r) => r.cls === 'wcm-dirInput');
+const dirInput = rows.find((r) => r.cls.split(' ').includes('wcm-dirInput'));
 assert(dirInput, 'dialog should carry a directory input');
 assert(dirInput.el.props.value === '', 'directory starts empty');
 const browseBtn = rows.find((r) => r.cls === 'wcm-dirRow' ? r.el.props.children[1] : null) ?? rows.find((r) => r.cls === 'wcm-dialog' ? null : null);
@@ -150,7 +150,7 @@ await new Promise((r) => setTimeout(r, 0));
 hookIndex = 0;
 rows = collectSimple(props['component:sidebar.workspaces']({ api: sidebarApi, wide: true, t: (k) => k, expandSidebar: () => {} }));
 assert(calls.some(([k]) => k === 'uiWorkspace.pickDirectory'), 'pickDirectory not called on browse');
-const filled = rows.find((r) => r.cls === 'wcm-dirInput');
+const filled = rows.find((r) => r.cls.split(' ').includes('wcm-dirInput'));
 assert(filled.el.props.value === '/tmp/n', 'browse should fill the directory input');
 // group select defaults to the first category (c1) — save
 const saveBtn = rows.find((r) => r.cls === 'wcm-primary' && r.el.props.children === 'save');
@@ -396,5 +396,66 @@ await entriesFor(false)['sidebar.workspaces'].api.renameSession('s1', 'Renamed')
 assert(calls.some(([k, id, title]) => k === 'session.rename' && title === 'Renamed'), 'legacy rename must use the resolved binding');
 assert(!calls.some(([k]) => k === 'sessions.using'), 'legacy services must not be asked for sessions.using');
 
-console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename');
+// L: Git import — the capability probe gates the tab; submitting clones through
+// the Host route and only then registers the resulting directory.
+const fetchCalls = [];
+const jsonResponse = (status, value) => ({ ok: status >= 200 && status < 300, status, json: async () => value });
+globalThis.fetch = async (url, init = {}) => {
+  fetchCalls.push([String(url), init]);
+  if (String(url).endsWith('/status')) return jsonResponse(200, { ok: true, available: true, token: 'tok-1', expiresInMs: 600000 });
+  if (String(url).endsWith('/clone')) return jsonResponse(200, { ok: true, path: 'D:/clones/repo' });
+  return jsonResponse(404, { ok: false, error: 'nope' });
+};
+const tPath = (key, params) => (params !== undefined && typeof params.path === 'string' ? `${key}:${params.path}` : key);
+const renderSidebar = (rendered, t) => { hookIndex = 0; return collectSimple(rendered['component:sidebar.workspaces']({ api: rendered['sidebar.workspaces'].api, wide: true, t, expandSidebar: () => {} })); };
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+props = entriesFor(true);
+hookState = [];
+rows = renderSidebar(props, tPath);
+rows.find((r) => r.cls === 'wcm-iconBtn' && r.el.props.title === 'addWorkspace').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+rows = renderSidebar(props, tPath);
+assert(!rows.some((r) => r.cls.includes('wcm-modeTab')), 'tabs must wait for the capability probe');
+await tick();
+rows = renderSidebar(props, tPath);
+const gitTab = rows.find((r) => r.cls.split(' ').includes('wcm-modeTab') && r.el.props.children === 'addFromGit');
+assert(gitTab, 'Git tab must appear once the Host reports the capability');
+gitTab.el.props.onClick({ stopPropagation() {} });
+rows = renderSidebar(props, tPath);
+const urlInput = rows.find((r) => r.cls.includes('wcm-gitUrl'));
+assert(urlInput, 'Git URL field missing');
+urlInput.el.props.onChange({ target: { value: 'https://github.com/org/repo.git' } });
+rows = renderSidebar(props, tPath);
+rows.find((r) => r.cls === 'wcm-dirRow').el.props.children[1].props.onClick({ stopPropagation() {} });
+await tick();
+rows = renderSidebar(props, tPath);
+assert(rows.find((r) => r.cls.includes('wcm-gitParent')).el.props.value === '/tmp/n', 'browse must fill the download directory');
+assert(rows.some((r) => r.cls === 'wcm-hint' && String(r.el.props.children).includes('/tmp/n/repo')), `target preview must derive the folder name from the URL, got ${JSON.stringify(rows.filter((r) => r.cls === 'wcm-hint').map((r) => r.el.props.children))}`);
+const saveButton = rows.find((r) => r.cls === 'wcm-primary' && r.el.props.children === 'save');
+assert(saveButton && saveButton.el.props.disabled === false, 'save must be enabled once URL and download directory are set');
+calls.length = 0;
+saveButton.el.props.onClick({ stopPropagation() {} });
+await tick();
+const cloneCall = fetchCalls.find(([url, init]) => url.endsWith('/clone') && init.method === 'POST');
+assert(cloneCall, 'clone must be posted to the Host route');
+const cloneBody = JSON.parse(cloneCall[1].body);
+assert(cloneBody.url === 'https://github.com/org/repo.git' && cloneBody.parentPath === '/tmp/n' && cloneBody.folderName === '' && cloneBody.branch === '', `clone body must carry the dialog values, got ${cloneCall[1].body}`);
+assert(cloneCall[1].headers['x-dsh-wcm-token'] === 'tok-1', 'clone must carry the bootstrap token');
+assert(calls.some(([k, v]) => k === 'workspaces.create' && v.path === 'D:/clones/repo'), 'the cloned path must be registered as a workspace');
+assert(calls.some(([k, key, value]) => k === 'scope.set' && key === 'assignments' && value.n1 === 'c1'), 'the imported project must join the chosen group');
+assert(calls.some(([k, id]) => k === 'uiWorkspace.startSession' && id === 'n1'), 'import must finish by opening the new project');
+
+// L2: unavailable Host capability hides the tab and surfaces the Host reason
+globalThis.fetch = async () => jsonResponse(200, { ok: true, available: false, reason: '未找到 git 命令' });
+props = entriesFor(true);
+hookState = [];
+rows = renderSidebar(props, tPath);
+rows.find((r) => r.cls === 'wcm-iconBtn' && r.el.props.title === 'addWorkspace').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+await tick();
+rows = renderSidebar(props, tPath);
+assert(!rows.some((r) => r.cls.includes('wcm-modeTab')), 'no Git tab when the Host cannot clone');
+let unavailable = '';
+try { await props['sidebar.workspaces'].api.cloneRepository({ url: 'https://x/y.git', parentPath: '/tmp' }); } catch (error) { unavailable = error.message; }
+assert(unavailable === '未找到 git 命令', `the Host reason must surface, got ${JSON.stringify(unavailable)}`);
+
+console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename, Git import');
 

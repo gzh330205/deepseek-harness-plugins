@@ -1,6 +1,6 @@
 {
   "name": "dsh-workspace-category-manager",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Named category management for DSH workspaces.",
@@ -56,7 +56,9 @@
   "scripts": {
     "build": "node ./scripts/build-client.mjs",
     "prepare": "pnpm run build",
-    "test": "node ./tests/api.test.js",
+    "test": "node ./tests/api.test.js && node ./tests/git-clone.test.js",
+    "test:client": "node ./tests/api.test.js",
+    "test:host": "node ./tests/git-clone.test.js",
     "check-api": "node ./scripts/check-api.mjs",
     "validate": "node ./scripts/validate.mjs"
   }

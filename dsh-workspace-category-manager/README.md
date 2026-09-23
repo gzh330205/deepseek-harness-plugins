@@ -7,6 +7,7 @@
 - 在 **设置 → 工作区分类** 中增加分类管理页面；
 - 创建、编辑和删除分类；
 - 为 DSH 已注册的 Workspace 分配或移除分类；
+- **从 Git 导入项目**：添加工作区时切换到「从 Git 导入」，选择下载目录、填写 Git 地址（可选分支与目录名）、选择分组后提交，Host 端自动 `git clone` 并把克隆出的目录注册为工作区、归入所选分类、打开新会话；
 - 侧边栏以**三级层级**呈现：**分类文件夹 → 项目 → 会话**。每个分类是一个可展开/收起的文件夹，文件夹图标使用分类颜色区分；未分类项目落在“未分类”文件夹；
 - 侧边栏头部保留**视图选项**（排序方式：手动 / 最近更新）、**添加分类**与**添加工作区**按钮（添加工作区复用 DSH 目录选择流程，选择目录后自动创建并进入新会话；添加分类直接在侧边栏弹出表单，无需跳转设置页）；
 - **右键**分类文件夹弹出**解散分类**菜单：解散后该分类被移除，其下所有项目进入“未分类”；
@@ -25,6 +26,29 @@
 - 不会移动、重命名或删除项目目录。
 
 DSH 的 `sidebar.workspaces` 是 single slot，因此此插件会替换内置 Workspace Browser，在同一位置以**分类文件夹 → 项目 → 会话**三级层级呈现工作区。分类文件夹可展开/收起、可拖拽排序、图标颜色即分类颜色；项目可拖入其它文件夹改变归属，也可在文件夹内拖拽调整顺序；点击项目展开对话记录、点击会话直接打开、行内悬停 **+** 新建会话、当前会话高亮、执行中会话显示与原版相同的追逐动画。头部保留原版的排序与添加工作区入口（添加复用 DSH 的目录选择流程，仅在部署提供该流程时显示按钮）。原版浏览器的搜索与拖拽会话排序暂不在这个替代视图中提供。
+
+## 从 Git 导入项目
+
+浏览器不能执行 git，因此克隆由 **Host 半部分**（`index.js`）完成，「添加工作区」对话框提供两条路径：
+
+- **本地目录**：和以前一样，用目录选择器挑一个已有目录；
+- **从 Git 导入**：填写 Git 地址（`https://`、`http://`、`ssh://`、`git://`、`file://`、`git@host:path` 或本机绝对路径），可选填分组、分支与目录名，选择「下载目录」后提交。Host 会执行 `git clone`（参数数组，不经 shell），成功后把克隆出的目录注册为 Workspace、写入所选分类并打开新会话。
+
+细节：
+
+- 目录名留空时从 Git 地址推导（`https://host/org/repo.git` → `repo`），推导结果实时显示在「将克隆到」提示里；Host 端会用同一规则复核；
+- 目标目录已存在、下载目录不存在、目录名含路径分隔符或系统保留名等情况会在克隆前直接拒绝；
+- 克隆超时（5 分钟）或失败时会删除它创建的那层目录，不留半成品；
+- 克隆期间会禁用对话框输入并提示「正在克隆仓库…」；
+- `git` 必须已安装且在 Host 进程的 `PATH` 中，否则「从 Git 导入」页签不会出现。
+
+**安全边界（重要）**：Git 导入是一个能写磁盘、能访问网络的 Host 能力，因此接口只在这些条件下存在/可用：
+
+- Host 的 Web 服务绑定在 `127.0.0.1`（绑定 `0.0.0.0` 时根本不注册该路由，并打印一条警告）；
+- 请求来自 loopback 地址、Host 头是 `127.0.0.1` / `localhost` / `[::1]`、且是同源浏览器请求（写操作必须带 `Origin`，跨站 `Sec-Fetch-Site: cross-site` 直接拒绝）；
+- 写操作需要先通过状态探测拿到的一次性令牌（`X-DSH-WCM-Token`，10 分钟有效），防跨站请求伪造；
+- Git 地址不得以 `-` 开头（防选项注入），下载目录必须是已存在的绝对路径，目录名必须是不含分隔符的单个路径段；
+- 通过 HTTPS/TLS 反向代理以域名访问的部署不会启用此功能（这是有意的：该能力只服务于本机使用）。
 
 ## 安装
 
@@ -59,20 +83,25 @@ workspace-category-manager:
 客户端是 TypeScript 源码，构建为 Dsh 模块表契约的单文件 bundle：
 
 ```
+index.js                    # Host 端：settings 注册 + Git 导入路由（git clone）
 src/
   index.ts                  # 客户端入口：样式注入 + 槽位注册
-  api.ts                    # DSH API 适配层（唯一接触 ctx）
+  api.ts                    # DSH API 适配层（唯一接触 ctx）+ Host Git 接口调用
   constants.ts / utils.ts   # 常量与工具
   components/               # TSX 组件（CategorySidebar/CategorySection/StateDot/dialogs/icons）
   styles.css                # ← 独立的样式文件（源层面分离）
 scripts/build-client.mjs    # esbuild：src/client → lib/client.js（CSS 内联注入）
 lib/client.js               # 构建产物（不提交，prepare 自动构建）
+tests/api.test.js           # 客户端：针对构建产物的 API 面测试
+tests/git-clone.test.js     # Host：校验规则 + 真实本地克隆 + 路由安全门禁
 ```
 
 ```bash
 pnpm install        # 触发 prepare → 构建 lib/client.js
 pnpm build          # 手动重新构建（改 src/ 后）
-pnpm test           # 针对构建产物的 API 面测试（适配层现代/回退/降级）
+pnpm test           # 客户端 + Host 全部测试
+pnpm test:client    # 仅客户端 API 面测试（现代/回退/降级/Git 导入 UI 流程）
+pnpm test:host      # 仅 Host Git 导入测试（会创建临时 git 仓库）
 pnpm check-api      # 升级核对（见下）
 pnpm validate       # 结构校验
 ```

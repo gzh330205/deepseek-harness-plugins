@@ -88,6 +88,39 @@ export function createDshApi(ctx) {
         if (has(uw, 'archiveSession')) return uw.archiveSession(sessionId);
         return workspaces.archiveSession(sessionId);
       };
+      /* ---------------- Host Git import ----------------
+       * Cloning runs on the Host (index.js) because the browser cannot run git.
+       * The status probe doubles as the CSRF bootstrap: it returns a
+       * short-lived token that the clone POST must carry. This block reads no
+       * DSH service — it is the Host half's one HTTP surface.
+       * ------------------------------------------------ */
+      const GIT_ROUTE = '/dsh-workspace-category-manager/git';
+      const jsonRequest = async (path, init) => {
+        let response;
+        try {
+          response = await fetch(path, { ...(init ?? {}), headers: { accept: 'application/json', ...((init?.headers) ?? {}) } });
+        } catch (error) {
+          throw new Error('无法连接 DSH Host 的 Git 导入接口。');
+        }
+        let payload = null;
+        try { payload = await response.json(); } catch (error) { payload = null; }
+        if (response.ok !== true || payload === null || payload.ok !== true) {
+          const detail = payload !== null && typeof payload.error === 'string' && payload.error !== '' ? payload.error : `Git 导入接口返回 HTTP ${response.status}。`;
+          throw new Error(detail);
+        }
+        return payload;
+      };
+      const gitImportStatus = () => jsonRequest(`${GIT_ROUTE}/status`);
+      const cloneRepository = async (input) => {
+        const status = await gitImportStatus();
+        if (status.available !== true) throw new Error(typeof status.reason === 'string' && status.reason !== '' ? status.reason : '当前部署不支持从 Git 导入。');
+        const result = await jsonRequest(`${GIT_ROUTE}/clone`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-dsh-wcm-token': status.token },
+          body: JSON.stringify(input),
+        });
+        return result.path;
+      };
       return {
         startSession,
         pickDirectory,
@@ -102,6 +135,8 @@ export function createDshApi(ctx) {
         deleteWorkspace: (workspaceId) => workspaces.delete(workspaceId),
         insertWorkspaceBefore: (workspaceId, beforeWorkspaceId) => workspaces.insertBefore(workspaceId, beforeWorkspaceId),
         archiveSession,
+        gitImportStatus,
+        cloneRepository,
         workspacesList: workspaces.list,
         sessionsList: sessions.list,
         settingsScope: ctx.get('settingsScope').bind({ namespace: SETTINGS_NAMESPACE }),
