@@ -1,0 +1,14 @@
+# DSH profile bundle: runtime environment manager (运行环境管理).
+#
+# Install into a profile:
+#   dsh plugin --profile web add ./dsh-run-env-manager
+#
+# The row id must equal the host half's SETTINGS_NAMESPACE: since DSH 0.1.7 a
+# plugin's Loader entry id IS its settings namespace, and it is also the id the
+# browser half passes to `ctx.configForms.get(...)`.
+#
+# A profile without this bundle is unaffected — all state (environment library,
+# per-workspace run configurations) lives under the installed profile.
+- insert:
+    - id: run-env-manager
+      name: dsh-run-env-manager

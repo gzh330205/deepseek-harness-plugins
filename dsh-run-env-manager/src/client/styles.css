@@ -1,0 +1,77 @@
+/* 只用 dsh 的主题变量，类前缀 renv-，避免和宿主或其它插件撞样式。 */
+/* 外壳对齐宿主内建「文件」页（dsh-client-ui-sidebar-files）：
+   root 不带内边距，头部 38px / 左 16px / border-l3，正文 8px 左内边距，页签同款下划线样式。 */
+.renv{display:flex;flex-direction:column;min-height:0;height:100%;box-sizing:border-box;color:var(--dsw-alias-label-primary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:1.5}
+.renv-head{flex:none;align-items:center;gap:4px;height:38px;padding:0 6px 0 16px;display:flex}
+.renv-headname{flex:auto;min-width:0;font-weight:600}
+.renv-body{flex:auto;min-height:0;overflow:auto;margin-right:2px;scrollbar-gutter:stable;padding:8px 8px 8px 16px;display:flex;flex-direction:column;gap:10px}
+.renv-row{display:flex;align-items:center;gap:6px;min-width:0}
+.renv-rowWrap{flex-wrap:wrap}
+.renv-between{justify-content:space-between}
+.renv-grow{flex:1;min-width:0}
+.renv-ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left}
+.renv-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dsw-alias-label-secondary);min-width:0}
+.renv-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.renv-span2{grid-column:1/-1}
+.renv input,.renv select,.renv textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:6px 8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}
+.renv input::placeholder,.renv textarea::placeholder{color:var(--dsw-alias-label-tertiary)}
+.renv input:disabled{opacity:.6}
+.renv-textarea{resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.5}
+.renv-json{min-height:180px;white-space:pre}
+.renv button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent;white-space:nowrap}
+.renv button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
+.renv button:disabled{cursor:default;opacity:.5}
+/* 主按钮与选中态都用「brand-primary 填充 + label-primary-inverted 前景」这一对 token：
+   brand-primary 在本产品里是高对比油墨色（浅色近黑 / 深色近白），硬编码 #fff 会在深色主题下变成白底白字。 */
+.renv .renv-iconbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:none;border-radius:6px;background:none;color:var(--dsw-alias-label-tertiary)}
+.renv .renv-iconbtn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}
+.renv-primary{color:var(--dsw-alias-label-primary-inverted)!important;background:var(--dsw-alias-brand-primary)!important;border-color:var(--dsw-alias-brand-primary)!important}
+.renv-primary:hover:not(:disabled){background:var(--dsw-alias-button-primary-hover)!important}
+.renv-danger{color:var(--dsw-alias-state-error-primary)!important}
+/* 页签用宿主面板内页签的语言：13px/500，未选中 tertiary，选中 business-primary，
+   下划线 2px 贴在分隔线上。选择器写成 `.renv .renv-tab`（特异性高于下面的 `.renv button`），
+   所以不再需要一排 !important 来抢顺序。 */
+.renv-tabs{flex:none;display:flex;gap:24px;padding:0 6px 0 16px;border-bottom:.5px solid var(--dsw-alias-border-l3)}
+.renv .renv-tab{position:relative;background:none;border:none;border-radius:0;padding:10px 0 9px;color:var(--dsw-alias-label-tertiary);font-size:13px;font-weight:500;line-height:16px}
+.renv .renv-tab::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:none}
+.renv .renv-tab:hover:not(.renv-tabOn){background:none;color:var(--dsw-alias-label-secondary)}
+.renv .renv-tab.renv-tabOn{color:var(--dsw-alias-state-business-primary)}
+.renv .renv-tab.renv-tabOn::after{background:var(--dsw-alias-state-business-primary)}
+.renv-card{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:10px;background:var(--dsw-alias-bg-layer-3);display:flex;flex-direction:column;gap:8px}
+.renv-section{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--dsw-alias-border-l2);padding-top:10px}
+.renv-sectionHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.renv-title{display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px}
+.renv-meta{font-size:11.5px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}
+.renv-hint{font-size:11.5px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}
+.renv-error{font-size:12px;line-height:1.5;color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere}
+.renv-list{display:flex;flex-direction:column;gap:6px}
+.renv-libRow{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px;background:var(--dsw-alias-bg-layer-3)}
+.renv-libGroup{display:flex;flex-direction:column;gap:4px}
+.renv-libKind{font-size:11.5px;font-weight:600;color:var(--dsw-alias-label-secondary);margin-top:6px}
+.renv-tag{margin-left:6px;font-size:10.5px;padding:1px 6px;border-radius:999px;color:var(--dsw-alias-brand-primary);border:1px solid var(--dsw-alias-brand-primary)}
+.renv-actions{justify-content:flex-end;flex-wrap:wrap}
+.renv-dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--dsw-alias-label-tertiary)}
+.renv-dot[data-state=running]{background:var(--dsw-static-deepseek-450,#4f8cff)}
+.renv-dot[data-state=ready]{background:var(--dsw-alias-state-success-primary)}
+.renv-dot[data-state=stopped]{background:var(--dsw-alias-state-success-primary)}
+.renv-dot[data-state=failed]{background:var(--dsw-alias-state-error-primary)}
+.renv-dot[data-state=starting]{background:var(--dsw-alias-state-warn-primary)}
+.renv-logWrap{display:flex;flex-direction:column;gap:6px;min-height:160px}
+.renv-log{flex:1;min-height:140px;max-height:40vh;margin:0;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+
+/* ── 日志里的终端着色 ──────────────────────────────────────────────────
+   调色板用 CSS 变量按主题切换（产品自己也是用 body[data-ds-dark-theme] 切），
+   所以解析器只输出类名、不写死颜色。0–15 号色走类，256 色/真彩色才内联。 */
+.renv-log{--renv-c0:#24292f;--renv-c1:#cf222e;--renv-c2:#1a7f37;--renv-c3:#9a6700;--renv-c4:#0969da;--renv-c5:#8250df;--renv-c6:#1b7c83;--renv-c7:#6e7781;--renv-c8:#57606a;--renv-c9:#a40e26;--renv-c10:#116329;--renv-c11:#7d4e00;--renv-c12:#0550ae;--renv-c13:#6639ba;--renv-c14:#10666b;--renv-c15:#8c959f}
+body[data-ds-dark-theme] .renv-log{--renv-c0:#9aa0a6;--renv-c1:#ff7b72;--renv-c2:#7ee787;--renv-c3:#e3b341;--renv-c4:#79c0ff;--renv-c5:#d2a8ff;--renv-c6:#76e3ea;--renv-c7:#c9d1d9;--renv-c8:#8b949e;--renv-c9:#ffa198;--renv-c10:#aff5b4;--renv-c11:#f0d059;--renv-c12:#a5d6ff;--renv-c13:#e2c5ff;--renv-c14:#b3f0ff;--renv-c15:#f0f6fc}
+.renv-a-fg-30{color:var(--renv-c0)}.renv-a-fg-31{color:var(--renv-c1)}.renv-a-fg-32{color:var(--renv-c2)}.renv-a-fg-33{color:var(--renv-c3)}.renv-a-fg-34{color:var(--renv-c4)}.renv-a-fg-35{color:var(--renv-c5)}.renv-a-fg-36{color:var(--renv-c6)}.renv-a-fg-37{color:var(--renv-c7)}
+.renv-a-fg-90{color:var(--renv-c8)}.renv-a-fg-91{color:var(--renv-c9)}.renv-a-fg-92{color:var(--renv-c10)}.renv-a-fg-93{color:var(--renv-c11)}.renv-a-fg-94{color:var(--renv-c12)}.renv-a-fg-95{color:var(--renv-c13)}.renv-a-fg-96{color:var(--renv-c14)}.renv-a-fg-97{color:var(--renv-c15)}
+.renv-a-bg-40{background:var(--renv-c0)}.renv-a-bg-41{background:var(--renv-c1)}.renv-a-bg-42{background:var(--renv-c2)}.renv-a-bg-43{background:var(--renv-c3)}.renv-a-bg-44{background:var(--renv-c4)}.renv-a-bg-45{background:var(--renv-c5)}.renv-a-bg-46{background:var(--renv-c6)}.renv-a-bg-47{background:var(--renv-c7)}
+.renv-a-bg-100{background:var(--renv-c8)}.renv-a-bg-101{background:var(--renv-c9)}.renv-a-bg-102{background:var(--renv-c10)}.renv-a-bg-103{background:var(--renv-c11)}.renv-a-bg-104{background:var(--renv-c12)}.renv-a-bg-105{background:var(--renv-c13)}.renv-a-bg-106{background:var(--renv-c14)}.renv-a-bg-107{background:var(--renv-c15)}
+.renv-a-bold{font-weight:600}
+.renv-a-dim{opacity:.65}
+.renv-a-italic{font-style:italic}
+.renv-a-underline{text-decoration:underline}
+.renv-a-strike{text-decoration:line-through;opacity:.8}
+.renv-a-inverse{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1)}
+.renv-empty{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:10px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px}

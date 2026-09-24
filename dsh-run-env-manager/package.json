@@ -1,0 +1,57 @@
+{
+  "name": "dsh-run-env-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Runtime environment manager for DSH: per-workspace run configurations, one-click start/stop, live logs and AI-assisted setup.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "index.js",
+    "cordis.patch.yml",
+    "scripts"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
+      ]
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-tools": "0.1.7-alpha.2",
+    "@deepseek-ai/schemastery": "~3.18.4"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@types/react": "^18.3.1",
+    "esbuild": "^0.24.0",
+    "react": "^18.2.0"
+  },
+  "scripts": {
+    "build": "node ./scripts/build-client.mjs",
+    "prepare": "pnpm run build",
+    "test": "node ./tests/environment.test.js && node ./tests/tomcat.test.js && node ./tests/decoder.test.js && node ./tests/ansi.test.js",
+    "validate": "node ./scripts/validate.mjs"
+  }
+}
