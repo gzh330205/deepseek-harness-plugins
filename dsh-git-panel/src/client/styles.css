@@ -1,0 +1,1220 @@
+/* dsh-git-panel：右侧栏 Git 面板样式。
+   颜色/字号沿用 DSH 主题变量（--dsw-*），没有变量时回落到中性色，
+   因此浅色/深色主题都能直接跟随，不需要插件自己判断主题。 */
+
+.dgp {
+  --dgp-line: var(--dsw-alias-border-l3, rgba(128, 128, 128, 0.25));
+  --dgp-line-soft: var(--dsw-alias-border-l2, rgba(128, 128, 128, 0.16));
+  --dgp-fg: var(--dsw-alias-label-primary, #1f2328);
+  --dgp-fg-2: var(--dsw-alias-label-secondary, #57606a);
+  --dgp-fg-3: var(--dsw-alias-label-tertiary, #8b949e);
+  --dgp-hover: var(--dsw-alias-interactive-bg-hover, rgba(128, 128, 128, 0.12));
+  --dgp-add: var(--dsw-alias-file-diff-added-marker, #2da44e);
+  --dgp-del: var(--dsw-alias-file-diff-deleted-marker, #cf222e);
+  --dgp-warn: var(--dsw-alias-state-warn-primary, #bf8700);
+  --dgp-ok: var(--dsw-alias-state-success-primary, #1a7f37);
+  --dgp-info: var(--dsw-alias-brand-primary, #0969da);
+  --dgp-lane-0: var(--dsw-static-blue-400, #4a8cff);
+  --dgp-lane-1: var(--dsw-alias-state-success-primary, #2da44e);
+  --dgp-lane-2: var(--dsw-static-amber-500, #d29922);
+  --dgp-lane-3: var(--dsw-static-red-400, #f85149);
+  --dgp-lane-4: var(--dsw-static-neutral-600, #8b949e);
+  box-sizing: border-box;
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  color: var(--dgp-fg);
+  font-size: var(--dsh-content-font-size-secondary, 13px);
+}
+
+.dgp *,
+.dgp *::before,
+.dgp *::after {
+  box-sizing: border-box;
+}
+
+/* 默认去掉所有按钮的外观，再只给真正需要「按钮感」的位置加回来。
+   用 `:where(button)` 把优先级压到与 `.dgp-xxx` 同级（0,1,0），于是每条具体规则都能
+   凭源码顺序覆盖它；不要写成 `.dgp button:not(...)` 黑名单——新增行内控件就会漏。 */
+.dgp :where(button) {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.dgp :where(button):disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* ── 中心窗口差异页（root `main` 席位） ─────────────────── */
+
+.dgp-page {
+  background: var(--dsw-alias-bg-base, #fff);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dgp-pagehead {
+  align-items: center;
+  border-bottom: 0.5px solid var(--dgp-line-soft);
+  display: flex;
+  flex: none;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 8px;
+}
+
+.dgp-pagetitle {
+  flex: none;
+  font-weight: 600;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-pagestat {
+  flex: none;
+}
+
+.dgp-pagecount {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.dgp-pagesub {
+  color: var(--dgp-fg-3);
+  flex: none;
+  font-size: 0.92em;
+  padding: 4px 10px 2px;
+  overflow-wrap: anywhere;
+}
+
+.dgp-pagebody {
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* 中心列比侧栏宽得多：行号栏给宽一点，左右各留一点边距。 */
+.dgp-page .dgp-line {
+  grid-template-columns: 4em 4em 1.2em minmax(0, 1fr);
+}
+
+.dgp-page .dgp-text {
+  padding-right: 24px;
+}
+
+.dgp-page .dgp-diff {
+  font-size: 12.5px;
+  padding-left: 4px;
+}
+
+/* ── 头部 ───────────────────────────────────────────────── */
+
+/* 头部尺寸对齐宿主内建「文件」页（dsh-client-ui-sidebar-files）：
+   height 38px、左内边距 16px、分隔线用 border-l3。第一行 + 分支行共用一条下边框。 */
+.dgp-head {
+  align-items: center;
+  display: flex;
+  flex: none;
+  gap: 4px;
+  height: 38px;
+  padding: 0 6px 0 16px;
+}
+
+.dgp-reponame {
+  align-items: center;
+  display: flex;
+  flex: auto;
+  gap: 5px;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.dgp-branchrow {
+  align-items: center;
+  border-bottom: 0.5px solid var(--dgp-line);
+  color: var(--dgp-fg-2);
+  display: flex;
+  flex: none;
+  gap: 6px;
+  height: 26px;
+  min-width: 0;
+  padding: 0 6px 0 16px;
+}
+
+.dgp-branch {
+  color: var(--dgp-fg);
+  font-weight: 500;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-ahead {
+  color: var(--dgp-ok);
+  font-variant-numeric: tabular-nums;
+}
+
+.dgp-behind {
+  color: var(--dgp-info);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 通用小件 ───────────────────────────────────────────── */
+
+.dgp-meta {
+  color: var(--dgp-fg-3);
+  font-size: 0.92em;
+  min-width: 0;
+}
+
+.dgp-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-iconbtn {
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  color: var(--dgp-fg-2);
+  cursor: pointer;
+  display: inline-flex;
+  flex: none;
+  justify-content: center;
+  padding: 3px;
+}
+
+.dgp-iconbtn:hover:not(:disabled) {
+  background: var(--dgp-hover);
+  color: var(--dgp-fg);
+}
+
+.dgp-iconbtn:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.dgp-linkbtn {
+  background: none;
+  border: none;
+  color: var(--dgp-info);
+  cursor: pointer;
+  font-size: 0.92em;
+  padding: 0 2px;
+}
+
+.dgp-linkbtn:disabled {
+  opacity: 0.5;
+}
+
+/* 有按钮外观的地方：提交框、详情动作、表单动作、新建分支、加载更多。 */
+.dgp-primary,
+.dgp-more,
+.dgp-commitrow button,
+.dgp-detailactions button,
+.dgp-formactions button,
+.dgp-branchnew button {
+  background: var(--dsw-alias-button-tool-bar-fill, rgba(128, 128, 128, 0.12));
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 5px;
+  color: var(--dgp-fg);
+  padding: 3px 8px;
+}
+
+.dgp-primary:hover:not(:disabled),
+.dgp-more:hover:not(:disabled),
+.dgp-commitrow button:hover:not(:disabled),
+.dgp-detailactions button:hover:not(:disabled),
+.dgp-formactions button:hover:not(:disabled),
+.dgp-branchnew button:hover:not(:disabled) {
+  background: var(--dgp-hover);
+}
+
+.dgp-primary {
+  background: var(--dsw-alias-button-primary-fill, var(--dgp-info));
+  border-color: transparent;
+  color: var(--dsw-alias-label-primary-foreground, #fff);
+  font-weight: 500;
+}
+
+.dgp-primary:hover:not(:disabled) {
+  background: var(--dsw-alias-button-primary-hover, var(--dgp-info));
+}
+
+.dgp-dangerbtn {
+  color: var(--dgp-del);
+}
+
+.dgp-primary.dgp-dangerbtn {
+  color: var(--dsw-alias-label-primary-foreground, #fff);
+}
+
+.dgp-more {
+  align-self: center;
+  flex: none;
+  margin: 6px;
+}
+
+.dgp-input {
+  background: var(--dsw-alias-bg-layer-2, transparent);
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 5px;
+  color: var(--dgp-fg);
+  flex: auto;
+  font: inherit;
+  min-width: 0;
+  padding: 3px 6px;
+}
+
+/* ── 提示区 ─────────────────────────────────────────────── */
+
+.dgp-hint {
+  align-items: center;
+  background: var(--dsw-alias-bg-mask-2, rgba(128, 128, 128, 0.08));
+  border-radius: 5px;
+  color: var(--dgp-fg-2);
+  display: flex;
+  flex: none;
+  gap: 6px;
+  margin: 4px 8px;
+  padding: 5px 7px;
+}
+
+.dgp-hint-warn {
+  background: color-mix(in srgb, var(--dgp-warn) 14%, transparent);
+  color: var(--dgp-warn);
+}
+
+.dgp-error {
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--dgp-del) 12%, transparent);
+  border-radius: 5px;
+  color: var(--dgp-del);
+  display: flex;
+  flex: none;
+  font-size: 0.95em;
+  gap: 5px;
+  margin: 4px 8px;
+  padding: 5px 7px;
+}
+
+.dgp-errortext {
+  flex: auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dgp-notice {
+  background: color-mix(in srgb, var(--dgp-ok) 12%, transparent);
+  border-radius: 5px;
+  color: var(--dgp-ok);
+  flex: none;
+  font-size: 0.95em;
+  margin: 4px 8px;
+  padding: 5px 7px;
+  overflow-wrap: anywhere;
+}
+
+.dgp-busy {
+  color: var(--dgp-fg-3);
+  flex: none;
+  font-size: 0.92em;
+  padding: 2px 8px;
+}
+
+.dgp-empty {
+  align-items: center;
+  color: var(--dgp-fg-3);
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.dgp-truncated {
+  color: var(--dgp-warn);
+  font-size: 0.92em;
+  padding: 6px 8px;
+}
+
+/* ── 子页签 ─────────────────────────────────────────────── */
+
+/* 与宿主面板内的页签同款：13px/500，未选中 tertiary，选中 business-primary，
+   下划线 2px 贴在分隔线上；左内边距与头部文字对齐。 */
+.dgp-tabs {
+  border-bottom: 0.5px solid var(--dgp-line);
+  display: flex;
+  flex: none;
+  gap: 24px;
+  padding: 0 6px 0 16px;
+}
+
+.dgp-tab {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--dgp-fg-3);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 500;
+  gap: 4px;
+  line-height: 16px;
+  padding: 10px 0 9px;
+  position: relative;
+}
+
+.dgp-tab::after {
+  background: none;
+  border-radius: 2px;
+  bottom: -1px;
+  content: '';
+  height: 2px;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.dgp-tab-on {
+  color: var(--dsw-alias-state-business-primary, var(--dgp-info));
+}
+
+.dgp-tab-on::after {
+  background: var(--dsw-alias-state-business-primary, var(--dgp-info));
+}
+
+.dgp-tab:hover {
+  color: var(--dgp-fg-2);
+}
+
+/* 选中态颜色由上面的 `.dgp-tab-on` 给出，这里只补 hover 时不压掉它。 */
+.dgp-tab-on:hover {
+  color: var(--dsw-alias-state-business-primary, var(--dgp-info));
+}
+
+/* 计数跟随宿主习惯：纯数字、不填底色（侧栏会话/工作区计数就是这个样子）。 */
+.dgp-tabcount {
+  color: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.72;
+  padding: 0 0 0 2px;
+}
+
+/* 与内建文件列表同样的内缩：body 左 8px + 行内 10px，首字落在 18px。 */
+.dgp-body {
+  display: flex;
+  flex: auto;
+  flex-direction: column;
+  margin-right: 2px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 8px 0 8px 8px;
+  scrollbar-gutter: stable;
+}
+
+.dgp-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: 8px;
+}
+
+/* ── 显示模式切换（变更页顶部） ─────────────────────────── */
+
+.dgp-viewbar {
+  align-items: center;
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  padding: 5px 8px 1px;
+}
+
+/* 展开/折叠靠右；窄栏放不下时随整行换行，不挤压前面的分段控件。 */
+.dgp-treeactions {
+  gap: 8px;
+  margin-left: auto;
+}
+
+.dgp-segmented {
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 5px;
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.dgp-segment {
+  background: none;
+  border: none;
+  color: var(--dgp-fg-2);
+  cursor: pointer;
+  font-size: 0.92em;
+  padding: 2px 8px;
+}
+
+.dgp-segment + .dgp-segment {
+  border-left: 0.5px solid var(--dgp-line);
+}
+
+.dgp-segment:hover {
+  background: var(--dgp-hover);
+}
+
+.dgp-segment-on {
+  background: var(--dsw-alias-interactive-bg-hover-accent, color-mix(in srgb, var(--dgp-info) 16%, transparent));
+  color: var(--dgp-fg);
+  font-weight: 500;
+}
+
+/* ── 变更列表 ───────────────────────────────────────────── */
+
+.dgp-group {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+
+.dgp-grouphead {
+  align-items: center;
+  color: var(--dgp-fg-2);
+  display: flex;
+  flex: none;
+  gap: 6px;
+  justify-content: space-between;
+  padding: 4px 8px 2px;
+}
+
+.dgp-grouptoggle {
+  align-items: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 4px;
+  padding: 0;
+  font-weight: 500;
+}
+
+.dgp-grouptitle {
+  font-weight: 500;
+}
+
+.dgp-grouptone {
+  color: inherit;
+}
+
+.dgp-groupcount {
+  color: var(--dgp-fg-3);
+  font-weight: 400;
+}
+
+.dgp-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.dgp-row {
+  align-items: center;
+  border-radius: 8px;
+  display: flex;
+  gap: 6px;
+  min-height: 26px;
+  padding: 4px 10px;
+}
+
+.dgp-row:hover {
+  background: var(--dgp-hover);
+}
+
+/* 中间窗口正在显示的文件：行保持高亮，方便对照。 */
+.dgp-row-on,
+.dgp-row-on:hover {
+  background: var(--dsw-alias-interactive-bg-hover-accent, color-mix(in srgb, var(--dgp-info) 14%, transparent));
+}
+
+/* 固定 16px，和宿主「文件」列表的图标位同宽：这样文件名的起点（530 + 16 + 6 = 552）
+   与内建文件列表完全重合。 */
+.dgp-letter {
+  flex: none;
+  font-family: var(--ds-font-family-code, ui-monospace, monospace);
+  font-size: 0.95em;
+  font-weight: 600;
+  text-align: center;
+  width: 16px;
+}
+
+.dgp-tone-add {
+  color: var(--dgp-add);
+}
+
+.dgp-tone-del {
+  color: var(--dgp-del);
+}
+
+.dgp-tone-mod {
+  color: var(--dgp-warn);
+}
+
+.dgp-tone-move {
+  color: var(--dgp-info);
+}
+
+.dgp-tone-conflict {
+  color: var(--dgp-del);
+}
+
+.dgp-name {
+  align-items: baseline;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex: auto;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.dgp-name-main {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-name-dir,
+.dgp-name-from {
+  color: var(--dgp-fg-3);
+  flex: none;
+  font-size: 0.88em;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-stat {
+  display: inline-flex;
+  flex: none;
+  font-family: var(--ds-font-family-code, ui-monospace, monospace);
+  font-size: 0.88em;
+  gap: 4px;
+}
+
+.dgp-stat-add {
+  color: var(--dgp-add);
+}
+
+.dgp-stat-del {
+  color: var(--dgp-del);
+}
+
+.dgp-rowactions {
+  display: inline-flex;
+  flex: none;
+  gap: 1px;
+  align-items: center;
+}
+
+/* ── 目录行（目录模式） ─────────────────────────────────── */
+
+.dgp-dirrow {
+  gap: 4px;
+}
+
+.dgp-dirtoggle {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--dgp-fg-2);
+  cursor: pointer;
+  display: inline-flex;
+  flex: auto;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.dgp-dirname {
+  color: var(--dgp-fg);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-dircount {
+  flex: none;
+}
+
+/* ── 提交框 ─────────────────────────────────────────────── */
+
+.dgp-commitbox {
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 4px;
+  margin: 6px 8px;
+  padding: 5px;
+}
+
+.dgp-commitmsg {
+  background: none;
+  border: none;
+  color: var(--dgp-fg);
+  font: inherit;
+  min-height: 34px;
+  outline: none;
+  resize: vertical;
+  width: 100%;
+}
+
+.dgp-commitrow {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.dgp-check {
+  align-items: center;
+  color: var(--dgp-fg-2);
+  display: inline-flex;
+  font-size: 0.92em;
+  gap: 4px;
+  cursor: pointer;
+}
+
+/* ── 差异详情 ───────────────────────────────────────────── */
+
+.dgp-detailhead {
+  align-items: center;
+  border-bottom: 0.5px solid var(--dgp-line);
+  display: flex;
+  flex: none;
+  gap: 5px;
+  min-height: 38px;
+  padding: 0 6px 0 16px;
+}
+
+.dgp-detailpath {
+  flex: auto;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-detaildir {
+  color: var(--dgp-fg-3);
+  font-size: 0.9em;
+  padding: 3px 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.dgp-detailactions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  padding: 8px;
+}
+
+.dgp-chip {
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 4px;
+  color: var(--dgp-fg-2);
+  flex: none;
+  font-size: 0.85em;
+  padding: 0 4px;
+}
+
+.dgp-chip-on {
+  border-color: var(--dgp-ok);
+  color: var(--dgp-ok);
+}
+
+.dgp-diff {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  font: var(--dsw-font-markdown-code-block, 12px/1.6 var(--ds-font-family-code, ui-monospace, monospace));
+  min-width: 0;
+  overflow-x: auto;
+  padding: 4px 0 8px;
+}
+
+.dgp-difffile {
+  display: flex;
+  flex-direction: column;
+  min-width: max-content;
+}
+
+.dgp-difffile-head {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--dgp-fg-2);
+  cursor: pointer;
+  display: flex;
+  flex: none;
+  gap: 6px;
+  padding: 3px 8px;
+  text-align: left;
+  position: sticky;
+  left: 0;
+}
+
+.dgp-difffile-path {
+  flex: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-line {
+  display: grid;
+  grid-template-columns: 3.2em 3.2em 1.1em minmax(0, 1fr);
+  line-height: 20px;
+  min-height: 20px;
+  white-space: pre;
+}
+
+.dgp-line-hunk {
+  background: color-mix(in srgb, var(--dgp-info) 10%, transparent);
+  color: var(--dgp-fg-2);
+  display: block;
+  padding: 2px 8px;
+}
+
+.dgp-line-note {
+  color: var(--dgp-fg-3);
+  display: block;
+  font-size: 0.92em;
+  padding: 1px 8px;
+}
+
+.dgp-line-add {
+  --dgp-gutter: var(--dsw-alias-file-diff-added-gutter, color-mix(in srgb, var(--dgp-add) 18%, transparent));
+  background: var(--dsw-alias-file-diff-added-bg, color-mix(in srgb, var(--dgp-add) 12%, transparent));
+}
+
+.dgp-line-del {
+  --dgp-gutter: var(--dsw-alias-file-diff-deleted-gutter, color-mix(in srgb, var(--dgp-del) 18%, transparent));
+  background: var(--dsw-alias-file-diff-deleted-bg, color-mix(in srgb, var(--dgp-del) 12%, transparent));
+}
+
+.dgp-ln {
+  color: var(--dgp-fg-3);
+  padding-right: 6px;
+  text-align: right;
+  user-select: none;
+}
+
+.dgp-line-add .dgp-ln,
+.dgp-line-del .dgp-ln {
+  background: var(--dgp-gutter);
+}
+
+.dgp-line-add .dgp-sign {
+  color: var(--dgp-add);
+}
+
+.dgp-line-del .dgp-sign {
+  color: var(--dgp-del);
+}
+
+.dgp-sign {
+  text-align: center;
+  user-select: none;
+}
+
+.dgp-text {
+  padding-right: 12px;
+}
+
+.dgp-line-ctx .dgp-text {
+  color: var(--dgp-fg-2);
+}
+
+.dgp-note {
+  color: var(--dgp-fg-3);
+}
+
+/* ── 历史 ───────────────────────────────────────────────── */
+
+.dgp-historybar {
+  align-items: center;
+  display: flex;
+  flex: none;
+  gap: 4px;
+  padding: 4px 6px;
+}
+
+.dgp-branchbtn {
+  align-items: center;
+  background: none;
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 5px;
+  color: var(--dgp-fg);
+  cursor: pointer;
+  display: inline-flex;
+  flex: auto;
+  gap: 5px;
+  min-width: 0;
+  padding: 3px 6px;
+}
+
+.dgp-branchbtn:hover {
+  background: var(--dgp-hover);
+}
+
+.dgp-clearbtn {
+  color: var(--dgp-fg-3);
+  flex: none;
+  padding: 0 2px;
+}
+
+.dgp-branchpop {
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  margin: 0 8px 4px;
+  max-height: 320px;
+  overflow: hidden;
+}
+
+.dgp-branchpop-head {
+  align-items: center;
+  display: flex;
+  flex: none;
+  gap: 4px;
+  padding: 5px;
+}
+
+.dgp-branchlist {
+  flex: auto;
+  overflow-y: auto;
+  padding-bottom: 4px;
+}
+
+.dgp-branchgroup {
+  color: var(--dgp-fg-3);
+  font-size: 0.85em;
+  padding: 4px 8px 1px;
+}
+
+.dgp-branchitem {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--dgp-fg);
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  padding: 3px 8px;
+  text-align: left;
+  width: 100%;
+}
+
+.dgp-branchitem:hover:not(:disabled) {
+  background: var(--dgp-hover);
+}
+
+.dgp-branchitem-on {
+  color: var(--dgp-info);
+  font-weight: 600;
+}
+
+.dgp-branchname {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-branchmeta {
+  color: var(--dgp-fg-3);
+  flex: none;
+  font-family: var(--ds-font-family-code, ui-monospace, monospace);
+  font-size: 0.85em;
+}
+
+.dgp-branchnew {
+  align-items: center;
+  border-top: 0.5px solid var(--dgp-line-soft);
+  display: flex;
+  flex: none;
+  gap: 4px;
+  padding: 5px;
+}
+
+.dgp-commitlist {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+
+.dgp-commititem {
+  align-items: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: 4px;
+  min-height: 34px;
+  padding: 0 8px 0 2px;
+  text-align: left;
+  width: 100%;
+}
+
+.dgp-commititem:hover {
+  background: var(--dgp-hover);
+}
+
+.dgp-graph {
+  flex: none;
+  overflow: visible;
+}
+
+.dgp-lane {
+  fill: none;
+  stroke-width: 1.6;
+}
+
+.dgp-lane-0 { stroke: var(--dgp-lane-0); }
+.dgp-lane-1 { stroke: var(--dgp-lane-1); }
+.dgp-lane-2 { stroke: var(--dgp-lane-2); }
+.dgp-lane-3 { stroke: var(--dgp-lane-3); }
+.dgp-lane-4 { stroke: var(--dgp-lane-4); }
+
+.dgp-lane-fill-0 { fill: var(--dgp-lane-0); }
+.dgp-lane-fill-1 { fill: var(--dgp-lane-1); }
+.dgp-lane-fill-2 { fill: var(--dgp-lane-2); }
+.dgp-lane-fill-3 { fill: var(--dgp-lane-3); }
+.dgp-lane-fill-4 { fill: var(--dgp-lane-4); }
+
+.dgp-dot {
+  stroke: var(--dsw-alias-bg-base, #fff);
+  stroke-width: 1.2;
+}
+
+.dgp-commitinfo {
+  display: flex;
+  flex-direction: column;
+  flex: auto;
+  gap: 1px;
+  min-width: 0;
+}
+
+.dgp-commitsubject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-commitmeta {
+  align-items: center;
+  color: var(--dgp-fg-3);
+  display: flex;
+  font-size: 0.88em;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dgp-hash {
+  color: var(--dgp-info);
+  flex: none;
+  font-family: var(--ds-font-family-code, ui-monospace, monospace);
+  font-size: 0.9em;
+}
+
+.dgp-commitwhen {
+  flex: none;
+}
+
+.dgp-decor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 1px;
+}
+
+.dgp-decoritem {
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 4px;
+  color: var(--dgp-fg-2);
+  font-size: 0.82em;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-decor-head {
+  border-color: var(--dgp-ok);
+  color: var(--dgp-ok);
+}
+
+.dgp-decor-tag {
+  border-color: var(--dgp-warn);
+  color: var(--dgp-warn);
+}
+
+.dgp-commitbody {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 2px;
+  padding: 6px 8px;
+}
+
+.dgp-commitmsgtext {
+  font: inherit;
+  margin: 2px 0 0;
+  max-height: 160px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--dgp-fg-2);
+}
+
+.dgp-inlinediff {
+  border-left: 2px solid var(--dgp-line);
+  margin: 0 0 4px 14px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+/* ── 工作树 ─────────────────────────────────────────────── */
+
+.dgp-wt {
+  border-bottom: 0.5px solid var(--dgp-line-soft);
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 2px;
+  padding: 5px 8px;
+}
+
+.dgp-wthead {
+  align-items: center;
+  display: flex;
+  gap: 5px;
+  min-width: 0;
+}
+
+.dgp-wtname {
+  flex: auto;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dgp-wtmeta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.dgp-badge {
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 4px;
+  color: var(--dgp-fg-2);
+  font-size: 0.82em;
+  padding: 0 4px;
+}
+
+.dgp-badge-on {
+  border-color: var(--dgp-info);
+  color: var(--dgp-info);
+}
+
+.dgp-badge-warn {
+  border-color: var(--dgp-warn);
+  color: var(--dgp-warn);
+}
+
+.dgp-badge-ok {
+  border-color: var(--dgp-ok);
+  color: var(--dgp-ok);
+}
+
+.dgp-confirm {
+  background: var(--dsw-alias-bg-mask-2, rgba(128, 128, 128, 0.08));
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 6px;
+}
+
+.dgp-confirmtext {
+  overflow-wrap: anywhere;
+}
+
+.dgp-form {
+  border-bottom: 0.5px solid var(--dgp-line-soft);
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  gap: 6px;
+  padding: 6px 8px;
+}
+
+.dgp-field {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.dgp-field > span {
+  color: var(--dgp-fg-2);
+  flex: none;
+  width: 4.6em;
+}
+
+.dgp-radio {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dgp-formactions {
+  display: flex;
+  gap: 6px;
+}

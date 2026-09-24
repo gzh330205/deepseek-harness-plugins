@@ -1,0 +1,14 @@
+# DSH profile bundle: Git panel (Git 变更 / 历史 / 工作树).
+#
+# Install into a profile:
+#   dsh plugin --profile web add ./dsh-git-panel
+#
+# The row id must equal the host half's SETTINGS_NAMESPACE: since DSH 0.1.7 a
+# plugin's Loader entry id IS its settings namespace, and it is also the id the
+# browser half passes to `ctx.configForms.get(...)`.
+#
+# The host half only talks to the local `git` executable over the DSH web
+# server; it keeps no state of its own beyond this entry's config.
+- insert:
+    - id: git-panel
+      name: dsh-git-panel

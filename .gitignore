@@ -46,5 +46,8 @@ Desktop.ini
 *.bak
 *.orig
 
+# Local agent tooling（本机 Claude/agent 计划与配置，不进仓库）
+.claude/
+
 # Local-only plugin (kept out of the repository, sources stay on disk)
 dsh-oneway-usage-monitor/
