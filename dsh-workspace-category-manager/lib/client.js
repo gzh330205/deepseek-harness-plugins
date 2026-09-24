@@ -55,6 +55,8 @@ var styles_default = `
 // src/client/constants.ts
 var NS = "settings.workspaceCategories";
 var SETTINGS_NAMESPACE = "workspace-category-manager";
+var COLLAPSED_CATEGORIES_FIELD = "collapsedCategories";
+var EXPANDED_WORKSPACES_FIELD = "expandedWorkspaces";
 
 // src/client/api.ts
 function createDshApi(ctx) {
@@ -198,23 +200,25 @@ function currentSessionId(state) {
   }
   return void 0;
 }
-var FOLDER_STATE_KEY = "dsh-workspace-category-manager:folderOpen";
-var loadFolderState = () => {
-  try {
-    const raw = localStorage.getItem(FOLDER_STATE_KEY);
-    if (raw === null) return {};
-    const parsed = JSON.parse(raw);
-    return parsed !== null && typeof parsed === "object" ? parsed : {};
-  } catch (error) {
-    return {};
-  }
+var expansionKey = (raw, field) => raw !== null && typeof raw === "object" ? raw[field] : void 0;
+var expansionIds = (raw, field) => {
+  const stored = expansionKey(raw, field);
+  return Array.isArray(stored) ? new Set(stored.filter((id) => typeof id === "string")) : /* @__PURE__ */ new Set();
 };
-var saveFolderState = (state) => {
-  try {
-    localStorage.setItem(FOLDER_STATE_KEY, JSON.stringify(state));
-  } catch (error) {
-  }
+var closedCategories = (raw) => expansionIds(raw, COLLAPSED_CATEGORIES_FIELD);
+var openWorkspaces = (raw) => expansionIds(raw, EXPANDED_WORKSPACES_FIELD);
+var retainIds = (ids, existingIds) => {
+  const known = existingIds instanceof Set ? existingIds : new Set(existingIds);
+  return [...ids].filter((id) => known.has(id));
 };
+function persistExpansion(scope, field, ids) {
+  try {
+    return Promise.resolve(scope.set(field, ids)).then(void 0, () => {
+    });
+  } catch (error) {
+    return Promise.resolve();
+  }
+}
 function errText(error) {
   return error instanceof Error ? error.message : String(error);
 }
@@ -375,7 +379,6 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const sessionState = useSessionsSnapshot(api.sessionsList);
   const config = configOf(scope);
   const [failure, setFailure] = import_react9.default.useState("");
-  const [openFolders, setOpenFolders] = import_react9.default.useState(loadFolderState);
   const [expandedIds, setExpandedIds] = import_react9.default.useState({});
   const [orderBy, setOrderBy] = import_react9.default.useState("manual");
   const [menuOpen, setMenuOpen] = import_react9.default.useState(false);
@@ -405,12 +408,25 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const sessionStatuses = useSessionStatuses(api);
   const startSession = (workspace) => api.startSession(workspaceId(workspace));
   const openSession = (sessionId) => api.openSession(sessionId);
-  const toggleProject = (id) => setExpandedIds((previous) => ({ ...previous, [id]: !previous[id] }));
-  const toggleFolder = (id) => setOpenFolders((previous) => {
-    const next = { ...previous, [id]: previous[id] === false };
-    saveFolderState(next);
-    return next;
-  });
+  const collapsedSet = closedCategories(config);
+  const workspaceSet = openWorkspaces(config);
+  const idsOfCategories = () => /* @__PURE__ */ new Set(["__uncategorized__", ...config.categories.map((category) => category.id)]);
+  const idsOfWorkspaces = () => new Set(list.map((workspace) => workspaceId(workspace)));
+  const expansionReady = snapshot.value !== void 0;
+  const toggleProject = (id) => {
+    const next = !(expandedIds[id] === true || workspaceSet.has(id));
+    setExpandedIds((previous) => ({ ...previous, [id]: next }));
+    const stored = new Set(workspaceSet);
+    if (next) stored.add(id);
+    else stored.delete(id);
+    persistExpansion(scope, EXPANDED_WORKSPACES_FIELD, retainIds(stored, idsOfWorkspaces()));
+  };
+  const toggleFolder = (id) => {
+    const collapsed = new Set(collapsedSet);
+    if (collapsed.has(id)) collapsed.delete(id);
+    else collapsed.add(id);
+    persistExpansion(scope, COLLAPSED_CATEGORIES_FIELD, retainIds(collapsed, idsOfCategories()));
+  };
   const sessionsOf = (workspace) => {
     const archived = new Set(workspaceState.archivedSessionIds ?? []);
     return (workspace.sessionIds ?? []).map((id) => byId[id]).filter((summary) => summary !== void 0 && summary.origin !== "subagent" && !archived.has(summary.id) && (!summary.blank || summary.id === currentId));
@@ -695,7 +711,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const project = (workspace) => {
     const id = workspaceId(workspace);
     const rows = sessionsOf(workspace);
-    const expanded = wide && expandedIds[id] === true;
+    const expanded = wide && (expandedIds[id] === true || workspaceSet.has(id));
     const wsStatus = statusOfWorkspace(workspace);
     const label = workspaceLabel(workspace);
     const act = () => {
@@ -740,7 +756,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   };
   const folder = (f) => {
     const isUncategorized = f.id === "__uncategorized__";
-    const open = wide && openFolders[f.id] !== false;
+    const open = wide && !collapsedSet.has(f.id);
     const status = statusOfCategory(f);
     const onToggle = () => {
       if (wide) toggleFolder(f.id);
@@ -753,6 +769,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       }
     }, onDragStart: wide && !isUncategorized ? dragStart("folder", f.id) : void 0, onDragOver: wide ? dragOverFolder(f.id) : void 0, onDrop: wide ? dropOnFolder(f.id) : void 0, onDragEnd: wide ? dragEnd : void 0, onContextMenu: wide && !isUncategorized ? (event) => openMenuAt("folder", f.id, event) : void 0 }, statusIconSlot(status, (0, import_react10.createElement)("span", { className: "wcm-rowIcon wcm-rowIconCategory", style: { color: f.color } }, (0, import_react10.createElement)(IconTagOutline16))), (0, import_react10.createElement)("span", { className: "wcm-folderLabel" }, f.name), (0, import_react10.createElement)("span", { className: "wcm-folderCount" }, f.projects.length), menuFor !== null && menuFor.kind === "folder" && menuFor.id === f.id ? popoverAt(menuFor.x, menuFor.y, menuItem(t("dissolveCategory"), true, () => setDissolveTarget({ id: f.id, name: f.name }))) : null), open ? (0, import_react10.createElement)("div", { className: "wcm-folderProjects" }, f.projects.map(project)) : null);
   };
+  const folderTree = expansionReady ? (0, import_react10.createElement)("div", { className: "wcm-folders" }, folders.map(folder)) : null;
   const sortItem = (mode, label) => (0, import_react10.createElement)("button", { className: `wcm-menuItem${orderBy === mode ? " wcm-menuItemOn" : ""}`, onClick: () => {
     setOrderBy(mode);
     setMenuOpen(false);
@@ -799,7 +816,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const addWorkspaceDialog = addOpen ? (0, import_react10.createElement)(Dialog, { title: t("addWorkspace"), close: () => {
     if (!addBusy) setAddOpen(false);
   } }, gitAvailable ? (0, import_react10.createElement)("div", { className: "wcm-modeTabs" }, modeTab("local", t("addLocal")), modeTab("git", t("addFromGit"))) : null, groupField, ...addDraft.mode === "git" ? gitFields : localFields, addFormError !== "" ? (0, import_react10.createElement)("p", { className: "wcm-error" }, addFormError) : null, addCloning ? (0, import_react10.createElement)("p", { className: "wcm-hint wcm-cloning" }, t("gitCloning")) : null, (0, import_react10.createElement)("div", { className: "wcm-gap" }), (0, import_react10.createElement)("div", { className: "wcm-actions" }, (0, import_react10.createElement)("button", { disabled: addBusy, onClick: () => setAddOpen(false) }, t("cancel")), (0, import_react10.createElement)("button", { className: "wcm-primary", disabled: !addReady, onClick: saveAddWorkspace }, t("save")))) : null;
-  const root = (0, import_react10.createElement)("div", { className: `wcm-sidebar${wide ? "" : " wcm-sidebarRail"}` }, (0, import_react10.createElement)("div", { className: "wcm-sidebarHead" }, (0, import_react10.createElement)("span", null, t("workspaceTitle")), wide ? headerActions : null), failure ? (0, import_react10.createElement)("p", { className: "wcm-error" }, failure) : null, (0, import_react10.createElement)("div", { className: "wcm-folders" }, folders.map(folder)), errorDialog, addWorkspaceDialog, renameDialog, deleteDialog, dissolveDialog, addCategoryDialog);
+  const root = (0, import_react10.createElement)("div", { className: `wcm-sidebar${wide ? "" : " wcm-sidebarRail"}` }, (0, import_react10.createElement)("div", { className: "wcm-sidebarHead" }, (0, import_react10.createElement)("span", null, t("workspaceTitle")), wide ? headerActions : null), failure ? (0, import_react10.createElement)("p", { className: "wcm-error" }, failure) : null, folderTree, errorDialog, addWorkspaceDialog, renameDialog, deleteDialog, dissolveDialog, addCategoryDialog);
   return root;
 }
 

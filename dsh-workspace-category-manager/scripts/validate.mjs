@@ -13,6 +13,18 @@ if (manifest.exports?.['./client'] !== './lib/client.js') throw new Error('Clien
 
 const host = readFileSync(resolve(root, 'index.js'), 'utf8');
 if (!host.includes("SETTINGS_NAMESPACE = 'workspace-category-manager'")) throw new Error('Host settings namespace is missing.');
+/* Sidebar expansion must ride the Host Config: DSH binds Web to a fresh
+ * loopback port on every launch, so an origin-scoped browser store is empty at
+ * boot and every category would reopen expanded. */
+for (const field of ['collapsedCategories', 'expandedWorkspaces']) {
+  if (!host.includes(`${field}: z.array(z.string())`)) throw new Error(`Host Config is missing the ${field} field.`);
+}
+const sidebar = readFileSync(resolve(root, 'src/client/components/CategorySidebar.tsx'), 'utf8');
+const utils = readFileSync(resolve(root, 'src/client/utils.ts'), 'utf8');
+if (sidebar.includes('localStorage.getItem') || sidebar.includes('localStorage.setItem') || utils.includes('localStorage.getItem') || utils.includes('localStorage.setItem')) throw new Error('Sidebar expansion must not go back to origin-scoped localStorage (it is lost on every launch).');
+if (!sidebar.includes('persistExpansion(scope, COLLAPSED_CATEGORIES_FIELD') || !sidebar.includes('persistExpansion(scope, EXPANDED_WORKSPACES_FIELD')) {
+  throw new Error('Sidebar expansion must be written to the Host Config on toggle.');
+}
 
 const entry = readFileSync(resolve(root, 'src/client/index.ts'), 'utf8');
 if (!entry.includes("id: 'workspace-categories'")) throw new Error('Client settings section id is missing.');

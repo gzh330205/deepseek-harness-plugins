@@ -30,6 +30,13 @@ export const Config = z.object({
   categories: z.array(Category).default([]).volatile(),
   /** Workspace ids are intentionally independent of workspace filesystem paths. */
   assignments: z.dict(z.string()).default({}).volatile(),
+  /* Sidebar expansion, kept here rather than in browser localStorage because the
+   * Host binds Web to a fresh loopback port on every launch: an origin-scoped
+   * store would be empty at boot and every category would come back expanded.
+   * Both fields hold SUPPRESSION lists (see scripts/validate.mjs), which keeps
+   * the persisted value small and the "expanded" default implicit. */
+  collapsedCategories: z.array(z.string()).default([]).volatile(),
+  expandedWorkspaces: z.array(z.string()).default([]).volatile(),
 });
 
 export const inject = [];

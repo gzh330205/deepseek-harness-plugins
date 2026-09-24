@@ -96,16 +96,21 @@ const servicesFor = (withUiWorkspace) => {
   const uiSession = modern ? { sessionStatus: store(statuses) } : { pendingInteractions: store(pending) };
   return { workspaces, sessions, uiWorkspace, uiSession, statuses, pending, setList: (next) => { list = next; } };
 };
-const bindScope = () => ({ subscribe: () => () => {}, getSnapshot: () => ({ value: state, status: 'ready', writable: true }), set: (k, v) => { calls.push(['scope.set', k, v]); state[k] = v; return Promise.resolve(); } });
-const entriesFor = (withUiWorkspace) => {
+const bindScope = (target = state) => ({ subscribe: () => () => {}, getSnapshot: () => ({ value: target, status: 'ready', writable: true }), set: (k, v) => { calls.push(['scope.set', k, v]); target[k] = v; return Promise.resolve(); } });
+/* Sidebar expansion is persisted in the Config, so a test that wants the
+ * "fresh install" defaults must read a fresh Config instead of inheriting the
+ * fields an earlier interaction wrote (in the app that restart-equivalent state
+ * comes from disk, not from memory). */
+const freshScope = (overrides = {}) => { const fresh = { categories: [], assignments: {}, collapsedCategories: [], expandedWorkspaces: [], ...overrides }; return { target: fresh, bind: () => bindScope(fresh) }; };
+const entriesFor = (withUiWorkspace, bind = bindScope) => {
   const svc = servicesFor(withUiWorkspace);
   const props = {};
-  const configFormsSvc = { get: () => bindScope() };
+  const configFormsSvc = { get: () => bind() };
   plugin.apply({
     effect: () => () => {},
     locale: { register: () => {}, bind: () => (k) => k },
     get: (name) => name === 'configForms' ? configFormsSvc : svc[name],
-    configForms: { get: () => bindScope() },
+    configForms: { get: () => bind() },
     slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { props[opts.name] = opts.inject ? opts.inject() : {}; props['component:' + opts.name] = Component; props._reg = opts; return () => {}; } },
   });
   return props;
@@ -194,9 +199,18 @@ assert(props._reg.priority === -1, 'sidebar priority must be -1');
 assert(props._reg.children === undefined, 'children must not be declared');
 
 // E: unified status language — session row keeps the chase animation; project/category rows use static dots
-props = entriesFor(true);
-hookIndex = 0;
-rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+const eScope = freshScope({ categories: [{ id: 'c1', name: '客户项目', color: '#4f8cff' }], assignments: { a: 'c1' } });
+props = entriesFor(true, eScope.bind);
+/* Expansion is now persisted, so a re-render keeps whatever the previous
+ * interaction left behind. Tests that need rows on screen say so explicitly
+ * instead of depending on the old "every render starts collapsed" behaviour. */
+const renderRows = (rendered) => { hookIndex = 0; return collectSimple(rendered['component:sidebar.workspaces']({ api: rendered['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} })); };
+const expandProjects = (rendered) => {
+  const initial = renderRows(rendered);
+  for (const row of initial) if (row.cls.includes('wcm-projectRow') && !row.cls.includes('wcm-open')) row.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+  return renderRows(rendered);
+};
+rows = renderRows(props);
 assert(rows.filter((r) => r.cls === 'wcm-rowIconSlot').length >= 2, 'icon slots missing (category + project rows)');
 assert(rows.some((r) => r.cls.includes('wcm-rowIconCategory')), 'category rows must use the tag icon');
 assert(rows.filter((r) => r.cls === 'wcm-rowChevron').length >= 2, 'chevrons must live inside the icon slots');
@@ -209,10 +223,7 @@ assert(rows.filter((r) => r.cls.includes('wcm-wsBadge') && r.cls.includes('wcm-w
 assert(rows.some((r) => r.cls === 'wcm-rowIcon'), 'icons must stay (not be replaced by the dot)');
 assert(!rows.some((r) => r.cls === 'wcm-dotMatrix'), 'chase must not appear on collapsed category/project rows');
 // expand the project — the running session row keeps the chase animation
-const projRowEl = rows.find((r) => r.cls === 'wcm-projectRow');
-projRowEl.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
-hookIndex = 0;
-rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+rows = expandProjects(props);
 assert(rows.some((r) => r.cls === 'wcm-dotMatrix'), 'session row must keep the chase animation');
 assert(rows.filter((r) => r.cls === 'wcm-dotMatrix').length === 1, 'chase must appear only on the running session row');
 // done state -> corner badges on category + project, halo dot on the session row
@@ -233,7 +244,7 @@ const propsDone = (() => { const out = {}; const configFormsSvc = { get: () => b
 hookState = [];
 hookIndex = 0;
 rows = collectSimple(propsDone['component:sidebar.workspaces']({ api: propsDone['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
-const projRowDone = rows.find((r) => r.cls === 'wcm-projectRow');
+const projRowDone = rows.find((r) => r.cls.split(' ').includes('wcm-projectRow'));
 projRowDone.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
 hookIndex = 0;
 rows = collectSimple(propsDone['component:sidebar.workspaces']({ api: propsDone['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
@@ -279,7 +290,7 @@ rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar
 assert(!rows.some((r) => r.cls.includes('MenuBtn') || r.cls.includes('wcm-folderDissolve')), 'management buttons must be removed');
 const menuTexts = (rs) => rs.filter((r) => r.cls === 'wcm-menuText').map((r) => r.el.props.children);
 // project row right-click → rename + delete
-rows.find((r) => r.cls === 'wcm-projectRow').el.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 40, clientY: 50 });
+rows.find((r) => r.cls.split(' ').includes('wcm-projectRow')).el.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 40, clientY: 50 });
 hookIndex = 0;
 rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
 let texts = menuTexts(rows);
@@ -291,10 +302,10 @@ rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar
 texts = menuTexts(rows);
 assert(texts.length === 1 && texts[0] === 'dissolveCategory', 'folder context menu should offer dissolve');
 // session row right-click → rename + fork + archive
-const projToExpand = rows.find((r) => r.cls === 'wcm-projectRow');
-projToExpand.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
-hookIndex = 0;
-rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+/* Expansion now survives a re-render (that is the feature), so collapse every
+ * open project row first and let the helper re-expand them deliberately. */
+for (const row of renderRows(props)) if (row.cls.includes('wcm-projectRow') && row.cls.includes('wcm-open')) row.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+rows = expandProjects(props);
 rows.find((r) => r.cls.split(' ').includes('wcm-session')).el.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 40, clientY: 50 });
 hookIndex = 0;
 rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
@@ -319,10 +330,7 @@ hookIndex = 0;
 rows = collectSimple(propsH['component:sidebar.workspaces']({ api: propsH['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
 assert(rows.filter((r) => r.cls.includes('wcm-wsBadge') && r.cls.includes('wcm-ws-warning')).length >= 2, 'waiting-for-human must show amber badges on category + project rows');
 assert(!rows.some((r) => r.cls.includes('wcm-ws-running')), 'warning must override the running (blue) state');
-const projWait = rows.find((r) => r.cls === 'wcm-projectRow');
-projWait.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
-hookIndex = 0;
-rows = collectSimple(propsH['component:sidebar.workspaces']({ api: propsH['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+rows = expandProjects(propsH);
 assert(rows.filter((r) => r.cls === 'wcm-wsDot wcm-ws-warning').length >= 1, 'waiting session row must show the amber halo dot');
 
 // H2: legacy shape (<=0.1.2 pendingInteractions {kind}) must still surface AMBER
@@ -347,11 +355,8 @@ assert(rows.filter((r) => r.cls.includes('wcm-wsBadge') && r.cls.includes('wcm-w
 // visible Conversation, so uiWorkspace.openSession must be the modern call.
 props = entriesFor(true);
 hookState = [];
-hookIndex = 0;
-rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
-rows.find((r) => r.cls === 'wcm-projectRow').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
-hookIndex = 0;
-rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+for (const row of renderRows(props)) if (row.cls.includes('wcm-projectRow') && row.cls.includes('wcm-open')) row.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+rows = expandProjects(props);
 const sessionRow = rows.find((r) => r.cls.split(' ').includes('wcm-session'));
 assert(sessionRow, 'session row must render once the project is expanded');
 calls.length = 0;
@@ -378,11 +383,8 @@ const propsJ = (() => { const out = {}; const configFormsSvc = { get: () => bind
   });
   return out; })();
 hookState = [];
-hookIndex = 0;
-rows = collectSimple(propsJ['component:sidebar.workspaces']({ api: propsJ['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
-rows.find((r) => r.cls === 'wcm-projectRow').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
-hookIndex = 0;
-rows = collectSimple(propsJ['component:sidebar.workspaces']({ api: propsJ['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+for (const row of renderRows(propsJ)) if (row.cls.includes('wcm-projectRow') && row.cls.includes('wcm-open')) row.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+rows = expandProjects(propsJ);
 assert(rows.some((r) => r.cls.split(' ').includes('wcm-current')), 'a mainView-retained session must render as current');
 
 // K: session rename — 0.1.6 only hands out a live binding while retained, so
@@ -457,5 +459,59 @@ let unavailable = '';
 try { await props['sidebar.workspaces'].api.cloneRepository({ url: 'https://x/y.git', parentPath: '/tmp' }); } catch (error) { unavailable = error.message; }
 assert(unavailable === '未找到 git 命令', `the Host reason must surface, got ${JSON.stringify(unavailable)}`);
 
-console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename, Git import');
+// M: sidebar expansion survives a restart. DSH binds Web to a fresh loopback
+// port on every launch, so browser localStorage is per-origin and always empty
+// at boot; the state has to live in the plugin Config. Reopening the program
+// must reproduce exactly what was closed/opened before.
+const restart = freshScope({
+  categories: [{ id: 'c1', name: '客户项目', color: '#4f8cff' }, { id: 'c2', name: '内部工具', color: '#ff8c4f' }],
+  assignments: { a: 'c1' },
+  collapsedCategories: ['c2'],
+  expandedWorkspaces: ['a'],
+});
+props = entriesFor(true, restart.bind);
+hookState = [];
+rows = renderRows(props);
+const folderOf = (name) => rows.find((r) => r.cls.startsWith('wcm-folderRow') && r.el.props.title === name);
+assert(folderOf('内部工具') && !folderOf('内部工具').cls.includes('wcm-open'), 'a category stored as collapsed must come back collapsed');
+assert(folderOf('客户项目') && folderOf('客户项目').cls.includes('wcm-open'), 'a category not stored as collapsed must stay expanded');
+assert(rows.find((r) => r.cls.split(' ').includes('wcm-projectRow')).cls.includes('wcm-open'), 'a project stored as expanded must come back expanded');
+assert(rows.some((r) => r.cls.split(' ').includes('wcm-session')), 'the restored expanded project must render its session rows');
+// closing a category writes the suppression list, idempotently (closing twice cannot double-list it)
+folderOf('客户项目').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+folderOf('客户项目').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+const collapsedWrites = () => calls.filter(([kind, key]) => kind === 'scope.set' && key === 'collapsedCategories').map(([, , value]) => value);
+const lastWrite = collapsedWrites()[collapsedWrites().length - 1];
+assert(JSON.stringify(lastWrite) === JSON.stringify(['c2', 'c1']), `closing a category must persist it once, got ${JSON.stringify(collapsedWrites())}`);
+assert(JSON.stringify(restart.target.collapsedCategories) === JSON.stringify(['c2', 'c1']), 'the persisted config must hold the closed categories');
+// reopening the same config (what the next program launch reads from disk) reproduces it
+props = entriesFor(true, restart.bind);
+hookState = [];
+rows = renderRows(props);
+assert(!folderOf('客户项目').cls.includes('wcm-open') && !folderOf('内部工具').cls.includes('wcm-open'), 'both categories must come back collapsed after the reopen');
+// a stale/dead id must not survive a write, so a long-lived profile cannot grow forever
+restart.target.collapsedCategories = ['c1', 'c2', 'gone'];
+props = entriesFor(true, restart.bind);
+hookState = [];
+rows = renderRows(props);
+folderOf('内部工具').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+assert(JSON.stringify(restart.target.collapsedCategories) === JSON.stringify(['c1']), `removed categories must be pruned, got ${JSON.stringify(restart.target.collapsedCategories)}`);
+
+// N: while the settings form is still loading there is no persisted state to
+// honour, so the list waits instead of flashing every category as expanded and
+// then snapping to the stored layout.
+const loading = { value: undefined, status: 'loading', writable: true };
+const loadingBind = () => ({ subscribe: () => () => {}, getSnapshot: () => loading, set: () => Promise.resolve() });
+props = entriesFor(true, loadingBind);
+hookState = [];
+rows = renderRows(props);
+assert(!rows.some((r) => r.cls === 'wcm-folders'), 'the category tree must wait for the first accepted settings section');
+loading.value = { categories: [{ id: 'c1', name: '客户项目', color: '#4f8cff' }], assignments: {}, collapsedCategories: ['c1'], expandedWorkspaces: [] };
+loading.status = 'ready';
+hookState = [];
+rows = renderRows(props);
+assert(rows.some((r) => r.cls === 'wcm-folders'), 'the tree must appear once the settings section arrives');
+assert(rows.find((r) => r.cls.startsWith('wcm-folderRow')).cls.includes('wcm-open') === false, 'the stored collapsed state must apply on the first real render');
+
+console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename, Git import, restart-stable sidebar expansion');
 

@@ -9,12 +9,13 @@
 - 为 DSH 已注册的 Workspace 分配或移除分类；
 - **从 Git 导入项目**：添加工作区时切换到「从 Git 导入」，选择下载目录、填写 Git 地址（可选分支与目录名）、选择分组后提交，Host 端自动 `git clone` 并把克隆出的目录注册为工作区、归入所选分类、打开新会话；
 - 侧边栏以**三级层级**呈现：**分类文件夹 → 项目 → 会话**。每个分类是一个可展开/收起的文件夹，文件夹图标使用分类颜色区分；未分类项目落在“未分类”文件夹；
+- **展开状态跨启动保持**：分类文件夹与项目行的展开/收起会随 `Config` 落盘，关闭程序时是什么样子，下次打开就还是什么样子（原因见「数据形式」——不能放 `localStorage`）；
 - 侧边栏头部保留**视图选项**（排序方式：手动 / 最近更新）、**添加分类**与**添加工作区**按钮（添加工作区复用 DSH 目录选择流程，选择目录后自动创建并进入新会话；添加分类直接在侧边栏弹出表单，无需跳转设置页）；
 - **右键**分类文件夹弹出**解散分类**菜单：解散后该分类被移除，其下所有项目进入“未分类”；
 - **拖拽**：项目可拖入其它分类文件夹改变归属（也可拖到“未分类”移出分类），拖到项目行上可调整顺序（跨文件夹时同时改归属）；分类文件夹之间可拖拽排序（持久化到分类顺序）；
 - 项目行不显示文件夹图标（窄轨道模式保留），**运行中的项目在行外侧**（左侧留白处）显示追逐动画，不占行宽、完整显示项目名；
 - **右键**项目行 / 会话行弹出管理菜单：项目支持**重命名 / 删除工作区**，会话支持**重命名 / 分叉 / 归档**；
-- 分类和分配关系持久化到本插件 Loader 条目的 `Config`（DSH 0.1.7+ 落进 profile 补丁 `$DSH_HOME/profiles/<profile>/cordis.patch.yml`，旧的 `$DSH_HOME/settings.yaml` 命名空间已随 0.1.7 移除，见「版本兼容」）；
+- 分类、分配关系与侧边栏展开状态持久化到本插件 Loader 条目的 `Config`（DSH 0.1.7+ 落进 profile 补丁 `$DSH_HOME/profiles/<profile>/cordis.patch.yml`，旧的 `$DSH_HOME/settings.yaml` 命名空间已随 0.1.7 移除，见「版本兼容」）；
 - 使用稳定的 Workspace ID，而不是目录路径，因此重命名显示标题不会丢失分类。
 
 ## 安全与限制
@@ -74,9 +75,18 @@ workspace-category-manager:
       color: '#4f8cff'
   assignments:
     workspace-stable-id: client-projects
+  # 侧边栏展开状态：只记录「非默认」的那一侧
+  collapsedCategories: []   # 列在这里的分类是收起的，其它保持展开
+  expandedWorkspaces: []    # 列在这里的项目是展开的，其它保持收起
 ```
 
 删除一个分类会自动移除其项目分配；项目目录、Workspace 本身及其会话不会受影响。
+
+### 侧边栏展开状态为什么放在这里
+
+展开/收起状态**不能**放在浏览器 `localStorage`：DSH 每次启动都会给 Web 服务分配一个**新的回环端口**，而 `localStorage` 按 origin（含端口）隔离，所以新端口下的存储永远是空的——分类会全部重新展开。
+
+因此这两项作为 `Config` 字段随分类、分配关系一起落盘（`$DSH_HOME/profiles/<profile>/cordis.patch.yml`），下次启动时按磁盘上的值恢复：**关闭时怎么样，打开时就是怎么样**。两个字段都只保存「非默认」的一侧（`collapsedCategories` / `expandedWorkspaces`），删掉的分类和已删除项目会在下次写入时自动清理，不会无限增长。
 
 ## 开发与构建
 
@@ -113,6 +123,9 @@ pnpm build && pnpm test
 node --check ./index.js
 node ./scripts/validate.mjs
 ```
+
+`validate` 会顺手守住本次的回归点：Host `Config` 必须声明 `collapsedCategories` / `expandedWorkspaces`，且侧边栏与 `utils.ts` 不得再出现 `localStorage` 读写（否则展开状态又会在换端口后丢失）。
+
 
 ## 版本兼容（重要）
 
