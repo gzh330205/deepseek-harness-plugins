@@ -111,6 +111,12 @@ function createDshApi(ctx) {
     const result = await face.rename(title);
     if (result.ok === false) throw new Error(result.error.message);
   };
+  const forkSession = (sessionId) => {
+    if (hasUi("forkSession")) return uiWorkspace().forkSession(sessionId);
+    return sessions.fork({ sessionId, increaseTitle: true }).then((childId) => {
+      openSession(childId);
+    });
+  };
   const archiveSession = (sessionId) => {
     const uw = uiWorkspace();
     if (has(uw, "archiveSession")) return uw.archiveSession(sessionId);
@@ -154,7 +160,7 @@ function createDshApi(ctx) {
     canPickDirectory: () => hasUi("pickDirectory") || has(workspaces, "pickDirectory"),
     sessionStatus,
     openSession,
-    forkSession: (opts) => sessions.fork(opts),
+    forkSession,
     renameSession,
     createWorkspace: (input) => workspaces.create(input),
     renameWorkspace: (workspaceId2, title) => workspaces.rename(workspaceId2, title),
@@ -692,14 +698,14 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
     }
   };
   const forkSession = (sessionId) => {
-    api.forkSession({ sessionId, increaseTitle: true }).then((childId) => {
-      api.openSession(childId);
-    }).catch(() => {
+    const started = api.forkSession(sessionId);
+    if (started !== void 0 && started !== null) Promise.resolve(started).catch((reason) => {
+      setFailure(errText(reason));
     });
   };
   const archiveSession = (sessionId) => {
     api.archiveSession(sessionId).catch((reason) => {
-      setFailure(reason instanceof Error ? reason.message : String(reason));
+      setFailure(errText(reason));
     });
   };
   const menuItem = (label, danger, onPick) => (0, import_react10.createElement)("button", { className: `wcm-menuItem${danger ? " wcm-menuDanger" : ""}`, onClick: () => {

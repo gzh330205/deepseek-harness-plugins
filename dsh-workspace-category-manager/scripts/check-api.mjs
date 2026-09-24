@@ -114,12 +114,23 @@ for (const m of pluginApiSrc.matchAll(/\b(uiWorkspace|workspaces|sessions)\.([a-
   if (!methodTokens.has(m[1])) methodTokens.set(m[1], new Set());
   methodTokens.get(m[1]).add(m[2]);
 }
+/* The adapter guards lazy services with has(uw, 'x') / hasUi('x') before calling
+ * them — the same token, spelled through the helper. Without this arm a new
+ * guarded capability (uiWorkspace.forkSession) never reaches the contract scan. */
+for (const m of pluginApiSrc.matchAll(/\bhasUi\('([a-zA-Z]+)'\)/g)) {
+  if (!methodTokens.has('uiWorkspace')) methodTokens.set('uiWorkspace', new Set());
+  methodTokens.get('uiWorkspace').add(m[1]);
+}
+for (const m of pluginApiSrc.matchAll(/\bhas\(\s*uw\s*,\s*'([a-zA-Z]+)'\s*\)/g)) {
+  if (!methodTokens.has('uiWorkspace')) methodTokens.set('uiWorkspace', new Set());
+  methodTokens.get('uiWorkspace').add(m[1]);
+}
 for (const svc of serviceTokens) {
   check(`adapter uses service "${svc}"`, providerOf.has(svc), `no provider found for ${svc}`);
 }
 // Fallback branches: a missing token only means the legacy path is unavailable.
 const SOFT = new Set([
-  'uiWorkspace.openSession', 'uiWorkspace.startSession', 'uiWorkspace.pickDirectory', 'uiWorkspace.archiveSession',
+  'uiWorkspace.openSession', 'uiWorkspace.startSession', 'uiWorkspace.pickDirectory', 'uiWorkspace.archiveSession', 'uiWorkspace.forkSession',
   'workspaces.startSession', 'workspaces.pickDirectory', 'sessions.open',
 ]);
 for (const [svc, methods] of methodTokens) {

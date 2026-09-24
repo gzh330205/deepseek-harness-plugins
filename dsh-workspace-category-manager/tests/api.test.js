@@ -47,6 +47,7 @@ const React = {
 };
 
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 let captured = null;
 globalThis.window = { __ModuleLoader__: { load: (m) => { captured = m; } } };
@@ -91,7 +92,7 @@ const servicesFor = (withUiWorkspace) => {
     archiveSession: (id) => { calls.push(['workspaces.archiveSession', id]); return Promise.resolve(); },
   };
   const uiWorkspace = modern
-    ? { openSession: (id) => calls.push(['uiWorkspace.openSession', id]), startSession: (id) => calls.push(['uiWorkspace.startSession', id]), archiveSession: (id) => { calls.push(['uiWorkspace.archiveSession', id]); return Promise.resolve(); }, pickDirectory: () => { calls.push(['uiWorkspace.pickDirectory']); return Promise.resolve('/tmp/n'); } }
+    ? { openSession: (id) => calls.push(['uiWorkspace.openSession', id]), startSession: (id) => calls.push(['uiWorkspace.startSession', id]), forkSession: (id) => { calls.push(['uiWorkspace.forkSession', id]); return Promise.resolve(); }, archiveSession: (id) => { calls.push(['uiWorkspace.archiveSession', id]); return Promise.resolve(); }, pickDirectory: () => { calls.push(['uiWorkspace.pickDirectory']); return Promise.resolve('/tmp/n'); } }
     : {};
   const uiSession = modern ? { sessionStatus: store(statuses) } : { pendingInteractions: store(pending) };
   return { workspaces, sessions, uiWorkspace, uiSession, statuses, pending, setList: (next) => { list = next; } };
@@ -312,6 +313,39 @@ rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar
 texts = menuTexts(rows);
 assert(texts.includes('rename') && texts.includes('fork') && texts.includes('archive'), 'session context menu should offer rename + fork + archive');
 
+// G2: the fork row must reach the fork capability. 0.1.7's UiWorkspace owns
+// forking (uiWorkspace.forkSession → sessions.fork({sessionId, increaseTitle})
+// and it is a Promise<void> that resolves after the child is catalogued), so the
+// adapter must ask the view owner rather than reach past it.
+props = entriesFor(true);
+hookState = [];
+for (const row of renderRows(props)) if (row.cls.includes('wcm-projectRow') && row.cls.includes('wcm-open')) row.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+rows = expandProjects(props);
+rows.find((r) => r.cls.split(' ').includes('wcm-session')).el.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 40, clientY: 50 });
+hookIndex = 0;
+rows = collectSimple(props['component:sidebar.workspaces']({ api: props['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+calls.length = 0;
+/* The clickable row is the button; the text span is its child. */
+const menuRowWith = (label) => rows.find((r) => r.cls === 'wcm-menuItem' && r.el.props.children?.props?.children === label);
+const forkItem = menuRowWith('fork');
+assert(forkItem, 'the session context menu must offer fork');
+forkItem.el.props.onClick({ stopPropagation() {} });
+await tick();
+assert(calls.some(([k, id]) => k === 'uiWorkspace.forkSession' && id === 's1'), `fork must go through uiWorkspace in 0.1.7, got ${JSON.stringify(calls)}`);
+// legacy (<0.1.6): no view owner — the child id comes back and is opened
+const legacyFork = entriesFor(false);
+hookState = [];
+for (const row of renderRows(legacyFork)) if (row.cls.includes('wcm-projectRow') && row.cls.includes('wcm-open')) row.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+rows = expandProjects(legacyFork);
+rows.find((r) => r.cls.split(' ').includes('wcm-session')).el.props.onContextMenu({ preventDefault() {}, stopPropagation() {}, clientX: 40, clientY: 50 });
+hookIndex = 0;
+rows = collectSimple(legacyFork['component:sidebar.workspaces']({ api: legacyFork['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }));
+calls.length = 0;
+rows.find((r) => r.cls === 'wcm-menuItem' && r.el.props.children?.props?.children === 'fork').el.props.onClick({ stopPropagation() {} });
+await tick();
+assert(calls.some(([k, opts]) => k === 'sessions.fork' && opts.sessionId === 's1' && opts.increaseTitle === true), `legacy fork must fall back to sessions.fork, got ${JSON.stringify(calls)}`);
+assert(calls.some(([k, id]) => k === 'sessions.open' && id === 'child1'), 'legacy fork must open the returned child through the legacy selection call');
+
 // H: waiting-for-human sessions must show AMBER, overriding running.
 // 0.1.6+ shape: uiSession.sessionStatus → { running, pendingInteraction, completionUnread }
 const svcH = servicesFor(true);
@@ -410,7 +444,6 @@ globalThis.fetch = async (url, init = {}) => {
 };
 const tPath = (key, params) => (params !== undefined && typeof params.path === 'string' ? `${key}:${params.path}` : key);
 const renderSidebar = (rendered, t) => { hookIndex = 0; return collectSimple(rendered['component:sidebar.workspaces']({ api: rendered['sidebar.workspaces'].api, wide: true, t, expandSidebar: () => {} })); };
-const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 props = entriesFor(true);
 hookState = [];
 rows = renderSidebar(props, tPath);

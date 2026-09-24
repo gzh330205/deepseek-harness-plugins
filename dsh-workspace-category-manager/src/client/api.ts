@@ -83,6 +83,20 @@ export function createDshApi(ctx) {
         if (result.ok === false) throw new Error(result.error.message);
       };
       /**
+       * Fork a Session. 0.1.6+ moved forking to the view owner too:
+       * uiWorkspace.forkSession resolves only after the child is catalogued
+       * (with an incremented inherited title) and deliberately leaves the
+       * current selection alone. Reaching past it to sessions.fork loses that
+       * bookkeeping and hands the caller a child it then has to open by hand,
+       * so the owner comes first and the controller stays the legacy fallback
+       * (<=0.1.2 had no owner, so there the returned child id is opened).
+       */
+      const forkSession = (sessionId) => {
+        /* hasUi() also keeps the token greppable for scripts/check-api.mjs. */
+        if (hasUi('forkSession')) return uiWorkspace().forkSession(sessionId);
+        return sessions.fork({ sessionId, increaseTitle: true }).then((childId) => { openSession(childId); });
+      };
+      /**
        * Archive a Session. 0.1.6+ also clears the Conversation panel when the
        * archived Session is the one on screen, so that policy must be asked of
        * uiWorkspace rather than applied to the controller directly.
@@ -132,7 +146,7 @@ export function createDshApi(ctx) {
         canPickDirectory: () => hasUi('pickDirectory') || has(workspaces, 'pickDirectory'),
         sessionStatus,
         openSession,
-        forkSession: (opts) => sessions.fork(opts),
+        forkSession,
         renameSession,
         createWorkspace: (input) => workspaces.create(input),
         renameWorkspace: (workspaceId, title) => workspaces.rename(workspaceId, title),
