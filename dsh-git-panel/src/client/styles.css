@@ -983,6 +983,9 @@
   flex: none;
 }
 
+/* min-height 必须等于 HistoryView.tsx 的 ROW_HEIGHT（validate.mjs 断言）。
+   纵向内边距放在 .dgp-commitinfo 上而不是行上：行一旦有纵向内边距，提交图就铺不满
+   整行，相邻两行之间会露出断口（validate.mjs 也会拦这个）。 */
 .dgp-commititem {
   align-items: center;
   background: none;
@@ -991,7 +994,7 @@
   cursor: pointer;
   display: flex;
   gap: 4px;
-  min-height: 34px;
+  min-height: 46px;
   padding: 0 8px 0 2px;
   text-align: left;
   width: 100%;
@@ -1002,8 +1005,19 @@
 }
 
 .dgp-graph {
+  align-self: stretch;
+  display: block;
   flex: none;
+  position: relative;
+}
+
+.dgp-graphlanes {
+  display: block;
+  height: 100%;
+  inset: 0;
   overflow: visible;
+  position: absolute;
+  width: 100%;
 }
 
 .dgp-lane {
@@ -1017,26 +1031,43 @@
 .dgp-lane-3 { stroke: var(--dgp-lane-3); }
 .dgp-lane-4 { stroke: var(--dgp-lane-4); }
 
-.dgp-lane-fill-0 { fill: var(--dgp-lane-0); }
-.dgp-lane-fill-1 { fill: var(--dgp-lane-1); }
-.dgp-lane-fill-2 { fill: var(--dgp-lane-2); }
-.dgp-lane-fill-3 { fill: var(--dgp-lane-3); }
-.dgp-lane-fill-4 { fill: var(--dgp-lane-4); }
+.dgp-lane-fill-0 { background-color: var(--dgp-lane-0); }
+.dgp-lane-fill-1 { background-color: var(--dgp-lane-1); }
+.dgp-lane-fill-2 { background-color: var(--dgp-lane-2); }
+.dgp-lane-fill-3 { background-color: var(--dgp-lane-3); }
+.dgp-lane-fill-4 { background-color: var(--dgp-lane-4); }
 
+/* 圆点是 HTML 元素（不是 svg circle）：泳道被纵向拉伸时它仍然是正圆。 */
 .dgp-dot {
-  stroke: var(--dsw-alias-bg-base, #fff);
-  stroke-width: 1.2;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.2px var(--dsw-alias-bg-base, #fff);
+  height: 7.2px;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 7.2px;
 }
 
 .dgp-commitinfo {
   display: flex;
-  flex-direction: column;
   flex: auto;
-  gap: 1px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 6px 0;
+}
+
+.dgp-subjectline {
+  align-items: center;
+  display: flex;
+  gap: 6px;
   min-width: 0;
 }
 
+/* 主题先被压缩（省出空间给 refs 徽标），徽标不被压缩。 */
 .dgp-commitsubject {
+  flex: 0 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1064,9 +1095,10 @@
 
 .dgp-decor {
   display: flex;
-  flex-wrap: wrap;
+  flex: none;
   gap: 3px;
-  margin-top: 1px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .dgp-decoritem {

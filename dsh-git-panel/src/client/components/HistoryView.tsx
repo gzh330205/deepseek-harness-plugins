@@ -13,8 +13,12 @@ import { DiffView } from './DiffView.jsx';
 import { IconBack, IconBranch, IconChevron, IconExternal, IconRefresh } from './icons.jsx';
 import { HISTORY_PAGE_SIZE } from '../constants.js';
 
-const ROW_HEIGHT = 34;
+/** 每个提交行的基准高度（px）。必须与 styles.css 里 `.dgp-commititem` 的 min-height 一致，
+ *  否则泳道连不上——validate.mjs 会断言这两个数字相等。 */
+const ROW_HEIGHT = 46;
 const LANE_WIDTH = 12;
+/** 泳道从 svg 左边缘起算的留白（与下方 d 属性里的 `+ 6` 必须一致）。 */
+const GRAPH_INSET = 6;
 
 export interface HistoryViewProps {
   root: string;
@@ -31,25 +35,33 @@ export interface HistoryViewProps {
   busy: string;
 }
 
+/**
+ * 一行的提交图：泳道线段 + 该行的圆点。
+ *
+ * 线段按 ROW_HEIGHT 画进 viewBox，再用 `preserveAspectRatio="none"` + `height:100%`
+ * 拉到行的实际高度——这样即使某行被内容撑高（字号调大、长 refs），相邻行的线也接得上、
+ * 不会出现断口。`vector-effect="non-scaling-stroke"` 保证拉伸不会把线拉粗。
+ * 圆点放在 SVG 外面：拉伸只该作用于线段，圆点必须是正圆。
+ */
 function Graph({ rows, lanes }: { rows: GraphRow[]; lanes: number }) {
+  const width = lanes * LANE_WIDTH + GRAPH_INSET * 2;
+  const lane = (rows[0]?.lane ?? 0) * LANE_WIDTH + GRAPH_INSET;
   return (
-    <svg className="dgp-graph" width={lanes * LANE_WIDTH + 6} height={ROW_HEIGHT} aria-hidden>
-      {rows.map((row, index) =>
-        row.strokes.map((stroke, strokeIndex) => (
-          <path
-            key={`${index}-${strokeIndex}`}
-            className={`dgp-lane dgp-lane-${stroke.color}`}
-            d={`M ${stroke.x1 * LANE_WIDTH + 6} ${stroke.y1 * ROW_HEIGHT} L ${stroke.x2 * LANE_WIDTH + 6} ${stroke.y2 * ROW_HEIGHT}`}
-          />
-        )),
-      )}
-      <circle
-        className={`dgp-dot dgp-lane-fill-${rows[0]?.color ?? 0}`}
-        cx={(rows[0]?.lane ?? 0) * LANE_WIDTH + 6}
-        cy={ROW_HEIGHT / 2}
-        r={3.6}
-      />
-    </svg>
+    <span className="dgp-graph" style={{ width }}>
+      <svg className="dgp-graphlanes" width={width} height="100%" viewBox={`0 0 ${width} ${ROW_HEIGHT}`} preserveAspectRatio="none" aria-hidden>
+        {rows.map((row, index) =>
+          row.strokes.map((stroke, strokeIndex) => (
+            <path
+              key={`${index}-${strokeIndex}`}
+              className={`dgp-lane dgp-lane-${stroke.color}`}
+              vectorEffect="non-scaling-stroke"
+              d={`M ${stroke.x1 * LANE_WIDTH + GRAPH_INSET} ${stroke.y1 * ROW_HEIGHT} L ${stroke.x2 * LANE_WIDTH + GRAPH_INSET} ${stroke.y2 * ROW_HEIGHT}`}
+            />
+          )),
+        )}
+      </svg>
+      <span className={`dgp-dot dgp-lane-fill-${rows[0]?.color ?? 0}`} style={{ left: lane }} />
+    </span>
   );
 }
 
@@ -361,13 +373,15 @@ export function HistoryView(props: HistoryViewProps) {
           <button type="button" className="dgp-commititem" key={commit.hash} onClick={() => void openDetail(commit.hash)} title={commit.subject}>
             <Graph rows={[commit.graph]} lanes={graph.lanes} />
             <span className="dgp-commitinfo">
-              <span className="dgp-commitsubject">{commit.subject}</span>
+              <span className="dgp-subjectline">
+                <span className="dgp-commitsubject">{commit.subject}</span>
+                <DecorationBadges commit={commit} />
+              </span>
               <span className="dgp-commitmeta">
                 <span className="dgp-hash">{commit.shortHash}</span>
                 <span className="dgp-ellipsis">{commit.author}</span>
                 <span className="dgp-commitwhen">{relativeTime(commit.authoredAt)}</span>
               </span>
-              <DecorationBadges commit={commit} />
             </span>
           </button>
         ))}

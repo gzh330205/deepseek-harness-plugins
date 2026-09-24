@@ -149,7 +149,7 @@ body{margin:0;background:#f4f5f7;font-family:var(--dsw-font-family);color:var(--
 .label{font:12px/1.4 monospace;color:#61666b;margin:0 0 6px;}
 .column{display:flex;flex-direction:column;}
 </style><style>${css}</style></head><body><div class="frame">${panels
-  .map((panel) => `<div class="column"><p class="label">${panel.label}</p><div class="pane" style="width:${panel.width}px">${panel.html}</div></div>`)
+  .map((panel) => `<div class="column"><p class="label">${panel.label}</p><div class="pane" style="width:${panel.width}px"><div class="dgp">${panel.html}</div></div></div>`)
   .join('')}</div></body></html>`;
 
 const pages = {

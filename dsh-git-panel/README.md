@@ -97,6 +97,48 @@ DSH Web 右侧栏的 **Git 面板**：在一个侧栏页里看当前待提交的
 > **外层 chrome 不是真实界面**（标签条、面板宽度、窗口标题栏由 DSH 自己画），
 > 真实观感请在重启后的侧栏里核对。
 
+### 与宿主面板对齐（像素级）
+
+面板骨架照宿主内建「文件」页（`dsh-client-ui-sidebar-files`）的尺寸来，**文字列必须重合**：
+
+| 位置 | 宿主「文件」页 | 本插件 |
+|---|---|---|
+| 头部文字 | `left = 528`（面板内边距 16px） | 仓库名 / 分支名同为 528 |
+| 列表行首图标 | `left = 530` | 变更状态字母同为 530 |
+| 列表行文件名 | `left = 552` | 文件名同为 552 |
+| 头部高 / 分隔线 | `38px` / `.5px solid border-l3` | 相同 |
+| 面板内页签 | 13px/500、`label-tertiary` → `state-business-primary`、2px 下划线 | 相同 |
+
+两个关键陷阱都踩过：
+
+1. **头部不要放前置图标**。图标本身在 528，但会把文字推到 547——和「文件」页的路径文字差
+   19px，肉眼一眼就看出来没对齐。分支行同理。
+2. **状态字母要占满 16px**（宿主列表的图标位宽度），否则文件名落在 548 而不是 552。
+
+`dsh-run-env-manager` 也按同一份尺寸改过（头部 38px + 工作区名 + 刷新、页签同款下划线、
+正文左内边距 16px），所以三个页签并排是齐的。
+
+### 提交图的几何约束
+
+提交图最容易「看着还行、其实断了」，所以三条约束都进了 `validate.mjs`：
+
+1. `HistoryView.tsx` 的 `ROW_HEIGHT` 必须等于 CSS `.dgp-commititem` 的 `min-height`；
+2. 泳道线段按 `ROW_HEIGHT` 画进 viewBox，再用 `preserveAspectRatio="none"` 纵向拉伸到行高
+   （`vector-effect="non-scaling-stroke"` 保证线不被拉粗），因此某一行被内容撑高也不会断线；
+   圆点是 HTML 元素而不是 `<circle>`——纵向拉伸会把 circle 压成椭圆；
+3. **行上不能有纵向内边距**（否则提交图铺不满整行，相邻行之间露出断口），纵向留白放在
+   `.dgp-commitinfo` 上。
+
+当前行高 46px；每行两条（主题 + refs 徽标同行，下面一行是 hash / 作者 / 时间），行距均匀。
+
+### 关于样式的一个坑（已加回归断言）
+
+`.dgp-commit` 这个类名一度同时用在「变更页的提交框」和「历史页的提交行」上：提交框是
+`flex-direction: column` + 边框 + 外边距，提交行是 `align-items: center`，两者叠加后
+**历史列表每一行都变成居中且带边框的卡片**。这类问题在没有浏览器的单测里看不出来，所以
+`scripts/validate.mjs` 现在会检查「同一个类是否被定义成两套规则」，并且 `tests/render.test.js`
+会真正渲染**有数据的**历史页与工作树页（而不只是空壳）。
+
 ## 安装
 
 在**本仓库根目录**执行：
@@ -216,7 +258,7 @@ pnpm test           # 纯解析 / 泳道 / 契约 / 真实 git 集成 / HTTP 接
 pnpm run validate   # 脚手架约定 + i18n key 完整性回归断言
 ```
 
-测试覆盖（共 8 个文件、377 条断言；没有 git 时集成用例自动 SKIP）：
+测试覆盖（共 8 个文件、380 条断言；没有 git 时集成用例自动 SKIP）：
 
 - `tests/parse.test.js`：porcelain v2 `-z`、`--numstat -z` 的 rename 怪形态、
   `diff-tree --name-status -z`、log 记录、worktree porcelain、for-each-ref、统一 diff

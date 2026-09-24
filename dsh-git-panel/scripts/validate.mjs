@@ -107,6 +107,27 @@ for (const match of stylesCode.matchAll(/(^|\})([^{}@]+)\{/g)) {
   }
 }
 
+// 提交图的行高常量必须和 CSS 的行高一致：泳道是按 ROW_HEIGHT 画进 viewBox 再纵向
+// 拉伸到行高的，两边数字不一致时相邻行的线会断开（提交图最常见的静默坏法）。
+{
+  const history = readFileSync(new URL('../src/client/components/HistoryView.tsx', import.meta.url), 'utf8');
+  const rowHeight = /const ROW_HEIGHT = (\d+);/.exec(history)?.[1];
+  const cssRowHeight = /\.dgp-commititem \{[^}]*min-height: (\d+)px/.exec(stylesCode)?.[1];
+  check(
+    `提交图行高一致（HistoryView ROW_HEIGHT=${rowHeight} vs .dgp-commititem min-height=${cssRowHeight}）`,
+    rowHeight !== undefined && rowHeight === cssRowHeight,
+  );
+  check('提交图泳道随行高拉伸（preserveAspectRatio=none + non-scaling-stroke）', history.includes('preserveAspectRatio="none"') && history.includes('vectorEffect="non-scaling-stroke"'));
+  check('提交图圆点不在 svg 里（拉伸不会把它压成椭圆）', !/<circle[^>]*className=\{?`?dgp-dot/.test(history));
+
+  // 行本身不能有纵向内边距：提交图是 align-self: stretch 铺满行的，行一旦上下留白，
+  // 相邻行的泳道之间就会露出断口。纵向留白应放在 .dgp-commitinfo 上。
+  const itemPad = /\.dgp-commititem \{[^}]*padding: ([^;]+);/.exec(stylesCode)?.[1]?.trim() ?? '';
+  const infoPad = /\.dgp-commitinfo \{[^}]*padding: ([^;]+);/.exec(stylesCode)?.[1]?.trim() ?? '';
+  check(`.dgp-commititem 不留纵向内边距（当前 padding: ${itemPad}）`, itemPad.startsWith('0'), itemPad);
+  check(`.dgp-commitinfo 承担纵向留白（当前 padding: ${infoPad}）`, /^\d/.test(infoPad) && !infoPad.startsWith('0'), infoPad);
+}
+
 /* ── i18n：组件里用到的字面量 key 必须在两套词典里都存在 ───────────────── */
 
 const dictionaries = read('src/client/locales.ts');

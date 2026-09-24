@@ -125,7 +125,7 @@ node --check ./client.js   # web-auth 为纯 Host 插件，无 client.js
 cd dsh-git-panel            # 或 dsh-run-env-manager
 pnpm install --ignore-scripts
 pnpm run build              # esbuild 打包 src/client → lib/client.js
-pnpm test                   # 8 个测试文件 / 377 条断言
+pnpm test                   # 8 个测试文件 / 380 条断言
 pnpm run typecheck          # tsc --noEmit
 pnpm run validate           # 脚手架约定 + i18n key 完整性 + 样式同名类冲突回归断言
 pnpm run preview            # 生成 README 截图用的独立渲染 HTML（仅 dsh-git-panel）

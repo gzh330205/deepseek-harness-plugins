@@ -278,6 +278,9 @@ try {
   check('历史：渲染出提交行', historyPage.html.includes('dgp-commititem'), historyPage.html.slice(0, 300));
   check('历史：主题 / 短 hash / 作者 / 时间都在', ['feat(app): 支持导出按钮', 'aaaaaaa', 'Dev'].every((text) => historyPage.html.includes(text)), '');
   check('历史：提交图泳道', historyPage.html.includes('dgp-graph') && historyPage.html.includes('dgp-lane'), '');
+  check('历史：泳道按行高拉伸（preserveAspectRatio=none + non-scaling-stroke）', historyPage.html.includes('preserveAspectRatio="none"') && historyPage.html.includes('non-scaling-stroke'), '');
+  check('历史：圆点是行内元素而不是 svg circle', historyPage.html.includes('class="dgp-dot') && !/<circle[^>]*dgp-dot/.test(historyPage.html), '');
+  check('历史：refs 徽标与主题同行（行高均匀，不再多占一行）', /class="dgp-subjectline"[\s\S]{0,400}?class="dgp-decor"/.test(historyPage.html), '');
   check('历史：refs 装饰', historyPage.html.includes('v1.0') && historyPage.html.includes('main'), '');
   check('历史：有「对齐左」的提交行类（不是提交框）', !historyPage.html.includes('dgp-commitbox'), '');
   check('历史：加载更多按钮', historyPage.html.includes('dgp-more'), '');
