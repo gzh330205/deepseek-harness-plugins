@@ -44,6 +44,8 @@ const React = {
     return hookState[i];
   },
   useSyncExternalStore(subscribe, getSnapshot) { return getSnapshot(); },
+  /* The sidebar retires its optimistic expansion overrides in an effect. */
+  useEffect() {},
 };
 
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -222,10 +224,12 @@ assert(rows.filter((r) => r.cls === 'wcm-rowChevron').length >= 2, 'chevrons mus
 assert(!rows.some((r) => r.cls === 'wcm-wsSlot'), 'no dedicated status slots anymore');
 assert(rows.filter((r) => r.cls.includes('wcm-wsBadge') && r.cls.includes('wcm-ws-running')).length >= 2, 'running must show blue corner badges on category + project rows');
 assert(rows.some((r) => r.cls === 'wcm-rowIcon'), 'icons must stay (not be replaced by the dot)');
-assert(!rows.some((r) => r.cls === 'wcm-dotMatrix'), 'chase must not appear on collapsed category/project rows');
-// expand the project — the running session row keeps the chase animation
+/* The session container is always mounted now (the CSS transition needs it), so
+ * a collapsed project hides the chase instead of unmounting it. */
+assert(rows.filter((r) => r.cls === 'wcm-sessions wcm-closed').length >= 1, 'a collapsed project must render its session container closed');
 rows = expandProjects(props);
 assert(rows.some((r) => r.cls === 'wcm-dotMatrix'), 'session row must keep the chase animation');
+assert(rows.some((r) => r.cls.startsWith('wcm-sessions') && !r.cls.includes('wcm-closed')), 'the expanded project must expose its session container');
 assert(rows.filter((r) => r.cls === 'wcm-dotMatrix').length === 1, 'chase must appear only on the running session row');
 // done state -> corner badges on category + project, halo dot on the session row
 props = entriesFor(true);
@@ -546,5 +550,40 @@ rows = renderRows(props);
 assert(rows.some((r) => r.cls === 'wcm-folders'), 'the tree must appear once the settings section arrives');
 assert(rows.find((r) => r.cls.startsWith('wcm-folderRow')).cls.includes('wcm-open') === false, 'the stored collapsed state must apply on the first real render');
 
-console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename, Git import, restart-stable sidebar expansion');
+// O: a toggle must repaint from the click, not after the Config round trip.
+// The settings write is a remote call, so rendering straight from the Config
+// made every folder wait (and look frozen) before it moved; both containers stay
+// mounted so the CSS transition has something to animate.
+const live = freshScope({
+  categories: [{ id: 'c1', name: '客户项目', color: '#4f8cff' }],
+  assignments: { a: 'c1' },
+  collapsedCategories: ['c1'],
+  expandedWorkspaces: [],
+});
+const renderLive = () => {
+  props = entriesFor(true, live.bind);
+  hookState = [];
+  return renderRows(props);
+};
+const rowFor = (rendered, name) => rendered.find((r) => r.cls.startsWith('wcm-folderRow') && r.el.props.title === name);
+const containerFor = (rendered, name) => {
+  const wrap = rendered.find((r) => r.cls === 'wcm-folderWrap' && [].concat(r.el.props.children).some((c) => c && c.props && c.props.title === name));
+  return [].concat(wrap.el.props.children).find((c) => c && c.props && String(c.props.className).includes('wcm-folderProjects'));
+};
+rows = renderLive();
+assert(!rowFor(rows, '客户项目').cls.includes('wcm-open'), 'a category stored as collapsed must render collapsed');
+assert(containerFor(rows, '客户项目').props.className.includes('wcm-closed'), 'the collapsed container must carry the transition class');
+assert(containerFor(rows, '客户项目').props['aria-hidden'] === 'true', 'a closed container must be hidden from assistive tech');
+// click -> the very next render already shows it open, before any Config change
+rowFor(rows, '客户项目').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+rows = renderLive();
+assert(rowFor(rows, '客户项目').cls.includes('wcm-open'), 'the clicked category must repaint immediately');
+assert(!containerFor(rows, '客户项目').props.className.includes('wcm-closed'), 'the clicked container must open immediately');
+assert(containerFor(rows, '客户项目').props['aria-hidden'] === undefined, 'the opened container must be exposed again');
+// the click still reaches the Config, and a fresh mount keeps the same state
+rows = renderLive();
+assert(rowFor(rows, '客户项目').cls.includes('wcm-open'), 'the reopened category must stay open on a fresh mount');
+assert(containerFor(rows, '客户项目').props.className.includes('wcm-closed') === false, 'the reopened container must stay open on a fresh mount');
+
+console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename, Git import, restart-stable sidebar expansion, optimistic animated toggles');
 

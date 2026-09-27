@@ -50,7 +50,19 @@ var styles_default = `
 .wcm-formFieldRow{display:flex;gap:8px}
 .wcm-formFieldRow .wcm-form-field{flex:1;min-width:0}
 .wcm-hint{margin:0;font-size:12px;line-height:16px;color:var(--dsw-alias-label-tertiary);word-break:break-all}
-.wcm-cloning{color:var(--dsw-alias-brand-primary)}`;
+.wcm-cloning{color:var(--dsw-alias-brand-primary)}
+/* Expand/collapse animation. Both containers stay mounted so the transition has
+   something to animate; the closed state collapses the grid track to 0fr (the
+   modern "animate to auto" technique), which keeps the panel height exact at any
+   number of rows. The border-left lives on a pseudo-element because it would
+   otherwise keep its own width while the track is animating. */
+.wcm-sessions,.wcm-folderProjects{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows .18s ease,opacity .18s ease}
+.wcm-sessions.wcm-closed,.wcm-folderProjects.wcm-closed{grid-template-rows:0fr;opacity:0;pointer-events:none}
+.wcm-sessions>*,.wcm-folderProjects>*{min-height:0;overflow:hidden}
+.wcm-folderProjects{position:relative}
+.wcm-folderProjects>div::before{content:'';position:absolute;top:0;bottom:4px;left:-9px;width:1px;background:var(--dsw-alias-border-l2)}
+@media (prefers-reduced-motion:reduce){.wcm-sessions,.wcm-folderProjects{transition:none}}
+`;
 
 // src/client/constants.ts
 var NS = "settings.workspaceCategories";
@@ -217,6 +229,8 @@ var retainIds = (ids, existingIds) => {
   const known = existingIds instanceof Set ? existingIds : new Set(existingIds);
   return [...ids].filter((id) => known.has(id));
 };
+var overrideGeneration = 0;
+var nextOverrideGeneration = () => overrideGeneration += 1;
 function persistExpansion(scope, field, ids) {
   try {
     return Promise.resolve(scope.set(field, ids)).then(void 0, () => {
@@ -385,7 +399,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const sessionState = useSessionsSnapshot(api.sessionsList);
   const config = configOf(scope);
   const [failure, setFailure] = import_react9.default.useState("");
-  const [expandedIds, setExpandedIds] = import_react9.default.useState({});
+  const [collapseOverrides, setCollapseOverrides] = import_react9.default.useState({});
   const [orderBy, setOrderBy] = import_react9.default.useState("manual");
   const [menuOpen, setMenuOpen] = import_react9.default.useState(false);
   const [addError, setAddError] = import_react9.default.useState(null);
@@ -408,30 +422,67 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const [dissolveBusy, setDissolveBusy] = import_react9.default.useState(false);
   const [dissolveError, setDissolveError] = import_react9.default.useState("");
   const dragRef = import_react9.default.useRef({ kind: null, id: null, el: null, over: null });
+  const pendingOverrides = import_react9.default.useRef(/* @__PURE__ */ new Map());
   const list = workspaceState.items ?? [];
   const byId = sessionState.byId ?? {};
   const currentId = currentSessionId(sessionState);
   const sessionStatuses = useSessionStatuses(api);
   const startSession = (workspace) => api.startSession(workspaceId(workspace));
   const openSession = (sessionId) => api.openSession(sessionId);
-  const collapsedSet = closedCategories(config);
-  const workspaceSet = openWorkspaces(config);
+  const persistedCollapsed = closedCategories(config);
+  const persistedWorkspaces = openWorkspaces(config);
   const idsOfCategories = () => /* @__PURE__ */ new Set(["__uncategorized__", ...config.categories.map((category) => category.id)]);
   const idsOfWorkspaces = () => new Set(list.map((workspace) => workspaceId(workspace)));
+  const isCollapsed = (id) => {
+    const entry = collapseOverrides[id];
+    return entry === void 0 || entry.field !== COLLAPSED_CATEGORIES_FIELD ? persistedCollapsed.has(id) : entry.value;
+  };
+  const isWorkspaceOpen = (id) => {
+    const entry = collapseOverrides[id];
+    return entry === void 0 || entry.field !== EXPANDED_WORKSPACES_FIELD ? persistedWorkspaces.has(id) : entry.value;
+  };
+  import_react9.default.useEffect(() => {
+    const ids = Object.keys(collapseOverrides);
+    if (ids.length === 0) return;
+    const known = idsOfCategories();
+    const knownWorkspaces = idsOfWorkspaces();
+    const survivor = {};
+    for (const id of ids) {
+      const entry = collapseOverrides[id];
+      const exists = entry.field === COLLAPSED_CATEGORIES_FIELD ? known.has(id) : knownWorkspaces.has(id);
+      const settled = !pendingOverrides.current.has(id);
+      const confirmed = entry.field === COLLAPSED_CATEGORIES_FIELD ? persistedCollapsed.has(id) === entry.value : persistedWorkspaces.has(id) === entry.value;
+      if (exists && !(settled && confirmed)) survivor[id] = entry;
+    }
+    if (Object.keys(survivor).length !== ids.length) setCollapseOverrides(survivor);
+  });
   const expansionReady = snapshot.value !== void 0;
-  const toggleProject = (id) => {
-    const next = !(expandedIds[id] === true || workspaceSet.has(id));
-    setExpandedIds((previous) => ({ ...previous, [id]: next }));
-    const stored = new Set(workspaceSet);
-    if (next) stored.add(id);
-    else stored.delete(id);
-    persistExpansion(scope, EXPANDED_WORKSPACES_FIELD, retainIds(stored, idsOfWorkspaces()));
+  const nextOverrides = (field) => {
+    const known = field === COLLAPSED_CATEGORIES_FIELD ? new Set(persistedCollapsed) : new Set(persistedWorkspaces);
+    pendingOverrides.current.forEach((entry) => {
+      if (entry.field !== field) return;
+      if (entry.value) known.add(entry.id);
+      else known.delete(entry.id);
+    });
+    return known;
+  };
+  const toggle = (id, field, nextValue, existingIds) => {
+    const generation = nextOverrideGeneration();
+    pendingOverrides.current.set(id, { id, field, value: nextValue, generation });
+    setCollapseOverrides((previous) => ({ ...previous, [id]: { generation, field, value: nextValue } }));
+    const next = nextOverrides(field);
+    if (nextValue) next.add(id);
+    else next.delete(id);
+    persistExpansion(scope, field, retainIds(next, existingIds())).then(() => {
+      const entry = pendingOverrides.current.get(id);
+      if (entry !== void 0 && entry.generation === generation) pendingOverrides.current.delete(id);
+    });
   };
   const toggleFolder = (id) => {
-    const collapsed = new Set(collapsedSet);
-    if (collapsed.has(id)) collapsed.delete(id);
-    else collapsed.add(id);
-    persistExpansion(scope, COLLAPSED_CATEGORIES_FIELD, retainIds(collapsed, idsOfCategories()));
+    toggle(id, COLLAPSED_CATEGORIES_FIELD, !isCollapsed(id), idsOfCategories);
+  };
+  const toggleProject = (id) => {
+    toggle(id, EXPANDED_WORKSPACES_FIELD, !isWorkspaceOpen(id), idsOfWorkspaces);
   };
   const sessionsOf = (workspace) => {
     const archived = new Set(workspaceState.archivedSessionIds ?? []);
@@ -717,7 +768,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const project = (workspace) => {
     const id = workspaceId(workspace);
     const rows = sessionsOf(workspace);
-    const expanded = wide && (expandedIds[id] === true || workspaceSet.has(id));
+    const expanded = wide && isWorkspaceOpen(id);
     const wsStatus = statusOfWorkspace(workspace);
     const label = workspaceLabel(workspace);
     const act = () => {
@@ -737,7 +788,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       setRenameTarget({ kind: "workspace", id, title: label });
       setRenameDraft(label);
       setRenameError("");
-    }), menuItem(t("deleteWorkspace"), true, () => setDeleteTarget({ id, label }))) : null, wide && expanded ? (0, import_react10.createElement)("div", { className: "wcm-sessions" }, rows.map((summary) => {
+    }), menuItem(t("deleteWorkspace"), true, () => setDeleteTarget({ id, label }))) : null, (0, import_react10.createElement)("div", { className: `wcm-sessions${expanded ? "" : " wcm-closed"}`, "aria-hidden": expanded ? void 0 : "true" }, rows.map((summary) => {
       const status = sessionStatusOf(summary, sessionStatuses);
       const showStatus = status !== void 0;
       const title = summary.blank ? t("newSession") : summary.displayTitle ?? summary.title ?? summary.id;
@@ -758,11 +809,11 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
         setRenameDraft(title);
         setRenameError("");
       }), menuItem(t("fork"), false, () => forkSession(summary.id)), menuItem(t("archive"), false, () => archiveSession(summary.id))) : null);
-    })) : null);
+    })));
   };
   const folder = (f) => {
     const isUncategorized = f.id === "__uncategorized__";
-    const open = wide && !collapsedSet.has(f.id);
+    const open = wide && !isCollapsed(f.id);
     const status = statusOfCategory(f);
     const onToggle = () => {
       if (wide) toggleFolder(f.id);
@@ -773,7 +824,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
         event.preventDefault();
         onToggle();
       }
-    }, onDragStart: wide && !isUncategorized ? dragStart("folder", f.id) : void 0, onDragOver: wide ? dragOverFolder(f.id) : void 0, onDrop: wide ? dropOnFolder(f.id) : void 0, onDragEnd: wide ? dragEnd : void 0, onContextMenu: wide && !isUncategorized ? (event) => openMenuAt("folder", f.id, event) : void 0 }, statusIconSlot(status, (0, import_react10.createElement)("span", { className: "wcm-rowIcon wcm-rowIconCategory", style: { color: f.color } }, (0, import_react10.createElement)(IconTagOutline16))), (0, import_react10.createElement)("span", { className: "wcm-folderLabel" }, f.name), (0, import_react10.createElement)("span", { className: "wcm-folderCount" }, f.projects.length), menuFor !== null && menuFor.kind === "folder" && menuFor.id === f.id ? popoverAt(menuFor.x, menuFor.y, menuItem(t("dissolveCategory"), true, () => setDissolveTarget({ id: f.id, name: f.name }))) : null), open ? (0, import_react10.createElement)("div", { className: "wcm-folderProjects" }, f.projects.map(project)) : null);
+    }, onDragStart: wide && !isUncategorized ? dragStart("folder", f.id) : void 0, onDragOver: wide ? dragOverFolder(f.id) : void 0, onDrop: wide ? dropOnFolder(f.id) : void 0, onDragEnd: wide ? dragEnd : void 0, onContextMenu: wide && !isUncategorized ? (event) => openMenuAt("folder", f.id, event) : void 0 }, statusIconSlot(status, (0, import_react10.createElement)("span", { className: "wcm-rowIcon wcm-rowIconCategory", style: { color: f.color } }, (0, import_react10.createElement)(IconTagOutline16))), (0, import_react10.createElement)("span", { className: "wcm-folderLabel" }, f.name), (0, import_react10.createElement)("span", { className: "wcm-folderCount" }, f.projects.length), menuFor !== null && menuFor.kind === "folder" && menuFor.id === f.id ? popoverAt(menuFor.x, menuFor.y, menuItem(t("dissolveCategory"), true, () => setDissolveTarget({ id: f.id, name: f.name }))) : null), (0, import_react10.createElement)("div", { className: `wcm-folderProjects${open ? "" : " wcm-closed"}`, "aria-hidden": open ? void 0 : "true" }, f.projects.map(project)));
   };
   const folderTree = expansionReady ? (0, import_react10.createElement)("div", { className: "wcm-folders" }, folders.map(folder)) : null;
   const sortItem = (mode, label) => (0, import_react10.createElement)("button", { className: `wcm-menuItem${orderBy === mode ? " wcm-menuItemOn" : ""}`, onClick: () => {

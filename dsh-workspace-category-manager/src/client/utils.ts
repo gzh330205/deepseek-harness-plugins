@@ -30,11 +30,19 @@ function useScope(scope) { return React.useSyncExternalStore((listener) => scope
      * long-lived profile cannot accumulate dead entries. */
     const retainIds = (ids, existingIds) => { const known = existingIds instanceof Set ? existingIds : new Set(existingIds); return [...ids].filter((id) => known.has(id)); };
     /**
+     * Monotonic id for one optimistic expansion override. A pending write can
+     * only be confirmed by a Config snapshot that at least its generation
+     * produced, so an older snapshot cannot retire a newer click's override and
+     * snap the row back — which is exactly what "lag then jump" looked like.
+     */
+    let overrideGeneration = 0;
+    const nextOverrideGeneration = () => (overrideGeneration += 1);
+    /**
      * Persist one expansion field. The form queues field writes with the latest
      * known revision, so rapid toggles keep their order without a local debounce
      * and never interleave the two expansion lists; a refused or failed write is
      * swallowed here because the next paint simply re-reads the Host mirror.
-     * The toggle itself renders from local state, so no await is needed.
+     * The caller already rendered from optimistic local state, so nothing awaits.
      */
     function persistExpansion(scope, field, ids) {
       try { return Promise.resolve(scope.set(field, ids)).then(undefined, () => {}); }
@@ -58,4 +66,4 @@ function useScope(scope) { return React.useSyncExternalStore((listener) => scope
     function joinDisplayPath(parent, name) { const base = String(parent ?? '').replace(/[/\\]+$/, ''); const separator = /\\/.test(base) && !/\//.test(base) ? '\\' : '/'; return `${base}${separator}${name}`; }
     function workspaceId(workspace) { return workspace.workspaceId; }
     function workspaceLabel(workspace) { return workspace.title || workspace.path?.replace(/.*[\\/]/, '') || workspace.workspaceId; }
-export { useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, repoNameFromUrl, joinDisplayPath, workspaceId, workspaceLabel, errText, closedCategories, openWorkspaces, retainIds, persistExpansion };
+export { useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, repoNameFromUrl, joinDisplayPath, workspaceId, workspaceLabel, errText, closedCategories, openWorkspaces, retainIds, persistExpansion, nextOverrideGeneration };

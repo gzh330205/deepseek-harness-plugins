@@ -22,8 +22,13 @@ for (const field of ['collapsedCategories', 'expandedWorkspaces']) {
 const sidebar = readFileSync(resolve(root, 'src/client/components/CategorySidebar.tsx'), 'utf8');
 const utils = readFileSync(resolve(root, 'src/client/utils.ts'), 'utf8');
 if (sidebar.includes('localStorage.getItem') || sidebar.includes('localStorage.setItem') || utils.includes('localStorage.getItem') || utils.includes('localStorage.setItem')) throw new Error('Sidebar expansion must not go back to origin-scoped localStorage (it is lost on every launch).');
-if (!sidebar.includes('persistExpansion(scope, COLLAPSED_CATEGORIES_FIELD') || !sidebar.includes('persistExpansion(scope, EXPANDED_WORKSPACES_FIELD')) {
+if (!sidebar.includes('persistExpansion(scope, field, retainIds(next, existingIds()))')) {
   throw new Error('Sidebar expansion must be written to the Host Config on toggle.');
+}
+/* A toggle must paint from local state first: rendering straight from the Config
+ * makes every click wait for the settings round trip. */
+if (!sidebar.includes('setCollapseOverrides((previous) =>') || !sidebar.includes('isWorkspaceOpen(id)') || !sidebar.includes('isCollapsed(f.id)')) {
+  throw new Error('Expansion must render from an optimistic local override, not only from the Config snapshot.');
 }
 
 const entry = readFileSync(resolve(root, 'src/client/index.ts'), 'utf8');

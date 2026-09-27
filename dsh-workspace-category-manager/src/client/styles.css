@@ -13,3 +13,14 @@
 .wcm-formFieldRow .wcm-form-field{flex:1;min-width:0}
 .wcm-hint{margin:0;font-size:12px;line-height:16px;color:var(--dsw-alias-label-tertiary);word-break:break-all}
 .wcm-cloning{color:var(--dsw-alias-brand-primary)}
+/* Expand/collapse animation. Both containers stay mounted so the transition has
+   something to animate; the closed state collapses the grid track to 0fr (the
+   modern "animate to auto" technique), which keeps the panel height exact at any
+   number of rows. The border-left lives on a pseudo-element because it would
+   otherwise keep its own width while the track is animating. */
+.wcm-sessions,.wcm-folderProjects{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows .18s ease,opacity .18s ease}
+.wcm-sessions.wcm-closed,.wcm-folderProjects.wcm-closed{grid-template-rows:0fr;opacity:0;pointer-events:none}
+.wcm-sessions>*,.wcm-folderProjects>*{min-height:0;overflow:hidden}
+.wcm-folderProjects{position:relative}
+.wcm-folderProjects>div::before{content:'';position:absolute;top:0;bottom:4px;left:-9px;width:1px;background:var(--dsw-alias-border-l2)}
+@media (prefers-reduced-motion:reduce){.wcm-sessions,.wcm-folderProjects{transition:none}}
