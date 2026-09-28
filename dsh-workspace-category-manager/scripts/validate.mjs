@@ -30,6 +30,15 @@ if (!sidebar.includes('persistExpansion(scope, field, retainIds(next, existingId
 if (!sidebar.includes('setCollapseOverrides((previous) =>') || !sidebar.includes('isWorkspaceOpen(id)') || !sidebar.includes('isCollapsed(f.id)')) {
   throw new Error('Expansion must render from an optimistic local override, not only from the Config snapshot.');
 }
+/* The animated panel keeps its rows inside ONE inner layer: as direct grid
+ * tracks every row stayed 34px tall while the panel claimed to be collapsed. */
+for (const inner of ['wcm-sessionsInner', 'wcm-folderProjectsInner']) {
+  if (!sidebar.includes(inner)) throw new Error(`Animated panel ${inner} wrapper is missing.`);
+}
+const css = readFileSync(resolve(root, 'src/client/styles.css'), 'utf8');
+if (/grid-template-rows\s*:\s*0fr/.test(css)) throw new Error('Collapsed panels must not use grid tracks; their children would keep their own row height.');
+if (!/\.wcm-sessions\.wcm-closed[^{]*\{[^}]*height:0/.test(css)) throw new Error('A collapsed panel must collapse its height (height:0).');
+if (!/wcm-closed \.wcm-folderProjectsInner|wcm-closed .wcm-sessionsInner/.test(css)) throw new Error('A collapsed panel must hide its inner layer (visibility:hidden).');
 
 const entry = readFileSync(resolve(root, 'src/client/index.ts'), 'utf8');
 if (!entry.includes("id: 'workspace-categories'")) throw new Error('Client settings section id is missing.');

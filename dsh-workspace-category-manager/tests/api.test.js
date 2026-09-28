@@ -573,13 +573,21 @@ const containerFor = (rendered, name) => {
 rows = renderLive();
 assert(!rowFor(rows, '客户项目').cls.includes('wcm-open'), 'a category stored as collapsed must render collapsed');
 assert(containerFor(rows, '客户项目').props.className.includes('wcm-closed'), 'the collapsed container must carry the transition class');
-assert(containerFor(rows, '客户项目').props['aria-hidden'] === 'true', 'a closed container must be hidden from assistive tech');
+/* The collapsed panel keeps exactly one child: the rows live inside the inner
+ * layer, never as direct grid tracks — as tracks they stayed 34px tall each and
+ * the "collapsed" folder kept reserving their height. */
+const innerChildren = (rendered, name) => {
+  const inner = containerFor(rendered, name).props.children;
+  return Array.isArray(inner) ? inner : [inner];
+};
+assert(innerChildren(rows, '客户项目').length === 1 && String(innerChildren(rows, '客户项目')[0].props.className).includes('wcm-folderProjectsInner'), 'a collapsed panel must wrap its rows in one inner layer');
+assert(containerFor(rows, '客户项目').props.className.includes('wcm-closed'), 'the closed panel is what hides the rows (height 0 + visibility)');
 // click -> the very next render already shows it open, before any Config change
 rowFor(rows, '客户项目').el.props.onClick({ stopPropagation() {}, preventDefault() {} });
 rows = renderLive();
 assert(rowFor(rows, '客户项目').cls.includes('wcm-open'), 'the clicked category must repaint immediately');
 assert(!containerFor(rows, '客户项目').props.className.includes('wcm-closed'), 'the clicked container must open immediately');
-assert(containerFor(rows, '客户项目').props['aria-hidden'] === undefined, 'the opened container must be exposed again');
+assert(!containerFor(rows, '客户项目').props.className.includes('wcm-closed'), 'the opened panel must drop the closed state');
 // the click still reaches the Config, and a fresh mount keeps the same state
 rows = renderLive();
 assert(rowFor(rows, '客户项目').cls.includes('wcm-open'), 'the reopened category must stay open on a fresh mount');

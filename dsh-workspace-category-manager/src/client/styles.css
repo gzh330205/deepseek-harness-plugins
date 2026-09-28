@@ -13,14 +13,13 @@
 .wcm-formFieldRow .wcm-form-field{flex:1;min-width:0}
 .wcm-hint{margin:0;font-size:12px;line-height:16px;color:var(--dsw-alias-label-tertiary);word-break:break-all}
 .wcm-cloning{color:var(--dsw-alias-brand-primary)}
-/* Expand/collapse animation. Both containers stay mounted so the transition has
-   something to animate; the closed state collapses the grid track to 0fr (the
-   modern "animate to auto" technique), which keeps the panel height exact at any
-   number of rows. The border-left lives on a pseudo-element because it would
-   otherwise keep its own width while the track is animating. */
-.wcm-sessions,.wcm-folderProjects{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows .18s ease,opacity .18s ease}
-.wcm-sessions.wcm-closed,.wcm-folderProjects.wcm-closed{grid-template-rows:0fr;opacity:0;pointer-events:none}
-.wcm-sessions>*,.wcm-folderProjects>*{min-height:0;overflow:hidden}
-.wcm-folderProjects{position:relative}
-.wcm-folderProjects>div::before{content:'';position:absolute;top:0;bottom:4px;left:-9px;width:1px;background:var(--dsw-alias-border-l2)}
-@media (prefers-reduced-motion:reduce){.wcm-sessions,.wcm-folderProjects{transition:none}}
+/* Expand/collapse animation. The collapsed panel is one wrapper whose own
+   padding/margin collapse to zero, so the transition animates the exact box the
+   panel occupies at any row count. The children must NOT be direct grid tracks:
+   with the panel as the grid container every row became its own 34px track and
+   stayed reserved while the panel read as collapsed. */
+.wcm-sessions,.wcm-folderProjects{overflow:hidden;transition:height .18s ease,padding .18s ease,margin .18s ease,opacity .18s ease}
+.wcm-sessionsInner,.wcm-folderProjectsInner{display:flex;flex-direction:column;transition:transform .18s ease,visibility .18s}
+.wcm-sessions.wcm-closed,.wcm-folderProjects.wcm-closed{height:0;padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;opacity:0;pointer-events:none}
+.wcm-sessions.wcm-closed .wcm-sessionsInner,.wcm-folderProjects.wcm-closed .wcm-folderProjectsInner{visibility:hidden;transform:translateY(-4px)}
+@media (prefers-reduced-motion:reduce){.wcm-sessions,.wcm-folderProjects,.wcm-sessionsInner,.wcm-folderProjectsInner{transition:none}}
