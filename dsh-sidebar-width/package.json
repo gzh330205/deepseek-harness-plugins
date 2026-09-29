@@ -1,0 +1,51 @@
+{
+  "name": "dsh-sidebar-width",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DSH 侧栏宽度记忆：把左右侧边栏宽度存成全局配置，跨会话 / 刷新 / 重启都保持，并在「插件合集」里提供配置页。",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "lib",
+    "index.js",
+    "cordis.patch.yml",
+    "locale",
+    "scripts"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "~3.18.4"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "esbuild": "^0.24.0"
+  },
+  "scripts": {
+    "build": "node ./scripts/build-client.mjs",
+    "prepare": "node ./scripts/build-client.mjs",
+    "validate": "node ./scripts/validate.mjs",
+    "test": "node ./tests/client.test.mjs"
+  }
+}

@@ -1,0 +1,13 @@
+# DSH profile bundle: 侧栏宽度记忆（sidebar width persistence）。
+#
+# 安装：
+#   dsh plugin --profile <profile> add ./dsh-sidebar-width
+#
+# 行 id 必须等于宿主半区 index.js 的 SETTINGS_NAMESPACE（0.1.7 起 Loader 条目 id
+# 即设置命名空间），也是浏览器半区 configForms.get() 用的命名空间。
+#
+# 这个插件没有自己的设置分区：它的配置页签贡献到 dsh-plugin-kit 的
+# `settings.pluginKit.tab` 槽（合集不在场时不提供入口）。
+- insert:
+    - id: sidebar-width
+      name: dsh-sidebar-width
