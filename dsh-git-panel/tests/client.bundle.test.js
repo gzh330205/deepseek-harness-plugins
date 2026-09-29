@@ -103,6 +103,13 @@ const ctx = {
       return () => undefined;
     },
   },
+  // 合集分区（dsh-plugin-kit）声明 settings.pluginKit.tab；这里让它看起来
+  // 已经声明，从而验证「合集在场 → 设置页签注册到合集槽」这条通路。
+  configForms: {
+    get(namespace) {
+      return { namespace };
+    },
+  },
   slots: {
     inject(name, callback) {
       logged.push(`inject seat: ${name}`);
@@ -112,6 +119,8 @@ const ctx = {
       seats.set(definition.name, { definition, component });
       return () => undefined;
     },
+    spec:  () => ({ kind: 'list', scope: 'root' }),
+    subscribe: () => () => undefined,
   },
   get: (name) => {
     if (name === 'layout') return { selectPanel: (id) => centerCalls.push(id) };
@@ -142,6 +151,17 @@ check('正文席位：key 与 tab 类型 id 一致', bodySeat?.definition?.key =
 check('正文席位：声明 locale 命名空间', bodySeat?.definition?.locale === 'gitPanel', String(bodySeat?.definition?.locale));
 check('正文席位：组件是函数', typeof bodySeat?.component === 'function');
 check('正文席位：inject 注入 api/actions/t', typeof bodySeat?.definition?.inject === 'function' && typeof bodySeat.definition.inject().t === 'function');
+
+/* ── 设置页签（「插件合集」分区的 list 子槽） ─────────────────────────── */
+
+check('inject 覆盖 configForms', (exports_.inject ?? []).includes('configForms'), JSON.stringify(exports_.inject));
+const settingsSeat = seats.get('settings.pluginKit.tab');
+check('设置席位：注册到 settings.pluginKit.tab', settingsSeat !== undefined, JSON.stringify([...seats.keys()]));
+check('设置席位：id 是 git-panel', settingsSeat?.definition?.id === 'git-panel', String(settingsSeat?.definition?.id));
+check('设置席位：order 是 60', settingsSeat?.definition?.order === 60, String(settingsSeat?.definition?.order));
+check('设置席位：label 可解析', settingsSeat?.definition?.label?.() === 'Git 面板', String(settingsSeat?.definition?.label?.()));
+check('设置席位：组件是函数', typeof settingsSeat?.component === 'function');
+check('设置席位：inject 注入 scope', typeof settingsSeat?.definition?.inject === 'function' && settingsSeat.definition.inject().scope !== undefined);
 
 /* ── 中心窗口差异页（root `main` 席位） ───────────────────────────────── */
 

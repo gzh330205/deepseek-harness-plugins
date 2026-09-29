@@ -4,6 +4,7 @@
  */
 export const zh = {
   title: 'Git',
+  settingsTab: 'Git 面板',
   guideTitle: 'Git 变更',
   guideDescription: '查看待提交的变更、提交历史与工作树',
 
@@ -165,6 +166,7 @@ export const zh = {
 
 export const en = {
   title: 'Git',
+  settingsTab: 'Git panel',
   guideTitle: 'Git changes',
   guideDescription: 'Pending changes with diffs, commit history and worktrees',
 

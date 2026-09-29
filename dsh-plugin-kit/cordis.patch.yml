@@ -1,0 +1,32 @@
+# DSH profile bundle: 插件合集（dsh-plugin-kit）。
+#
+# 安装（装这一个包 = 8 行一起进 profile）：
+#   dsh plugin --profile web add ./dsh-plugin-kit
+#
+# 这一个 insert 有且仅有 8 行：
+#   - 锚点行 `dsh-plugin-kit` 是合集自己的 host/client 半区，删了分区就没了；
+#   - 其余 6 行是合集的 link 依赖，id 必须与各子插件 host 半区的
+#     SETTINGS_NAMESPACE 一致（id 即设置命名空间）。
+#
+# 为什么每个 name 都写成裸包名：客户端半区只挂到 `name` 恰好等于裸包名的
+# 那一行（见 @deepseek-ai/dsh-client-modules/lib/index.js:746 的
+# exactPackageSpecifier 判定）。写成 ./dsh-git-panel 这类相对路径时，行仍然
+# 能挂上 host 半区，但浏览器半区不会加载。
+- insert:
+    # 锚点行：合集自身，不能关、不能改 id。
+    - id: dsh-plugin-kit
+      name: dsh-plugin-kit
+    - id: git-panel
+      name: dsh-git-panel
+    - id: run-env-manager
+      name: dsh-run-env-manager
+    - id: workspace-category-manager
+      name: dsh-workspace-category-manager
+    - id: mcp-skill-manager
+      name: dsh-mcp-skill-manager
+    - id: win-notify
+      name: dsh-win-notify
+    - id: oneway-usage-monitor
+      name: dsh-oneway-usage-monitor
+    - id: sidebar-width
+      name: dsh-sidebar-width

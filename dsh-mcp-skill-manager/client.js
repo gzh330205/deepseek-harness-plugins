@@ -74,7 +74,53 @@ window.__ModuleLoader__.load({
     const zh = { mcpTab: 'MCP', skillsTab: 'Skills', loading: '正在读取设置…', unavailable: '此部署未提供可编辑的管理设置。', mcpIntro: '新增、编辑、启停 DSH MCP 服务，或手动导入 Claude Code、Codex、OpenCode 的配置。导入仅在你主动打开导入窗口后读取来源。', skillsIntro: '新增托管 Skill，或手动选择外部 Skill 并在 DSH Skills 目录创建链接；不会复制或删除来源文件。', mcpTitle: 'MCP 服务', skillTitle: 'Skills', add: '新增', addMcp: '新增 MCP', editMcp: '编辑 MCP', removeMcp: '删除 MCP', addSkill: '新增 Skill', editSkill: '编辑 Skill', removeSkill: '删除 Skill', unlinkSkill: '取消链接', import: '导入', linkImport: '链接导入', emptyMcp: '尚未配置 MCP 服务。', emptySkill: '尚未添加 Skill。', enabled: '已启用', disabled: '已停用', edit: '编辑', enable: '启用', disable: '停用', remove: '删除', unlink: '取消链接', linked: '外部链接' };
     const en = { mcpTab: 'MCP', skillsTab: 'Skills', loading: 'Loading settings…', unavailable: 'This deployment does not expose editable manager settings.', mcpIntro: 'Add, edit, enable, or disable DSH MCP servers, or manually import configuration from Claude Code, Codex, or OpenCode. Sources are read only when you open Import.', skillsIntro: 'Create managed Skills or manually select an external Skill to link inside the DSH Skills directory. Source files are neither copied nor deleted.', mcpTitle: 'MCP servers', skillTitle: 'Skills', add: 'Add', addMcp: 'Add MCP', editMcp: 'Edit MCP', removeMcp: 'Remove MCP', addSkill: 'Add Skill', editSkill: 'Edit Skill', removeSkill: 'Remove Skill', unlinkSkill: 'Unlink Skill', import: 'Import', linkImport: 'Link import', emptyMcp: 'No MCP servers are configured.', emptySkill: 'No Skills have been added.', enabled: 'Enabled', disabled: 'Disabled', edit: 'Edit', enable: 'Enable', disable: 'Disable', remove: 'Remove', unlink: 'Unlink', linked: 'External link' };
     const inject = ['slots', 'locale', 'connection', 'remote', 'configForms'];
-    function apply(ctx) { ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'mcp-skill-manager: dictionaries'); const t = ctx.locale.bind(NS); const scope = ctx.configForms.get(SETTINGS_NAMESPACE); /* 0.1.7: 条目 id 即设置命名空间 */ const refresh = () => ctx.configForms.describe().ensure(); ctx.slots.inject('settings.plugins.tab', function* () { yield ctx.slots.register({ name: 'settings.plugins.tab', id: 'mcp', order: 20, label: () => t('mcpTab'), locale: NS, inject: () => ({ scope, t, refresh }) }, McpTab); yield ctx.slots.register({ name: 'settings.plugins.tab', id: 'skills', order: 21, label: () => t('skillsTab'), locale: NS, inject: () => ({ scope, t, refresh }) }, SkillsTab); }); }
+    /**
+     * 合集耦合点：合集的浏览器半区在 settings.section(plugin-kit) 上声明了一个
+     * list 子槽 settings.pluginKit.tab。子插件把设置页贡献到该槽时，它会出现在
+     * 「设置 → 插件合集」分区的页签栏里；合集缺席时退回本插件自己的入口。
+     * 别改槽名：它是 dsh-plugin-kit 与全部子插件之间的唯一契约。
+     * 契约副本：src/client/kit-tab.mjs（客户端半区不能 import npm 包，故此处内联）。
+     */
+    function registerKitTab(ctx, options) {
+      const slot = options.slot ?? 'settings.pluginKit.tab';
+      const slots = ctx.slots;
+      let dispose;
+      let mode;
+      const apply = () => {
+        const declared = slots.spec?.(slot) !== undefined;
+        const next = declared ? 'tab' : options.fallback ? 'fallback' : undefined;
+        if (next === mode) return;
+        if (dispose) dispose();
+        dispose = undefined;
+        mode = next;
+        dispose = next === 'tab' ? options.tab() : next === 'fallback' ? options.fallback() : undefined;
+      };
+      const off = slots.subscribe(slot, apply);
+      apply();
+      ctx.effect(() => () => { off(); if (dispose) dispose(); }, options.effectName ?? 'plugin-kit: settings tab');
+    }
+    function apply(ctx) {
+      ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'mcp-skill-manager: dictionaries');
+      const t = ctx.locale.bind(NS);
+      const scope = ctx.configForms.get(SETTINGS_NAMESPACE); /* 0.1.7: 条目 id 即设置命名空间 */
+      const refresh = () => ctx.configForms.describe().ensure();
+      /* 一个设置页 = 一组 register options + 组件；合集在场挂到合集槽，缺席挂回内置插件页。
+         expose 的 inject 回调是普通箭头函数并且**立即执行**（目标槽已声明时同步注册），回调
+         返回 register 的 disposer —— 不用 generator、不依赖 inject 的惰性重放。 */
+      const expose = (slot, options, component) => ctx.slots.inject(slot, () => ctx.slots.register({ ...options, name: slot, locale: NS, inject: () => ({ scope, t, refresh }) }, component));
+      const mcpOptions = { id: 'mcp', order: 20, label: () => t('mcpTab') };
+      const skillOptions = { id: 'skills', order: 21, label: () => t('skillsTab') };
+      registerKitTab(ctx, {
+        effectName: 'mcp-skill-manager: kit settings tab (mcp)',
+        tab: () => expose('settings.pluginKit.tab', mcpOptions, McpTab),
+        fallback: () => expose('settings.plugins.tab', mcpOptions, McpTab),
+      });
+      registerKitTab(ctx, {
+        effectName: 'mcp-skill-manager: kit settings tab (skills)',
+        tab: () => expose('settings.pluginKit.tab', skillOptions, SkillsTab),
+        fallback: () => expose('settings.plugins.tab', skillOptions, SkillsTab),
+      });
+    }
     return { apply, inject };
   }
 });

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Session notifications",
+    "description": "Notify when a session finishes or needs a human: Tauri native notifications or browser Notification, optionally Windows Toast (configured under the Plugin Kit section)"
+  }
+}

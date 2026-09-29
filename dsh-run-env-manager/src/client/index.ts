@@ -7,6 +7,7 @@ import { createAgent } from './agent.js';
 import { RunPanel } from './components/RunPanel.jsx';
 import { EnvironmentSection } from './components/EnvironmentSection.jsx';
 import { IconRunOutline } from './components/icons.jsx';
+import { registerKitTab } from './kit-tab.js';
 
 // 与 dsh 自己编译产物的约定一致：一个 <style data-plugin-css> 标签，重复挂载不重复注入。
 if (typeof document !== 'undefined') {
@@ -240,12 +241,16 @@ function apply(ctx: any) {
     );
 
     // 同一套环境库管理也挂在设置里（设置页没有会话上下文，组件自己拉不带工作区的快照）。
-    ctx.slots.inject('settings.section', () =>
-      ctx.slots.register(
-        { name: 'settings.section', id: 'run-environments', order: 17, label: () => t('globalEnvironments'), locale: NS, inject: () => ({ api, t, pickDirectory }) },
-        EnvironmentSection,
-      ),
-    );
+    // settings.pluginKit.tab 不在 SlotMap 里：注册名走动态字符串，避免 tsc 报 key 不存在。
+    const register = (name: string, options: object, component: any): (() => void) => ctx.slots.register({ name, ...options }, component);
+    const sectionEntry = () => ({ id: 'run-environments', order: 17, label: () => t('globalEnvironments'), locale: NS, inject: () => ({ api, t, pickDirectory }) });
+    // 合集在场 → 页面注册进「插件合集」分区的 settings.pluginKit.tab；
+    // 合集缺席 → 退回本插件原来的顶层设置分区 settings.section。切换与去重由 helper 负责。
+    registerKitTab(ctx, {
+      effectName: 'run-env-manager: suite settings section',
+      tab: () => ctx.slots.inject('settings.pluginKit.tab', () => register('settings.pluginKit.tab', sectionEntry(), EnvironmentSection)),
+      fallback: () => ctx.slots.inject('settings.section', () => register('settings.section', sectionEntry(), EnvironmentSection)),
+    });
   } catch (error) {
     console.warn('[run-env-manager] client apply failed', error);
   }

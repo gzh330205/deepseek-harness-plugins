@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "会话通知",
+    "description": "会话完成 / 需要人工干预时提醒：Tauri 原生通知或浏览器 Notification，可选 Windows Toast（设置入口在「插件合集」分区）"
+  }
+}

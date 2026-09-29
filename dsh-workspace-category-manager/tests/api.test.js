@@ -50,6 +50,16 @@ const React = {
 
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+/* Minimal stand-in for the DSH 0.1.7 slots service: registerKitTab needs
+ * `subscribe` (no replay of the current state) and `specDynamic`. This one
+ * models a deployment WITHOUT the suite package, i.e. the plugin must keep
+ * registering its own top-level settings.section section. */
+const slotsFake = (sink) => ({
+  inject: (key, fn) => { fn(); },
+  register: (opts, Component) => { sink[opts.name] = opts.inject ? opts.inject() : {}; sink['component:' + opts.name] = Component; sink._reg = opts; return () => {}; },
+  subscribe: () => () => {},
+  spec:  () => undefined,
+});
 
 let captured = null;
 globalThis.window = { __ModuleLoader__: { load: (m) => { captured = m; } } };
@@ -114,7 +124,7 @@ const entriesFor = (withUiWorkspace, bind = bindScope) => {
     locale: { register: () => {}, bind: () => (k) => k },
     get: (name) => name === 'configForms' ? configFormsSvc : svc[name],
     configForms: { get: () => bind() },
-    slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { props[opts.name] = opts.inject ? opts.inject() : {}; props['component:' + opts.name] = Component; props._reg = opts; return () => {}; } },
+    slots: slotsFake(props),
   });
   return props;
 };
@@ -243,7 +253,7 @@ const propsDone = (() => { const out = {}; const configFormsSvc = { get: () => b
     locale: { register: () => {}, bind: () => (k) => k },
     get: (name) => name === 'configForms' ? configFormsSvc : svc2[name],
     configForms: { get: () => bindScope() },
-    slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
+    slots: slotsFake(out),
   });
   return out; })();
 hookState = [];
@@ -264,7 +274,7 @@ const propsViewed = (() => { const out = {}; const configFormsSvc = { get: () =>
     locale: { register: () => {}, bind: () => (k) => k },
     get: (name) => name === 'configForms' ? configFormsSvc : svc3[name],
     configForms: { get: () => bindScope() },
-    slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
+    slots: slotsFake(out),
   });
   return out; })();
 hookState = [];
@@ -280,7 +290,7 @@ plugin.apply({
   locale: { register: () => {}, bind: () => (k) => k },
   get: (name) => name === 'configForms' ? { get: () => bindScope() } : raceSvc[name],
   configForms: { get: () => bindScope() },
-  slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { raceOut[opts.name] = opts.inject ? opts.inject() : {}; raceOut['component:' + opts.name] = Component; return () => {}; } },
+  slots: slotsFake(raceOut),
 });
 const raceApi = raceOut['sidebar.workspaces'].api;
 assert(!raceApi.canPickDirectory(), 'should start without pick capability');
@@ -360,7 +370,7 @@ const propsH = (() => { const out = {}; const configFormsSvc = { get: () => bind
     locale: { register: () => {}, bind: () => (k) => k },
     get: (name) => name === 'configForms' ? configFormsSvc : svcH[name],
     configForms: { get: () => bindScope() },
-    slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
+    slots: slotsFake(out),
   });
   return out; })();
 hookState = [];
@@ -380,7 +390,7 @@ const propsH2 = (() => { const out = {}; const configFormsSvc = { get: () => bin
     locale: { register: () => {}, bind: () => (k) => k },
     get: (name) => name === 'configForms' ? configFormsSvc : svcH2[name],
     configForms: { get: () => bindScope() },
-    slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
+    slots: slotsFake(out),
   });
   return out; })();
 hookState = [];
@@ -417,7 +427,7 @@ const propsJ = (() => { const out = {}; const configFormsSvc = { get: () => bind
     locale: { register: () => {}, bind: () => (k) => k },
     get: (name) => name === 'configForms' ? configFormsSvc : svcJ[name],
     configForms: { get: () => bindScope() },
-    slots: { inject: (key, fn) => { fn(); }, register: (opts, Component) => { out[opts.name] = opts.inject ? opts.inject() : {}; out['component:' + opts.name] = Component; return () => {}; } },
+    slots: slotsFake(out),
   });
   return out; })();
 hookState = [];
@@ -593,5 +603,60 @@ rows = renderLive();
 assert(rowFor(rows, '客户项目').cls.includes('wcm-open'), 'the reopened category must stay open on a fresh mount');
 assert(containerFor(rows, '客户项目').props.className.includes('wcm-closed') === false, 'the reopened container must stay open on a fresh mount');
 
-console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename, Git import, restart-stable sidebar expansion, optimistic animated toggles');
+// L: suite migration — the «工作区分类» page lives in exactly ONE place at a
+// time: the suite's settings.pluginKit.tab while dsh-plugin-kit is loaded,
+// otherwise this plugin's own top-level settings.section section.
+const suiteSlots = (() => {
+  const declared = new Set(['settings.section', 'sidebar.workspaces']);
+  const subs = new Map();   // key → Set<listener>          (entry/declaration notifications)
+  const ctrls = new Map();  // key → Set<reconciler>         (slots.inject controllers)
+  const live = new Map();   // slot key → Map<id, disposer>
+  const listeners = (map, key) => { let set = map.get(key); if (!set) { set = new Set(); map.set(key, set); } return set; };
+  return {
+    spec:  (key) => declared.has(key) ? { kind: 'list', scope: 'root' } : undefined,
+    ids: (key) => [...(live.get(key)?.keys() ?? [])],
+    subscribe: (key, fn) => { const set = listeners(subs, key); set.add(fn); return () => set.delete(fn); },
+    register: (opts, Component) => {
+      if (!declared.has(opts.name)) throw new Error(`slot "${opts.name}" is not declared`);
+      let entries = live.get(opts.name); if (!entries) { entries = new Map(); live.set(opts.name, entries); }
+      if (entries.has(opts.id)) throw new Error(`slot "${opts.name}" already has an entry with id "${opts.id}"`);
+      const entry = { opts, Component };
+      entries.set(opts.id, entry);
+      return () => { if (entries.get(opts.id) === entry) entries.delete(opts.id); };
+    },
+    inject: (key, fn) => {
+      let active;
+      const stop = () => { if (active) { active(); active = undefined; } };
+      const reconcile = () => { if (declared.has(key)) { if (!active) active = fn() ?? (() => {}); } else stop(); };
+      const set = listeners(ctrls, key); set.add(reconcile);
+      reconcile();
+      return () => { set.delete(reconcile); stop(); };
+    },
+    /* Declaration lifetime boundary: inject controllers settle first (they are
+     * synchronous in DSH), then the entry subscribers (microtask-batched). */
+    setDeclared: (key, present) => {
+      if (present) declared.add(key); else declared.delete(key);
+      for (const fn of [...(ctrls.get(key) ?? [])]) fn();
+      for (const fn of [...(subs.get(key) ?? [])]) fn();
+    },
+  };
+})();
+const suiteSvc = servicesFor(true);
+plugin.apply({
+  effect: () => () => {},
+  locale: { register: () => {}, bind: () => (k) => k },
+  get: (name) => name === 'configForms' ? { get: () => bindScope() } : suiteSvc[name],
+  configForms: { get: () => bindScope() },
+  slots: suiteSlots,
+});
+assert(suiteSlots.ids('settings.section').includes('workspace-categories'), 'suite absent: the fallback settings.section must still register');
+assert(!suiteSlots.ids('settings.pluginKit.tab').includes('workspace-categories'), 'suite absent: nothing may register into the suite slot');
+suiteSlots.setDeclared('settings.pluginKit.tab', true);
+assert(suiteSlots.ids('settings.pluginKit.tab').includes('workspace-categories'), 'suite declared: the page must move into the suite slot');
+assert(!suiteSlots.ids('settings.section').includes('workspace-categories'), 'suite declared: the top-level section must be disposed');
+suiteSlots.setDeclared('settings.pluginKit.tab', false);
+assert(suiteSlots.ids('settings.section').includes('workspace-categories'), 'suite collapsed: the fallback section must come back');
+assert(!suiteSlots.ids('settings.pluginKit.tab').includes('workspace-categories'), 'suite collapsed: the suite entry must be gone');
+
+console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename, Git import, restart-stable sidebar expansion, optimistic animated toggles, suite settings migration');
 

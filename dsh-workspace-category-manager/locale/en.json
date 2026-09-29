@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Workspace categories",
+    "description": "Group the projects in the left workspace list into categories; categories store only a workspace-ID mapping and never touch directories on disk."
+  }
+}

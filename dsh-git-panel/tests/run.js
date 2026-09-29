@@ -10,6 +10,7 @@ const files = [
   'graph.test.js',
   'contract.test.js',
   'tree.test.js',
+  'kit-tab.test.js',
   'client.bundle.test.js',
   'render.test.js',
   'git.integration.test.js',

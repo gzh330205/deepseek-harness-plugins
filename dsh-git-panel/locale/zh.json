@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git 面板",
+    "description": "右侧栏 Git：待提交变更与差异、带提交图的历史、worktree 管理（设置入口在「插件合集」分区）"
+  }
+}

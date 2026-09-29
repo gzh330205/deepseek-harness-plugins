@@ -1,0 +1,55 @@
+{
+  "name": "dsh-plugin-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DSH plugin kit: one Settings section hosting the configuration pages of the bundled plugins.",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "lib",
+    "index.js",
+    "cordis.patch.yml",
+    "locale",
+    "scripts"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ]
+    }
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "~3.18.4",
+    "dsh-git-panel": "link:../dsh-git-panel",
+    "dsh-mcp-skill-manager": "link:../dsh-mcp-skill-manager",
+    "dsh-oneway-usage-monitor": "link:../dsh-oneway-usage-monitor",
+    "dsh-run-env-manager": "link:../dsh-run-env-manager",
+    "dsh-sidebar-width": "link:../dsh-sidebar-width",
+    "dsh-win-notify": "link:../dsh-win-notify",
+    "dsh-workspace-category-manager": "link:../dsh-workspace-category-manager"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  },
+  "scripts": {
+    "build": "node ./scripts/build-client.mjs",
+    "prepare": "node ./scripts/build-client.mjs",
+    "validate": "node ./scripts/validate.mjs"
+  }
+}

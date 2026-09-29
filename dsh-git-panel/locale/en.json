@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Git panel",
+    "description": "Git in the right sidebar: pending changes with diffs, history with a commit graph, and worktree management (configured under the Plugin Kit section)"
+  }
+}

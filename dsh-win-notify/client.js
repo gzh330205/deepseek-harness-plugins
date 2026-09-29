@@ -95,6 +95,7 @@ window.__ModuleLoader__.load({
       }
     }
 
+    // 只声明真正用到的服务：本插件是客户端通知，不提供设置页。
     const inject = ['sessions'];
 
     function apply(ctx) {

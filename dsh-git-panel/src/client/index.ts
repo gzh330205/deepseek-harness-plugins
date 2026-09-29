@@ -12,14 +12,16 @@
  */
 import React from 'react';
 import cssText from './styles.css';
-import { NS, TAB_ID, TAB_KIND } from './constants.js';
+import { NS, SETTINGS_NAMESPACE, TAB_ID, TAB_KIND } from './constants.js';
 import { zh, en } from './locales.js';
 import { createActions, createApi } from './api.js';
 import { GitPanel } from './components/GitPanel.jsx';
 import { DiffPage } from './components/DiffPage.jsx';
+import { GitPanelSettings } from './components/GitPanelSettings';
 import { IconGit } from './components/icons.jsx';
 import { fileAddressFor } from './format.js';
 import { getDiffTarget, setDiffTarget, type DiffItem, type DiffTargetState } from './diff-target.js';
+import { registerKitTab } from '../shared/kit-tab';
 
 /** 中心窗口差异页在 root `main` 席位里的 key（同时也是 selectPanel 的 id）。 */
 const DIFF_PANEL_ID = 'git-diff';
@@ -36,7 +38,7 @@ if (typeof document !== 'undefined') {
   }
 }
 
-const inject = ['slots', 'locale', 'sidebarRightTabs'];
+const inject = ['slots', 'locale', 'sidebarRightTabs', 'configForms'];
 
 function apply(ctx: any) {
   try {
@@ -44,6 +46,20 @@ function apply(ctx: any) {
     const t = ctx.locale.bind(NS);
     const api = createApi();
     const actions = createActions();
+
+    // 设置面：合集在场时贡献「设置 → 插件合集 → Git 面板」一个页签；合集缺席
+    // （单独安装本插件）时本插件没有设置入口，与改动前一致。
+    const configScope = ctx.configForms.get(SETTINGS_NAMESPACE);
+    registerKitTab(ctx, {
+      effectName: 'git-panel: kit settings tab',
+      tab: () =>
+        ctx.slots.inject('settings.pluginKit.tab', () =>
+          ctx.slots.register(
+            { name: 'settings.pluginKit.tab', id: 'git-panel', order: 60, label: () => t('settingsTab'), locale: NS, inject: () => ({ scope: configScope }) },
+            GitPanelSettings as any,
+          ),
+        ),
+    });
 
     ctx.effect(
       () =>

@@ -1086,6 +1086,29 @@ function EnvironmentSection({ api, pickDirectory, t }) {
   ] });
 }
 
+// src/client/kit-tab.ts
+function registerKitTab(ctx, options) {
+  const slot = options.slot ?? "settings.pluginKit.tab";
+  const slots = ctx.slots;
+  let dispose;
+  let mode;
+  const apply2 = () => {
+    const declared = slots.spec?.(slot) !== void 0;
+    const next = declared ? "tab" : options.fallback ? "fallback" : void 0;
+    if (next === mode) return;
+    if (dispose) dispose();
+    dispose = void 0;
+    mode = next;
+    dispose = next === "tab" ? options.tab() : next === "fallback" ? options.fallback() : void 0;
+  };
+  const off = slots.subscribe(slot, apply2);
+  apply2();
+  ctx.effect(() => () => {
+    off();
+    if (dispose) dispose();
+  }, options.effectName ?? "plugin-kit: settings tab");
+}
+
 // src/client/index.ts
 if (typeof document !== "undefined") {
   const tagId = "dsh-run-env-manager/styles.css";
@@ -1305,13 +1328,13 @@ function apply(ctx) {
       ),
       "run-env-manager: panel body"
     );
-    ctx.slots.inject(
-      "settings.section",
-      () => ctx.slots.register(
-        { name: "settings.section", id: "run-environments", order: 17, label: () => t("globalEnvironments"), locale: NS, inject: () => ({ api, t, pickDirectory }) },
-        EnvironmentSection
-      )
-    );
+    const register = (name, options, component) => ctx.slots.register({ name, ...options }, component);
+    const sectionEntry = () => ({ id: "run-environments", order: 17, label: () => t("globalEnvironments"), locale: NS, inject: () => ({ api, t, pickDirectory }) });
+    registerKitTab(ctx, {
+      effectName: "run-env-manager: suite settings section",
+      tab: () => ctx.slots.inject("settings.pluginKit.tab", () => register("settings.pluginKit.tab", sectionEntry(), EnvironmentSection)),
+      fallback: () => ctx.slots.inject("settings.section", () => register("settings.section", sectionEntry(), EnvironmentSection))
+    });
   } catch (error) {
     console.warn("[run-env-manager] client apply failed", error);
   }

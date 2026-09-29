@@ -1250,3 +1250,89 @@
   display: flex;
   gap: 6px;
 }
+
+/* ── 「插件套件 → Git 面板」设置页 ────────────────────────────────────── */
+.dgp-settings {
+  color: var(--dgp-fg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 760px;
+}
+
+.dgp-settingsTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.dgp-settingsMuted {
+  color: var(--dgp-fg-2);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.dgp-settingsForm {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dgp-settingsForm label {
+  color: var(--dgp-fg-2);
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  gap: 5px;
+}
+
+.dgp-settingsInput {
+  background: var(--dsw-alias-bg-layer-3, transparent);
+  border: 1px solid var(--dgp-line);
+  border-radius: 7px;
+  box-sizing: border-box;
+  color: var(--dgp-fg);
+  font: inherit;
+  font-size: 13px;
+  padding: 7px;
+  width: 100%;
+}
+
+.dgp-settingsError {
+  color: var(--dsw-alias-state-error-primary, #d33);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.dgp-settingsActions {
+  display: flex;
+  gap: 6px;
+}
+
+.dgp-settings button {
+  background: transparent;
+  border: 1px solid var(--dgp-line);
+  border-radius: 7px;
+  color: var(--dgp-fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 10px;
+}
+
+.dgp-settings button:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover, rgba(128, 128, 128, 0.12));
+}
+
+.dgp-settings button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.dgp-settingsPrimary {
+  background: var(--dsw-alias-brand-primary, #4a7dff) !important;
+  border-color: var(--dsw-alias-brand-primary, #4a7dff) !important;
+  color: #fff !important;
+}

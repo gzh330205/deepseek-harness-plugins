@@ -99,10 +99,17 @@ async function loadClient(stubs = {}) {
     inject(_deps, callback) {
       if (uiSession !== undefined || stubs.uiSession === 'missing') callback(ctx);
     },
-    effect: () => () => {},
+    // 真实 cordis 的 effect 会执行回调并保留其返回的 disposer；这里照做，
+    // 免得「写在 effect 里的注册」对测试隐形。
+    effect: (fn) => {
+      const disposer = fn();
+      return typeof disposer === 'function' ? disposer : () => {};
+    },
   };
 
+  // 本插件不再提供设置页：客户端半区不 require 任何模块，只声明 sessions。
   const mod = bundle.factory(() => { throw new Error('client bundle 不应 require 任何模块'); });
+  check('inject 只声明 sessions', JSON.stringify(mod.inject) === JSON.stringify(['sessions']), JSON.stringify(mod.inject));
   let applyError;
   try {
     mod.apply(ctx);
@@ -259,6 +266,7 @@ const sessionRow = (overrides = {}) => ({ id: 's1', displayTitle: '修 bug', run
   check('sessions.list 缺失时 apply 不抛错', noList.applyError === undefined);
   check('sessions.list 缺失时给出降级警告', noList.warnings.some((line) => line.includes('sessions.list 不可用')));
 }
+
 
 console.log(`\n${pass}/${pass + fail} 通过`);
 process.exit(fail ? 1 : 0);

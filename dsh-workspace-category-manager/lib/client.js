@@ -876,6 +876,29 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   return root;
 }
 
+// src/client/kit-tab.ts
+function registerKitTab(ctx, options) {
+  const slot = options.slot ?? "settings.pluginKit.tab";
+  const slots = ctx.slots;
+  let dispose;
+  let mode;
+  const apply2 = () => {
+    const declared = slots.spec?.(slot) !== void 0;
+    const next = declared ? "tab" : options.fallback ? "fallback" : void 0;
+    if (next === mode) return;
+    if (dispose) dispose();
+    dispose = void 0;
+    mode = next;
+    dispose = next === "tab" ? options.tab() : next === "fallback" ? options.fallback() : void 0;
+  };
+  const off = slots.subscribe(slot, apply2);
+  apply2();
+  ctx.effect(() => () => {
+    off();
+    if (dispose) dispose();
+  }, options.effectName ?? "plugin-kit: settings tab");
+}
+
 // src/client/index.ts
 if (typeof document !== "undefined") {
   const tagId = "dsh-workspace-category-manager/styles.css";
@@ -894,7 +917,13 @@ function apply(ctx) {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), "workspace-category-manager: dictionaries");
   const t = ctx.locale.bind(NS);
   const api = createDshApi(ctx);
-  ctx.slots.inject("settings.section", () => ctx.slots.register({ name: "settings.section", id: "workspace-categories", order: 16, label: () => t("title"), locale: NS, inject: () => ({ api, t }) }, CategorySection));
+  const register = (name, options, component) => ctx.slots.register({ name, ...options }, component);
+  const sectionEntry = () => ({ id: "workspace-categories", order: 16, label: () => t("title"), locale: NS, inject: () => ({ api, t }) });
+  registerKitTab(ctx, {
+    effectName: "workspace-category-manager: suite settings section",
+    tab: () => ctx.slots.inject("settings.pluginKit.tab", () => register("settings.pluginKit.tab", sectionEntry(), CategorySection)),
+    fallback: () => ctx.slots.inject("settings.section", () => register("settings.section", sectionEntry(), CategorySection))
+  });
   ctx.slots.inject("sidebar.workspaces", () => ctx.slots.register({ name: "sidebar.workspaces", priority: -1, locale: NS, inject: () => ({ api, t }) }, CategorySidebar));
 }
 return module.exports; } });
