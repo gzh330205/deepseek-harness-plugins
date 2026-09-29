@@ -108,7 +108,16 @@ function makeContext(saved) {
     },
   };
   const layout = { entries: [] };
+  // 假的 ctx.sidebarRight：只实现本插件用到的那几个公开方法。
+  const rightbar = { target: undefined, calls: [] };
   const ctx = {
+    sidebarRight: {
+      commandTarget: () => rightbar.target,
+      openTabFromTarget(kind, target) {
+        rightbar.calls.push([kind, target]);
+        return true;
+      },
+    },
     effect() {},
     locale: { register() {}, bind: () => (key) => key },
     configForms: { get: () => scope },
@@ -120,7 +129,7 @@ function makeContext(saved) {
       entries: (key) => (key === 'root' ? layout.entries : []),
     },
   };
-  return { ctx, scope, saved, layout };
+  return { ctx, scope, saved, layout, rightbar };
 }
 
 /** 载入产物，返回 exports（apply / inject）。 */
@@ -281,10 +290,97 @@ async function boot(config = {}, layoutOverrides = {}) {
   const mod = loadBundle();
   check(
     'inject 声明齐全',
-    JSON.stringify(mod.inject) === JSON.stringify(['slots', 'locale', 'configForms']),
+    JSON.stringify(mod.inject) === JSON.stringify(['slots', 'locale', 'configForms', 'sidebarRight']),
     JSON.stringify(mod.inject),
   );
   check('导出具名 apply', typeof mod.apply === 'function');
+}
+
+/* ── 场景 13：关闭右栏最后一个标签 → 停在引导页 ─────────────────────── */
+
+{
+  const { layout, rightbar } = await boot({ guideOnLastTab: true });
+  const docked = { sessionId: 's1', paneId: 'pane1', host: 'dock', tabId: 'tab2' };
+  const empty = { sessionId: 's1', paneId: 'pane1', host: 'dock', tabId: undefined };
+
+  check('启动时的收起状态不算「刚关闭」', rightbar.calls.length === 0, JSON.stringify(rightbar.calls));
+
+  // 打开右栏 + 一个标签
+  rightbar.target = docked;
+  layout.info.rightbarShown = true;
+  layout.emit();
+  // 手动点收起：标签还在（tabId 有值）→ 绝不能自作主张打开引导页
+  layout.info.rightbarShown = false;
+  layout.emit();
+  check('手动收起（标签还在）不打开引导页', rightbar.calls.length === 0, JSON.stringify(rightbar.calls));
+
+  // 重新展开，然后关闭最后一个标签：pane 空了
+  layout.info.rightbarShown = true;
+  layout.emit();
+  rightbar.target = empty;
+  layout.info.rightbarShown = false;
+  layout.emit();
+  check('关闭最后一个标签后打开引导页', rightbar.calls.length === 1 && rightbar.calls[0][0] === 'guide', JSON.stringify(rightbar.calls));
+  check('引导页开在原来那个 dock pane', rightbar.calls[0]?.[1]?.paneId === 'pane1', JSON.stringify(rightbar.calls[0]?.[1]));
+
+  // 同一次收起重复通知不应重复打开
+  layout.emit();
+  check('重复通知不重复打开', rightbar.calls.length === 1, JSON.stringify(rightbar.calls));
+}
+
+/* ── 场景 14：引导页回退的边界 ──────────────────────────────────────── */
+
+{
+  // 窄视口：右栏是全屏浮层，收起就收起
+  const full = await boot({ guideOnLastTab: true }, { rightbarFullscreen: true });
+  full.layout.info.rightbarShown = true;
+  full.layout.emit();
+  full.rightbar.target = { sessionId: 's1', paneId: 'pane1', host: 'dock', tabId: undefined };
+  full.layout.info.rightbarShown = false;
+  full.layout.emit();
+  check('全屏（窄视口）浮层不强行打开引导页', full.rightbar.calls.length === 0, JSON.stringify(full.rightbar.calls));
+}
+
+{
+  const off = await boot({ guideOnLastTab: false });
+  off.layout.info.rightbarShown = true;
+  off.layout.emit();
+  off.rightbar.target = { sessionId: 's1', paneId: 'pane1', host: 'dock', tabId: undefined };
+  off.layout.info.rightbarShown = false;
+  off.layout.emit();
+  check('开关关闭时保持 DSH 原生行为', off.rightbar.calls.length === 0, JSON.stringify(off.rightbar.calls));
+}
+
+{
+  const disabled = await boot({ enabled: false, guideOnLastTab: true });
+  disabled.layout.info.rightbarShown = true;
+  disabled.layout.emit();
+  disabled.rightbar.target = { sessionId: 's1', paneId: 'pane1', host: 'dock', tabId: undefined };
+  disabled.layout.info.rightbarShown = false;
+  disabled.layout.emit();
+  check('总开关关闭时不动作', disabled.rightbar.calls.length === 0, JSON.stringify(disabled.rightbar.calls));
+}
+
+{
+  // 没有 sidebarRight 服务（别的部署）时不能抛错
+  const saved = { current: { sidebarWidth: 0, rightbarWidth: 0, guideOnLastTab: true } };
+  const env = makeContext(saved);
+  delete env.ctx.sidebarRight;
+  const layout = makeLayout();
+  env.layout.entries.push({ store: layout.store });
+  const mod = loadBundle();
+  let threw = '';
+  try {
+    mod.apply(env.ctx);
+    await sleep(450);
+    layout.info.rightbarShown = true;
+    layout.emit();
+    layout.info.rightbarShown = false;
+    layout.emit();
+  } catch (error) {
+    threw = String(error);
+  }
+  check('缺少 sidebarRight 服务时安全降级', threw === '', threw);
 }
 
 console.log(`\n${passed}/${passed + failures.length} 通过`);

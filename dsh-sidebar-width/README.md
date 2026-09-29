@@ -17,8 +17,8 @@ profile 的 `cordis.patch.yml`），因此跨会话、跨标签、重启都保�
 
 | 半区 | 文件 | 作用 |
 |---|---|---|
-| host | `index.js` | 声明 `Config`：`enabled` / `sidebarWidth` / `rightbarWidth`（都 `.volatile()`） |
-| client | `src/client/index.js` → `lib/client.js` | 连接布局 store、应用宽度、记录用户拖动、贡献「侧栏宽度」设置页签 |
+| host | `index.js` | 声明 `Config`：`enabled` / `sidebarWidth` / `rightbarWidth` / `guideOnLastTab`（都 `.volatile()`） |
+| client | `src/client/index.js` → `lib/client.js` | 连接布局 store、应用宽度、记录用户拖动、关闭最后一个标签后回引导页、贡献「侧栏宽度」设置页签 |
 | bundle | `cordis.patch.yml` | 一行 `insert`：`id: sidebar-width` = `SETTINGS_NAMESPACE` |
 
 ## 怎么拿到 DSH 的布局 store（关键）
@@ -71,6 +71,42 @@ instance.subscribe(listener)        // 用户拖动 / 快捷键都会从这里�
 
 `enabled: false` 时既不应用也不记录；窄视口（< 1024，原生会自动折叠）不强行展开左栏。
 
+## 关闭右栏最后一个标签 → 停在引导页
+
+DSH 原生：右栏**只剩一个标签**时关掉它，`closeTab`（`dsh-client-ui-sidebar-right` 的 store）
+会一并 `planSetExpanded(false)`，把整个右栏收起：
+
+```js
+// sidebar-right 的 closeTab action（原生）
+if (!soleDockedTab(state, tabId)) return [{ type: 'closeTab', tabId }];
+return [{ type: 'closeTab', tabId }, ...planSetMode(state, 'push'), ...planSetExpanded(state, false)];
+```
+
+本插件把这一步改成**停在引导页**（`kind: "guide"`，界面上叫「开始」），右栏保持展开。
+走的是公开服务 `ctx.sidebarRight.openTabFromTarget('guide', target)`——它内部的
+`openContent` 一定会 `planSetExpanded(true)`，所以列会重新展开。
+
+**判据**（`createGuideFallback`）用两个条件同时成立：`layoutInfo.rightbarShown` 由
+`true` 变 `false`，**且**活动 dock pane 已空（`commandTarget().tabId === undefined`）。
+只看「收起」是不够的：
+
+| 场景 | pane 里有标签？ | 动作 |
+|---|---|---|
+| 关闭最后一个标签（本功能的目标） | 否 | 打开引导页 |
+| 手动点「收起右侧边栏」 | 是 | **不动**（否则用户再也收不起右栏） |
+| 引导页作为唯一标签 | — | 它**没有关闭按钮**（原生 `canCloseTab` 明令禁止），不存在「关了又被打开」的循环 |
+| 窄视口（<768px）全屏浮层 | — | 让原生照常收起，不打扰 |
+| `guideOnLastTab: false` 或 `enabled: false` | — | 完全保持 DSH 原生行为 |
+
+设置页里对应一个勾选框（默认开启）。真机验证：
+
+```
+打开右栏（引导页）→ 点「工作区文件」→ 标签只剩「文件」
+关闭它            → open=true  标签回到「开始」      ← ★功能生效
+手动点收起右侧边栏 → open=false 且保持不动            ← 不误触发
+关掉开关后再试     → open=false（原生收起右栏）        ← 开关有效
+```
+
 ## 安装
 
 ```bash
@@ -109,6 +145,8 @@ node ./tests/client.test.mjs
 
 - 只改「前端显示宽度」，不碰任何仓库/会话数据。
 - 折叠状态不记：侧栏折叠时不会把宽度写成 0，也不会因为配置里有值就自动展开。
+- 「关闭最后一个标签 → 引导页」只在**右栏本来是展开的**前提下生效（`rightbarShown` 由 true 变 false），
+  并且不会阻止手动收起；`guideOnLastTab` 可关掉。
 - 左右栏都接管，全部通过布局 store 的 actions 写入。
 - 原生 clamp：左栏 264–420px，右栏 300px–视口 70%；配置里填超范围的值会以引擎实际值为准。
 - 依赖「store 挂在 `root` 注册项上」这一实现细节：DSH 若改了这里，插件会打一行 warning

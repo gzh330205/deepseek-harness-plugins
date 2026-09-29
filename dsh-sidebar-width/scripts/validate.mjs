@@ -17,7 +17,7 @@ const manifest = JSON.parse(read('package.json'));
 if (manifest.name !== 'dsh-sidebar-width') fail('name 必须是 dsh-sidebar-width');
 if (manifest.dsh?.bundle?.patch !== './cordis.patch.yml') fail('dsh.bundle.patch 必须是 ./cordis.patch.yml');
 if (manifest.dsh?.client?.platform !== 'web') fail('dsh.client.platform 必须是 web');
-for (const mod of ['@deepseek-ai/dsh-client-ui-settings', '@deepseek-ai/dsh-client-ui-slots', '@deepseek-ai/dsh-client-locale']) {
+for (const mod of ['@deepseek-ai/dsh-client-ui-settings', '@deepseek-ai/dsh-client-ui-slots', '@deepseek-ai/dsh-client-locale', '@deepseek-ai/dsh-client-ui-sidebar-right']) {
   if (!(manifest.dsh.client.inject ?? []).includes(mod)) fail(`dsh.client.inject 缺少 ${mod}`);
 }
 if (manifest.dependencies?.['@deepseek-ai/schemastery'] !== '~3.18.4') fail('schemastery 必须是 ~3.18.4');
@@ -30,7 +30,7 @@ for (const needle of ["import z from '@deepseek-ai/schemastery'", 'export const 
   if (!host.includes(needle)) fail(`index.js 缺少 ${needle}`);
 }
 if (!host.includes("SETTINGS_NAMESPACE = 'sidebar-width'")) fail('SETTINGS_NAMESPACE 必须是 sidebar-width');
-for (const field of ['enabled', 'sidebarWidth', 'rightbarWidth']) {
+for (const field of ['enabled', 'sidebarWidth', 'rightbarWidth', 'guideOnLastTab']) {
   if (!host.includes(field)) fail(`Config 缺少字段 ${field}`);
 }
 if (!/rightbarWidth:[^,\n]*\.volatile\(\)/.test(host)) fail('rightbarWidth 必须标 .volatile()');
@@ -56,6 +56,11 @@ for (const needle of ['entries?.("root")', 'setSidebar', 'setRightbar', 'getSnap
 }
 if (client.includes('gridTemplateColumns')) fail('lib/client.js 不应再直接改写 grid-template-columns（面板宽度由引擎决定，改轨道会溢出）');
 if (!client.includes('layoutInfo')) fail('lib/client.js 缺少 layoutInfo 读取');
+// 「关闭最后一个标签 → 引导页」必须走公开服务，并且判据里要有「pane 已空」这一条
+// （只看收起会把手动收起也当成关闭最后一个标签，用户就再也收不起右栏）。
+if (!client.includes('openTabFromTarget')) fail('lib/client.js 必须用 ctx.sidebarRight.openTabFromTarget 打开引导页');
+if (!client.includes('rightbarShown')) fail('lib/client.js 缺少 rightbarShown 判据');
+if (!/tabId\s*!==\s*void 0/.test(client)) fail('lib/client.js 必须用「pane 里还有没有标签」把手动收起区分开');
 // 只允许走 store：出现 DOM 列宽/分隔条信号就是在退回旧实现。
 for (const forbidden of ['flex-basis', 'data-dragging', 'data-sidebar-collapsed', 'MutationObserver']) {
   if (client.includes(forbidden)) fail(`lib/client.js 不应再出现 ${forbidden}（应只通过布局 store 的 actions 改宽度）`);

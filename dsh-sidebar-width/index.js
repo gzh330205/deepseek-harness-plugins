@@ -37,6 +37,13 @@ export const Config = z.object({
   sidebarWidth: z.number().min(0).max(2000).default(0).volatile(),
   /** 右侧栏宽度（px）。0 = 没设置过。面板未打开时也会记住，下次展开即用该宽度。 */
   rightbarWidth: z.number().min(0).max(4000).default(0).volatile(),
+  /**
+   * 右栏最后一个标签关闭后，停在引导页而不是收起右栏。
+   *
+   * DSH 原生行为：右栏只剩一个标签时关掉它，`closeTab` 会顺手 `planSetExpanded(false)`，
+   * 整个右栏收起。打开这一项后由浏览器半补一手，改成显示引导页（`kind: "guide"`）。
+   */
+  guideOnLastTab: z.boolean().default(true).volatile(),
 });
 
 export const inject = [];

@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Sidebar widths",
-    "description": "Keep the left and right sidebar widths in one global setting that survives session switches, reloads and restarts (configured under the Plugin kit section)"
+    "description": "Keep the left and right sidebar widths in one global setting that survives session switches, reloads and restarts; closing the last right-side tab lands on the guide page (configured under the Plugin kit section)"
   }
 }

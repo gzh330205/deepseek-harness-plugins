@@ -72,6 +72,7 @@ var SIDEBAR_MAX = 420;
 var RIGHTBAR_MIN = 300;
 var SIDEBAR_AUTO_COLLAPSE = 1024;
 var RECORD_DEBOUNCE_MS = 300;
+var GUIDE_KIND = "guide";
 var CSS_ID = "dsh-sidebar-width/settings.css";
 var CSS = `
 .sw{display:flex;flex-direction:column;gap:14px;max-width:760px;color:var(--dsw-alias-label-primary)}
@@ -81,6 +82,7 @@ var CSS = `
 .sw-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .sw-form label{display:flex;flex-direction:column;gap:5px;color:var(--dsw-alias-label-secondary);font-size:12px}
 .sw-input{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px}
+.sw-check{display:flex;align-items:center;gap:7px;color:var(--dsw-alias-label-secondary);font-size:12px;cursor:pointer}
 .sw-actions{display:flex;gap:6px;justify-content:flex-end}
 .sw-actions button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent}
 .sw-actions button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
@@ -112,7 +114,9 @@ var zh = {
   saved: "\u5DF2\u4FDD\u5B58\u5E76\u5E94\u7528\u3002",
   loading: "\u6B63\u5728\u8FDE\u63A5 DSH \u5E03\u5C40\u2026",
   unavailable: "\u62FF\u4E0D\u5230 DSH \u7684\u5E03\u5C40 store\uFF0C\u6B64\u90E8\u7F72\u4E0D\u652F\u6301\u8C03\u6574\u4FA7\u680F\u5BBD\u5EA6\u3002",
-  autoHint: "\u76F4\u63A5\u62D6\u52A8\u5206\u9694\u6761\u4E5F\u4F1A\u81EA\u52A8\u8BB0\u5F55\uFF08\u65E0\u9700\u56DE\u5230\u8FD9\u91CC\u70B9\u4FDD\u5B58\uFF09\uFF1B\u6536\u8D77\u4FA7\u680F\u4E0D\u4F1A\u88AB\u8BB0\u5F55\u3002"
+  autoHint: "\u76F4\u63A5\u62D6\u52A8\u5206\u9694\u6761\u4E5F\u4F1A\u81EA\u52A8\u8BB0\u5F55\uFF08\u65E0\u9700\u56DE\u5230\u8FD9\u91CC\u70B9\u4FDD\u5B58\uFF09\uFF1B\u6536\u8D77\u4FA7\u680F\u4E0D\u4F1A\u88AB\u8BB0\u5F55\u3002",
+  guideLabel: "\u5173\u95ED\u53F3\u680F\u6700\u540E\u4E00\u4E2A\u6807\u7B7E\u540E\uFF0C\u6539\u4E3A\u663E\u793A\u5F15\u5BFC\u9875",
+  guideHint: "\u53F3\u680F\u53EA\u5269\u4E00\u4E2A\u6807\u7B7E\u65F6\u5173\u6389\u5B83\uFF0CDSH \u9ED8\u8BA4\u4F1A\u628A\u6574\u4E2A\u53F3\u680F\u6536\u8D77\u3002\u6253\u5F00\u8FD9\u4E00\u9879\u540E\u505C\u5728\u5F15\u5BFC\u9875\uFF08kind: guide\uFF09\u3002\u624B\u52A8\u70B9\u6536\u8D77\u6309\u94AE\u4E0D\u53D7\u5F71\u54CD\u3002"
 };
 var en = {
   tab: "Sidebar width",
@@ -129,7 +133,9 @@ var en = {
   saved: "Saved and applied.",
   loading: "Connecting to the DSH layout\u2026",
   unavailable: "The DSH layout store is unavailable, so this deployment cannot adjust sidebar widths.",
-  autoHint: "Dragging the divider is recorded automatically \u2014 no need to come back here. Collapsing a sidebar is never recorded."
+  autoHint: "Dragging the divider is recorded automatically \u2014 no need to come back here. Collapsing a sidebar is never recorded.",
+  guideLabel: "Show the guide page after the last right-side tab closes",
+  guideHint: "Closing the only tab of the right column makes DSH collapse the whole column. With this on you land on the guide page instead (kind: guide). The collapse button is unaffected."
 };
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Math.round(value)));
@@ -187,6 +193,43 @@ function applyWidths(instance, config, expected) {
   }
   return readWidths(instance);
 }
+function createGuideFallback(ctx, readConfig) {
+  const service = ctx.sidebarRight;
+  if (service === void 0 || typeof service.commandTarget !== "function" || typeof service.openTabFromTarget !== "function") {
+    return () => {
+    };
+  }
+  let previousShown;
+  let previousFullscreen = false;
+  let reopening = false;
+  return (info) => {
+    const shown = info?.rightbarShown === true;
+    const fullscreen = info?.rightbarFullscreen === true;
+    const wasShown = previousShown;
+    const wasFullscreen = previousFullscreen;
+    previousShown = shown;
+    previousFullscreen = fullscreen;
+    if (reopening || shown || wasShown !== true || wasFullscreen) return;
+    const config = readConfig();
+    if (config.enabled === false || config.guideOnLastTab === false) return;
+    let target;
+    try {
+      target = service.commandTarget();
+    } catch (error) {
+      console.warn("[dsh-sidebar-width] \u8BFB\u53D6\u53F3\u680F\u76EE\u6807\u5931\u8D25\uFF0C\u8DF3\u8FC7\u5F15\u5BFC\u9875\u56DE\u9000", error);
+      return;
+    }
+    if (target === void 0 || target.tabId !== void 0 || target.host !== "dock") return;
+    reopening = true;
+    try {
+      service.openTabFromTarget(GUIDE_KIND, target);
+    } catch (error) {
+      console.warn("[dsh-sidebar-width] \u5173\u95ED\u6700\u540E\u4E00\u4E2A\u6807\u7B7E\u540E\u65E0\u6CD5\u6253\u5F00\u5F15\u5BFC\u9875", error);
+    } finally {
+      reopening = false;
+    }
+  };
+}
 function useScope(scope) {
   return import_react2.default.useSyncExternalStore(
     (listener) => scope.subscribe(listener),
@@ -217,7 +260,8 @@ function SidebarWidthSettings({ scope, holder, t }) {
   const saved = snapshot?.value ?? {};
   const value = {
     sidebarWidth: draft?.sidebarWidth ?? saved.sidebarWidth ?? 0,
-    rightbarWidth: draft?.rightbarWidth ?? saved.rightbarWidth ?? 0
+    rightbarWidth: draft?.rightbarWidth ?? saved.rightbarWidth ?? 0,
+    guideOnLastTab: draft?.guideOnLastTab ?? saved.guideOnLastTab ?? true
   };
   const patch = (key, next) => setDraft((old) => ({ ...old ?? value, [key]: next }));
   const save = async () => {
@@ -229,6 +273,7 @@ function SidebarWidthSettings({ scope, holder, t }) {
       const rightbar = clamp(Math.max(0, Number(value.rightbarWidth) || 0), 0, 4e3);
       await scope.set("sidebarWidth", sidebar);
       await scope.set("rightbarWidth", rightbar);
+      await scope.set("guideOnLastTab", value.guideOnLastTab !== false);
       if (holder?.instance !== void 0) {
         applyWidths(holder.instance, { ...saved, sidebarWidth: sidebar, rightbarWidth: rightbar }, {});
       }
@@ -298,6 +343,17 @@ function SidebarWidthSettings({ scope, holder, t }) {
     ),
     h("p", { className: "sw-hint" }, t("hint")),
     h("p", { className: "sw-hint" }, t("autoHint")),
+    h(
+      "label",
+      { className: "sw-check" },
+      h("input", {
+        type: "checkbox",
+        checked: value.guideOnLastTab !== false,
+        onChange: (event) => patch("guideOnLastTab", event.target.checked)
+      }),
+      t("guideLabel")
+    ),
+    h("p", { className: "sw-hint" }, t("guideHint")),
     failure ? h("p", { className: "sw-error" }, failure) : null,
     note ? h("p", { className: "sw-ok" }, note) : null,
     h(
@@ -308,7 +364,7 @@ function SidebarWidthSettings({ scope, holder, t }) {
     )
   );
 }
-var inject = ["slots", "locale", "configForms"];
+var inject = ["slots", "locale", "configForms", "sidebarRight"];
 function apply(ctx) {
   try {
     ctx.effect(() => ctx.locale.register(NS, { zh, en }), "sidebar-width: dictionaries");
@@ -332,9 +388,11 @@ function apply(ctx) {
         void scope.set("rightbarWidth", pending.rightbar);
       }
     };
+    const observeRightbar = createGuideFallback(ctx, readConfig);
     const onStoreChange = () => {
       if (holder.instance === void 0) return;
       const info = holder.instance.getSnapshot().layoutInfo;
+      observeRightbar(info);
       const saved = readConfig();
       if (info.sidebar > 0 && info.sidebar !== lastSeen.sidebar && info.sidebar !== expected.sidebar && info.sidebar !== saved.sidebarWidth) {
         recordPending.sidebar = info.sidebar;

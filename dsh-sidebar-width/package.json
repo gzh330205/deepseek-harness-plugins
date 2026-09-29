@@ -1,6 +1,6 @@
 {
   "name": "dsh-sidebar-width",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "DSH 侧栏宽度记忆：把左右侧边栏宽度存成全局配置，跨会话 / 刷新 / 重启都保持，并在「插件合集」里提供配置页。",
@@ -28,6 +28,7 @@
       "inject": [
         "@deepseek-ai/dsh-client-locale",
         "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
         "@deepseek-ai/dsh-client-ui-slots"
       ]
     }

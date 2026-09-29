@@ -43,6 +43,8 @@ const RIGHTBAR_MIN = 300;
 const SIDEBAR_AUTO_COLLAPSE = 1024;
 /** 拖动时每一步都会触发一次 store 变更，写配置要防抖。 */
 const RECORD_DEBOUNCE_MS = 300;
+/** DSH 内置引导页的 tab kind（见 dsh-client-ui-sidebar-right 的 GUIDE_KIND）。 */
+const GUIDE_KIND = 'guide';
 
 /* ── 设置页样式（沿用 DSH 主题变量，浅/深色都跟随） ─────────────────── */
 
@@ -55,6 +57,7 @@ const CSS = `
 .sw-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .sw-form label{display:flex;flex-direction:column;gap:5px;color:var(--dsw-alias-label-secondary);font-size:12px}
 .sw-input{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px}
+.sw-check{display:flex;align-items:center;gap:7px;color:var(--dsw-alias-label-secondary);font-size:12px;cursor:pointer}
 .sw-actions{display:flex;gap:6px;justify-content:flex-end}
 .sw-actions button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent}
 .sw-actions button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
@@ -91,6 +94,8 @@ const zh = {
   loading: '正在连接 DSH 布局…',
   unavailable: '拿不到 DSH 的布局 store，此部署不支持调整侧栏宽度。',
   autoHint: '直接拖动分隔条也会自动记录（无需回到这里点保存）；收起侧栏不会被记录。',
+  guideLabel: '关闭右栏最后一个标签后，改为显示引导页',
+  guideHint: '右栏只剩一个标签时关掉它，DSH 默认会把整个右栏收起。打开这一项后停在引导页（kind: guide）。手动点收起按钮不受影响。',
 };
 
 const en = {
@@ -109,6 +114,8 @@ const en = {
   loading: 'Connecting to the DSH layout…',
   unavailable: 'The DSH layout store is unavailable, so this deployment cannot adjust sidebar widths.',
   autoHint: 'Dragging the divider is recorded automatically — no need to come back here. Collapsing a sidebar is never recorded.',
+  guideLabel: 'Show the guide page after the last right-side tab closes',
+  guideHint: 'Closing the only tab of the right column makes DSH collapse the whole column. With this on you land on the guide page instead (kind: guide). The collapse button is unaffected.',
 };
 
 /* ── 布局 store ─────────────────────────────────────────────────────── */
@@ -200,6 +207,71 @@ function applyWidths(instance, config, expected) {
   return readWidths(instance);
 }
 
+/* ── 「关掉最后一个标签 → 回引导页」 ─────────────────────────────────── */
+
+/**
+ * DSH 原生：右栏只剩一个标签时关闭它，`closeTab`（sidebar-right 的 store）会一并
+ * `planSetExpanded(false)`，把整个右栏收起。想让它停在引导页，就得在这里补一手。
+ *
+ * 判据为什么是「`rightbarShown` 由 true 变 false **且** 活动 dock pane 已空」：
+ *
+ *   - 手动点收起按钮：`expanded` 变 false，但 pane 里的标签还在，
+ *     `commandTarget().tabId` 有值 → 不动（否则用户永远收不起右栏）；
+ *   - 引导页自己作为唯一 docked 标签时**没有关闭按钮**（`canCloseTab` 明令禁止），
+ *     所以不存在「关了又被本插件打开」的死循环；
+ *   - 只有「关闭最后一个标签」会同时满足「收起」+「pane 为空」。
+ *
+ * 打开引导页走的是公开服务 `ctx.sidebarRight.openTabFromTarget('guide', target)`；
+ * 它内部的 `openContent` 一定会 `planSetExpanded(true)`，所以列会重新展开。
+ * 窄视口（<768px）下右栏是全屏浮层，那里让原生照常收起，不打扰用户。
+ *
+ * @param ctx 浏览器插件上下文
+ * @param readConfig 读当前全局配置
+ * @returns 接收 `layoutInfo` 的观察函数（挂在布局 store 的订阅里）
+ */
+function createGuideFallback(ctx, readConfig) {
+  const service = ctx.sidebarRight;
+  if (
+    service === undefined ||
+    typeof service.commandTarget !== 'function' ||
+    typeof service.openTabFromTarget !== 'function'
+  ) {
+    return () => {};
+  }
+  let previousShown;
+  let previousFullscreen = false;
+  let reopening = false;
+  return (info) => {
+    const shown = info?.rightbarShown === true;
+    const fullscreen = info?.rightbarFullscreen === true;
+    const wasShown = previousShown;
+    const wasFullscreen = previousFullscreen;
+    previousShown = shown;
+    previousFullscreen = fullscreen;
+    // 只在「刚收起」这一帧动作；首次观测（wasShown undefined）不算。
+    if (reopening || shown || wasShown !== true || wasFullscreen) return;
+    const config = readConfig();
+    if (config.enabled === false || config.guideOnLastTab === false) return;
+    let target;
+    try {
+      target = service.commandTarget();
+    } catch (error) {
+      console.warn('[dsh-sidebar-width] 读取右栏目标失败，跳过引导页回退', error);
+      return;
+    }
+    // tabId 仍在 = 用户手动收起，或收起的不是「空掉的」那一列。
+    if (target === undefined || target.tabId !== undefined || target.host !== 'dock') return;
+    reopening = true;
+    try {
+      service.openTabFromTarget(GUIDE_KIND, target);
+    } catch (error) {
+      console.warn('[dsh-sidebar-width] 关闭最后一个标签后无法打开引导页', error);
+    } finally {
+      reopening = false;
+    }
+  };
+}
+
 /* ── 设置页 ─────────────────────────────────────────────────────────── */
 
 function useScope(scope) {
@@ -238,6 +310,7 @@ function SidebarWidthSettings({ scope, holder, t }) {
   const value = {
     sidebarWidth: draft?.sidebarWidth ?? saved.sidebarWidth ?? 0,
     rightbarWidth: draft?.rightbarWidth ?? saved.rightbarWidth ?? 0,
+    guideOnLastTab: draft?.guideOnLastTab ?? saved.guideOnLastTab ?? true,
   };
   const patch = (key, next) => setDraft((old) => ({ ...(old ?? value), [key]: next }));
 
@@ -250,6 +323,7 @@ function SidebarWidthSettings({ scope, holder, t }) {
       const rightbar = clamp(Math.max(0, Number(value.rightbarWidth) || 0), 0, 4000);
       await scope.set('sidebarWidth', sidebar);
       await scope.set('rightbarWidth', rightbar);
+      await scope.set('guideOnLastTab', value.guideOnLastTab !== false);
       // 立刻应用一次，不必等下次刷新。
       if (holder?.instance !== undefined) {
         applyWidths(holder.instance, { ...saved, sidebarWidth: sidebar, rightbarWidth: rightbar }, {});
@@ -323,6 +397,17 @@ function SidebarWidthSettings({ scope, holder, t }) {
     ),
     h('p', { className: 'sw-hint' }, t('hint')),
     h('p', { className: 'sw-hint' }, t('autoHint')),
+    h(
+      'label',
+      { className: 'sw-check' },
+      h('input', {
+        type: 'checkbox',
+        checked: value.guideOnLastTab !== false,
+        onChange: (event) => patch('guideOnLastTab', event.target.checked),
+      }),
+      t('guideLabel'),
+    ),
+    h('p', { className: 'sw-hint' }, t('guideHint')),
     failure ? h('p', { className: 'sw-error' }, failure) : null,
     note ? h('p', { className: 'sw-ok' }, note) : null,
     h(
@@ -336,7 +421,7 @@ function SidebarWidthSettings({ scope, holder, t }) {
 
 /* ── 插件入口 ───────────────────────────────────────────────────────── */
 
-export const inject = ['slots', 'locale', 'configForms'];
+export const inject = ['slots', 'locale', 'configForms', 'sidebarRight'];
 
 export function apply(ctx) {
   try {
@@ -366,9 +451,13 @@ export function apply(ctx) {
       }
     };
 
+    /** 「最后一个标签关闭 → 引导页」的观察者（见 createGuideFallback）。 */
+    const observeRightbar = createGuideFallback(ctx, readConfig);
+
     const onStoreChange = () => {
       if (holder.instance === undefined) return;
       const info = holder.instance.getSnapshot().layoutInfo;
+      observeRightbar(info);
       const saved = readConfig();
       // 只记「用户真的改过」的值：展开态（>0）、不是我们刚写进去的、和配置不同。
       if (
