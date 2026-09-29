@@ -23,15 +23,61 @@ window.__ModuleLoader__.load({
     function Check({ label, checked, onChange }) { return h('label', { className: 'msm-check' }, h('input', { type: 'checkbox', checked, onChange: (event) => onChange(event.target.checked) }), label); }
     function Dialog({ title, children, close }) { return h('div', { className: 'msm-dialogMask', role: 'presentation', onMouseDown: (event) => { if (event.target === event.currentTarget) close(); } }, h('section', { className: 'msm-dialog', role: 'dialog', 'aria-modal': true, 'aria-label': title }, h('header', { className: 'msm-dialogHead' }, h('h3', null, title), h('button', { className: 'msm-close', type: 'button', onClick: close, 'aria-label': 'Close' }, '×')), children)); }
 
-    function KeyValueEditor({ label, hint, value, onChange, keyPlaceholder, valuePlaceholder, maskValues = false }) {
-      const entries = Object.entries(value ?? {});
-      const update = (index, key, nextValue) => { const next = [...entries]; next[index] = [key, nextValue]; onChange(Object.fromEntries(next.filter(([name]) => name.trim() !== ''))); };
-      const rename = (index, name, currentValue) => { const next = [...entries]; next[index] = [name, currentValue]; onChange(Object.fromEntries(next.filter(([key]) => key.trim() !== ''))); };
-      const remove = (index) => { const next = [...entries]; next.splice(index, 1); onChange(Object.fromEntries(next)); };
-      return h('div', { className: 'msm-span' }, h('label', null, label), hint ? h('p', { className: 'msm-muted' }, hint) : null, h('div', { className: 'msm-picker' }, entries.map(([key, currentValue], index) => h('div', { className: 'msm-row', key: `${key}:${index}` }, h('input', { value: key, placeholder: keyPlaceholder, onChange: (event) => rename(index, event.target.value, currentValue) }), h('input', { type: maskValues ? 'password' : 'text', value: currentValue, placeholder: valuePlaceholder, onChange: (event) => update(index, key, event.target.value) }), h('button', { type: 'button', className: 'msm-danger', onClick: () => remove(index) }, '移除'))), h('button', { type: 'button', onClick: () => onChange({ ...value, '': '' }) }, '新增')));
+    /**
+     * 键值对编辑器（环境变量 / HTTP 头共用）。
+     *
+     * 两个必须守住的点：
+     *   1. **行标识要稳定**。早期版本用 `${key}:${index}` 当 React key，
+     *      于是「打一个字符 → key 变了 → React 认为换了一行 → 重建 DOM → 输入框失焦」，
+     *      一个字符都打不连贯。现在每行有一个自增 id，与正在编辑的文本无关。
+     *   2. **空名字的行要留在本地**。键清空是为了重打，但投影给上层的对象里
+     *      空名字必须被过滤掉（schema 不接受空键名）；本地行列表不能被同步逻辑清掉，
+     *      否则光标下面的行会突然消失。
+     *
+     * 值不再用 password 遮罩显示：它本来就以明文存在 profile 的 cordis.patch.yml 里，
+     * 遮罩只会让人没法核对自己填了什么。
+     */
+    function KeyValueEditor({ label, hint, value, onChange, keyPlaceholder, valuePlaceholder }) {
+      const idRef = React.useRef(1);
+      const rowsFrom = (source) => Object.entries(source ?? {}).map(([name, item]) => ({ id: idRef.current++, name, value: String(item ?? '') }));
+      // 投影：只把名字非空的行交给上层。
+      const project = (rows) => Object.fromEntries(rows.filter((row) => row.name.trim() !== '').map((row) => [row.name, row.value]));
+      const [rows, setRows] = React.useState(() => rowsFrom(value));
+
+      // 只有当外部值与本地投影不一致时才重建行（也就是父组件真的换了数据：
+      // 切换编辑对象、重置表单）。打字过程中投影与外部值一致，绝不重建。
+      const projected = JSON.stringify(project(rows));
+      React.useEffect(() => {
+        if (JSON.stringify(value ?? {}) === projected) return;
+        setRows(rowsFrom(value));
+      });
+
+      const commit = (next) => { setRows(next); onChange(project(next)); };
+      return h('div', { className: 'msm-span' },
+        h('label', null, label),
+        hint ? h('p', { className: 'msm-muted' }, hint) : null,
+        h('div', { className: 'msm-picker' },
+          rows.map((row) => h('div', { className: 'msm-row', key: row.id },
+            h('input', {
+              value: row.name,
+              placeholder: keyPlaceholder,
+              spellCheck: false,
+              autoComplete: 'off',
+              onChange: (event) => commit(rows.map((item) => item.id === row.id ? { ...item, name: event.target.value } : item)),
+            }),
+            h('input', {
+              type: 'text',
+              value: row.value,
+              placeholder: valuePlaceholder,
+              spellCheck: false,
+              autoComplete: 'off',
+              onChange: (event) => commit(rows.map((item) => item.id === row.id ? { ...item, value: event.target.value } : item)),
+            }),
+            h('button', { type: 'button', className: 'msm-danger', onClick: () => commit(rows.filter((item) => item.id !== row.id)) }, '移除'))),
+          h('button', { type: 'button', onClick: () => setRows([...rows, { id: idRef.current++, name: '', value: '' }]) }, '新增')));
     }
-    function EnvironmentEditor({ value, onChange }) { return h(KeyValueEditor, { label: '环境变量', hint: '这些值会传给 MCP 子进程。机密值会写入 DSH 设置文件；请谨慎保存。', value, onChange, keyPlaceholder: 'JENKINS_URL', valuePlaceholder: '值', maskValues: true }); }
-    function HeaderEditor({ value, onChange }) { return h(KeyValueEditor, { label: 'HTTP 请求头', hint: '用于 HTTP MCP 认证，例如 Authorization: Bearer <token> 或 X-API-Key: <key>。值会写入本机 DSH 设置文件。', value, onChange, keyPlaceholder: 'Authorization', valuePlaceholder: 'Bearer <token>', maskValues: true }); }
+    function EnvironmentEditor({ value, onChange }) { return h(KeyValueEditor, { label: '环境变量', hint: '这些值会原样传给 MCP 子进程，并以明文写入本机 profile 的 cordis.patch.yml。', value, onChange, keyPlaceholder: 'JENKINS_URL', valuePlaceholder: '值' }); }
+    function HeaderEditor({ value, onChange }) { return h(KeyValueEditor, { label: 'HTTP 请求头', hint: '用于 HTTP MCP 认证，例如 Authorization: Bearer <token> 或 X-API-Key: <key>。值以明文写入本机 profile 的 cordis.patch.yml。', value, onChange, keyPlaceholder: 'Authorization', valuePlaceholder: 'Bearer <token>' }); }
     function McpForm({ initial, save, cancel }) {
       const [draft, setDraft] = React.useState({ ...initial, env: initial.env ?? {}, argsText: (initial.args ?? []).join(' ') }); const [error, setError] = React.useState(''); const patch = (key, value) => setDraft((old) => ({ ...old, [key]: value }));
       const positive = (value, fallback) => { const n = Number(value); return Number.isFinite(n) && n >= 1 ? Math.floor(n) : fallback; };
