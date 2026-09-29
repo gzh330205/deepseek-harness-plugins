@@ -69,6 +69,69 @@ headerEnvVars:
 
 这样实际发送的是 `Authorization: <DSH 启动环境中的 JENKINS_API_TOKEN>`，不会把 Token 写入设置文件。
 
+## 与官方 `dsh-mcp-client` 配置对齐
+
+每条受管记录的字段**不是手抄的，而是直接继承官方 schema**：
+
+```js
+import { Config as McpClientConfig } from '@deepseek-ai/dsh-mcp-client';
+const [stdioSchema, httpSchema] = McpClientConfig.list;      // 官方是 z.union([stdio, streamable-http])
+z.union([ stdioSchema.dict, httpSchema.dict ].map((dict) => z.object({ ...dict, ...managerExtras })));
+```
+
+这样官方以后新增字段（`reconnect`、`maxInstructionBytes`、`failOnStartupError` …）会自动出现在
+本插件里，不会再出现「官方加了字段、管理器不认识」。挂载时除管理器元数据外**原样透传**给
+`applyMcpClient`，只把 `envVars` / `headerEnvVars`（引用宿主环境变量的结构化字段）解引用并进
+`env` / `headers`。
+
+> 曾经这里是逐字段手写映射，结果漏了 `reconnect` / `maxInstructionBytes`，还把
+> `failOnStartupError` 硬编码成 `false`——官方字段一律以官方为准，别在管理器里再写一遍。
+
+管理器自己的元数据：`id`（状态检查的键）、`label`、`enabled`、`envVars` / `headerEnvVars`、
+`importedFrom` / `diagnostics`。
+
+## MCP 状态检查
+
+打开 MCP 页会自动对**所有已启用**的服务做一次真实握手探测，每张卡片直接给出结论；也可以随时
+点「重新检查」。一个服务一个请求，慢的（`npx` 首次下载）不会拖住快的。
+
+探测由 Host 半完成，走的是**与 `dsh-mcp-client` 完全相同的 SDK 与传输**（同样的
+`cross-spawn` + `shell:false`、同样的 `scrubbedParentEnv()` 环境脱敏），因此
+「探测通过」等价于「模型调用时能连上」：
+
+| 显示 | 含义 |
+|---|---|
+| ● 可用　工具 N　耗时　服务器名/版本 | `initialize` 成功且 `tools/list` 可用 |
+| ● 不可用　耗时 + 错误文本 | 连接/握手/列表失败；子进程 stderr 会附在错误后面 |
+| 诊断行（单独一行） | 命令解析层面能确定的原因，见下 |
+| 已停用 / 未检查 | 未启用，或不探测 |
+
+另外 Host 侧还记录**挂载结果**（`applyMcpClient` 是否抛错）：它与实时探测互补——
+官方客户端 `failOnStartupError=false` 时初始连接失败**不会**拒绝激活，表现为「工具静默消失」，
+所以只靠挂载结果看不出来，必须实测。
+
+### Windows：`node` / `npx` 这类裸命令的陷阱
+
+这是「服务配了却永远连不上、日志只有一句 Connection closed」的头号原因，值得单独说：
+
+- SDK 用 `cross-spawn` + `shell: false` 启动 stdio 服务。cross-spawn 按「先目录、后扩展名
+  （`.com/.exe/.bat/.cmd`）」解析裸命令，所以 **PATH 里靠前的目录决定用哪个文件**；
+- DSH Desktop 会把自带的 `resources/runtime/dsh/bin` 放在 PATH 很前面，那里有 `node.cmd`、
+  `pnpm.cmd`；而 `npm` 附带的 `npx` 是**无扩展名的 shell 脚本**；
+- Node 在 CVE-2024-27980 之后**拒绝在 `shell:false` 下 spawn `.cmd`/`.bat`**，无扩展名文件在
+  Windows 上也不是可执行文件——两种情况 spawn 都直接失败；
+- 用 `npx` / `pnpm` / `yarn` 裸命令的服务几乎都会踩到。
+
+**修法（已实测）**：改用真实程序的 `.exe` 绝对路径。Node 类服务写成：
+
+```yaml
+command: '<node 安装目录>\node.exe'
+args: ['<包目录>/node_modules/@scope/pkg/dist/index.js']
+```
+
+实测：一个 `npx -y @raviraj87/jenkins-mcp` 的 Jenkins MCP 服务在裸 `npx` 下 100% 起不来；改成
+「绝对 `node.exe` + 全局安装后的 `dist/index.js`」后探测通过（`jenkins-mcp-server 1.0.1`，37 个工具，约 0.5 s）。`cmd /c ...` 包一层**不可行**（实测同样失败）。
+
 ## Skills Tab
 
 打开 **设置 → 插件 → Skills**：
@@ -137,7 +200,7 @@ DSH 0.1.7 起设置不再由插件自己注册命名空间（`settingsScope` / `
 - 导入接口只支持 loopback (`127.0.0.1`) 的单用户 Web Host；绑定 LAN 时会自动关闭；
 - 不导入 MCP 的 OAuth、SSE/未知 transport 或明文秘密；
 - 外部链接的损坏、权限变化和外部删除会让该 Skill 不可发现，需要在来源侧修复；
-- MCP 连接状态/工具数尚未在 UI 中展示。
+- 状态检查会按配置真实起一次连接（stdio 会拉子进程、HTTP 会握手），量大时首次检查可能需要十几秒。
 
 ## 开发与验证
 
@@ -147,4 +210,9 @@ pnpm install --ignore-scripts
 node ./scripts/validate.mjs
 node --check ./index.js
 node --check ./client.js
+node ./tests/probe.test.mjs      # 真起子进程 / 真连 HTTP 的探测测试（23 条断言）
 ```
+
+`tests/probe.test.mjs` **不 mock SDK**：它用 `tests/fixtures/echo-mcp-server.mjs`
+（一个最小 stdio MCP 服务）验证「可用 / 进程秒退 / 命令不存在 / HTTP 连不上 / 环境变量注入」，
+外加 Windows 命令解析诊断（`.cmd`、无扩展名 shim、`.exe` 不误报）。

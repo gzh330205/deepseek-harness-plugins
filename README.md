@@ -8,7 +8,7 @@
 |---|---|---|
 | [`dsh-plugin-kit`](./dsh-plugin-kit) | 0.1.0 | **插件合集（推荐入口）**：唯一进 profile 依赖的组合包，把下面 6 个插件作为子插件行挂在一次安装里；并在「设置 → 插件合集」分区用页签集中呈现各插件的配置 |
 | [`dsh-sidebar-width`](./dsh-sidebar-width) | 0.1.0 | 左右侧栏宽度记忆：收进一份全局配置（Loader volatile Config），跨会话 / 刷新 / 重启都保持（原生左栏完全不持久化、右栏只按会话存）。实现不碰 DOM，而是从 `ctx.slots.entries('root')[0].store` 取到 DSH 的布局 store 实例，调它自己的 `actions.setSidebar/setRightbar` |
-| [`dsh-mcp-skill-manager`](./dsh-mcp-skill-manager) | 0.2.0 | 带 Web 设置页面的 MCP 与 Skills 统一管理器：管理 MCP 服务与 Skill 的新增、编辑、启停、删除，并支持从 Claude Code / Codex / OpenCode 一键导入 |
+| [`dsh-mcp-skill-manager`](./dsh-mcp-skill-manager) | 0.3.0 | MCP 与 Skills 统一管理器：新增 / 编辑 / 启停 / 删除，支持从 Claude Code / Codex / OpenCode 一键导入；**MCP 配置字段直接继承官方 `dsh-mcp-client` 的 schema**（不手抄字段表），并提供**真实握手的状态检查**（可用 / 工具数 / 耗时 / 错误文本 / 命令解析诊断） |
 | [`dsh-workspace-category-manager`](./dsh-workspace-category-manager) | 0.2.0 | 为 DSH 工作区添加逻辑分类，侧边栏以「分类文件夹 → 项目 → 会话」三级层级展示，支持拖拽归类与排序；支持按 Git 地址克隆并导入项目；兼容 DSH 0.1.7 / 0.1.6（`configForms` 设置、`uiWorkspace.openSession` 会话切换、`uiSession.sessionStatus` 状态点） |
 | [`dsh-win-notify`](./dsh-win-notify) | 0.2.1 | 会话执行完成 / 需要人工干预（审批、提问）时弹通知：Tauri 桌面壳原生通知或浏览器 Notification（客户端路线），可选 Windows 系统 Toast（宿主路线，零依赖）；兼容 DSH 0.1.6+（`uiSession.sessionStatus`），客户端降级不抛错 |
 | [`dsh-run-env-manager`](./dsh-run-env-manager) | 0.1.0 | 运行环境管理器：按工作区维护运行配置、一键启停、实时日志（SSE）、PATH 环境探测与 Tomcat 托管启动，支持 AI 读项目生成配置 |

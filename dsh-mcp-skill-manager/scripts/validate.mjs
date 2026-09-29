@@ -10,6 +10,8 @@ const requiredFiles = [
   'README.md',
   'skills/mcp-skill-maintenance/SKILL.md',
   'examples/mcp-server.template.yml',
+  'tests/probe.test.mjs',
+  'tests/fixtures/echo-mcp-server.mjs',
 ];
 
 const missing = requiredFiles.filter((file) => !existsSync(resolve(root, file)));
@@ -47,6 +49,35 @@ const skill = readFileSync(resolve(root, 'skills/mcp-skill-maintenance/SKILL.md'
 if (!/^---\r?\nname: mcp-skill-maintenance\r?\ndescription:/m.test(skill)) {
   console.error('The included skill needs valid name and description frontmatter.');
   process.exit(1);
+}
+
+// 状态检查：宿主半必须真做一次握手探测，并把命令解析诊断与官方字段继承都保住。
+const probeRequired = [
+  'probeMcpServer',
+  'describeProbeError',
+  'explainStdioFailure',
+  'resolveStdioCommand',
+  "McpClientConfig",
+  "/mcp-status",
+  'scrubbedParentEnv',
+];
+for (const needle of probeRequired) {
+  if (!host.includes(needle)) {
+    console.error(`index.js must keep the MCP status probe (${needle}); see the status-check section of README.md`);
+    process.exit(1);
+  }
+}
+// 官方 config 必须是被「继承」的，而不是手抄字段表——手抄过一次就漏了 reconnect/maxInstructionBytes。
+if (!/ManagedMcpServer[\s\S]{0,1200}?McpClientConfig\?\.list/.test(host)) {
+  console.error('ManagedMcpServer must inherit the official dsh-mcp-client schema branches instead of re-listing fields');
+  process.exit(1);
+}
+// 浏览器半要有状态面板与逐卡片健康行。
+for (const needle of ['mcp-status', 'msm-statusBar', 'McpHealth', 'msm-hint']) {
+  if (!client.includes(needle)) {
+    console.error(`client.js must render the MCP status panel (${needle})`);
+    process.exit(1);
+  }
 }
 
 console.log('DSH MCP & Skill Manager scaffold is valid.');
