@@ -1309,6 +1309,7 @@
 .dgp-settingsActions {
   display: flex;
   gap: 6px;
+  justify-content: flex-end;
 }
 
 .dgp-settings button {

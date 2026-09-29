@@ -81,7 +81,7 @@ var CSS = `
 .sw-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .sw-form label{display:flex;flex-direction:column;gap:5px;color:var(--dsw-alias-label-secondary);font-size:12px}
 .sw-input{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;padding:7px}
-.sw-actions{display:flex;gap:6px}
+.sw-actions{display:flex;gap:6px;justify-content:flex-end}
 .sw-actions button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent}
 .sw-actions button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
 .sw-actions button:disabled{cursor:default;opacity:.5}
