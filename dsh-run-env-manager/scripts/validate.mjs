@@ -57,7 +57,7 @@ const dotRule = (state) =>
 check('停止态不得再用成功色（绿点=没启动过 就是这个 bug）', !/state-success/.test(dotRule('stopped')), dotRule('stopped'));
 check('停止态用中性灰', /label-tertiary/.test(dotRule('stopped')), dotRule('stopped'));
 check('运行中用蓝', /deepseek-450|state-business|#[0-9a-f]{6}/i.test(dotRule('running')), dotRule('running'));
-check('就绪同样算运行中（蓝）', /deepseek-450|state-business|#[0-9a-f]{6}/i.test(dotRule('ready')), dotRule('ready'));
+check('就绪用成功色（绿）', /state-success/.test(dotRule('ready')), dotRule('ready'));
 check('异常用红', /state-error/.test(dotRule('failed')), dotRule('failed'));
 check('过渡态（启动中/停止中）用黄', /state-warn/.test(dotRule('starting')) && /state-warn/.test(dotRule('stopping')), dotRule('starting') + ' / ' + dotRule('stopping'));
 
