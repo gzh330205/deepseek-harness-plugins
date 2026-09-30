@@ -36,6 +36,22 @@ export interface RunPanelProps {
  * 运行面板：上半是「运行」，下半是「配置」。
  * 数据全部来自宿主的全量快照（动作回快照 + 2 秒轮询 + 活动实例的 SSE 日志）。
  */
+/** 状态 → 文案 key。running 与 ready 的圆点都是蓝色（都是运行中），两者的区别只剩这里。 */
+const STATUS_LABELS: Record<string, string> = {
+  starting: 'statusStarting',
+  running: 'statusRunning',
+  ready: 'statusReady',
+  stopping: 'statusStopping',
+  stopped: 'statusStopped',
+  failed: 'statusFailed',
+};
+
+/** 未知状态原样显示枚举，方便以后宿主加了新状态时一眼看见。 */
+function statusLabel(status: string, t: RunPanelProps['t']): string {
+  const key = STATUS_LABELS[status];
+  return key === undefined ? status : t(key);
+}
+
 export function RunPanel(props: RunPanelProps) {
   const { api, sessionId, t } = props;
   const useSessions = props.useSessions ?? (NO_SUBSCRIPTION as RunPanelProps['useSessions']);
@@ -202,7 +218,7 @@ export function RunPanel(props: RunPanelProps) {
                         </div>
                         {run !== undefined && (
                           <div className="renv-meta">
-                            {t('status')}: {run.status}
+                            {t('status')}: {statusLabel(run.status, t)}
                             {run.exitCode === null || run.exitCode === undefined ? '' : ` · exit ${run.exitCode}`}
                             {run.url !== undefined && run.url !== '' ? ` · ${run.url}` : ''}
                           </div>

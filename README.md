@@ -11,7 +11,7 @@
 | [`dsh-mcp-skill-manager`](./dsh-mcp-skill-manager) | 0.3.0 | MCP 与 Skills 统一管理器：新增 / 编辑 / 启停 / 删除，支持从 Claude Code / Codex / OpenCode 一键导入；**MCP 配置字段直接继承官方 `dsh-mcp-client` 的 schema**（不手抄字段表），并提供**真实握手的状态检查**（可用 / 工具数 / 耗时 / 错误文本 / 命令解析诊断） |
 | [`dsh-workspace-category-manager`](./dsh-workspace-category-manager) | 0.2.0 | 为 DSH 工作区添加逻辑分类，侧边栏以「分类文件夹 → 项目 → 会话」三级层级展示，支持拖拽归类与排序；支持按 Git 地址克隆并导入项目；兼容 DSH 0.1.7 / 0.1.6（`configForms` 设置、`uiWorkspace.openSession` 会话切换、`uiSession.sessionStatus` 状态点） |
 | [`dsh-win-notify`](./dsh-win-notify) | 0.2.1 | 会话执行完成 / 需要人工干预（审批、提问）时弹通知：Tauri 桌面壳原生通知或浏览器 Notification（客户端路线），可选 Windows 系统 Toast（宿主路线，零依赖）；兼容 DSH 0.1.6+（`uiSession.sessionStatus`），客户端降级不抛错 |
-| [`dsh-run-env-manager`](./dsh-run-env-manager) | 0.1.0 | 运行环境管理器：按工作区维护运行配置、一键启停、实时日志（SSE）、PATH 环境探测与 Tomcat 托管启动，支持 AI 读项目生成配置 |
+| [`dsh-run-env-manager`](./dsh-run-env-manager) | 0.1.1 | 运行环境管理器：按工作区维护运行配置、一键启停、实时日志（SSE）、PATH 环境探测与 Tomcat 托管启动，支持 AI 读项目生成配置 |
 | [`dsh-git-panel`](./dsh-git-panel) | 0.1.0 | 右侧栏 Git 面板：待提交变更（**列表 / 目录树两种显示模式**，目录模式下可逐目录或一键展开/折叠，分组 + 增删行数 + 统一 diff）、**点文件的差异可开在中间列（可关闭返回对话、可切换文件，行在侧栏高亮）或侧栏内联**、提交历史（带提交图、分支/标签装饰、分页）、`git worktree` 管理（列表/新建/删除/清理，删除前 dirty 守卫与补丁导出）。只在本机绑定下注册、写操作要求同源，且完全不联网（无 fetch/pull/push） |
 | [`dsh-oneway-usage-monitor`](./dsh-oneway-usage-monitor) | 0.1.0 | OneWay 用量监控：右下角三环悬浮卡片 + 扫码登录（本地目录，不在仓库跟踪范围内） |
 

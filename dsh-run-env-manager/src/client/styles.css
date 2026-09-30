@@ -50,12 +50,17 @@
 .renv-libKind{font-size:11.5px;font-weight:600;color:var(--dsw-alias-label-secondary);margin-top:6px}
 .renv-tag{margin-left:6px;font-size:10.5px;padding:1px 6px;border-radius:999px;color:var(--dsw-alias-brand-primary);border:1px solid var(--dsw-alias-brand-primary)}
 .renv-actions{justify-content:flex-end;flex-wrap:wrap}
+/* 圆点语义：灰=未启动/已停止，蓝=运行中（含就绪），黄=过渡（启动中/停止中），红=异常。
+   曾经 stopped 用的是 state-success（绿色），于是「从没启动过」的服务也是绿点——绿色在这个
+   面板里只该表示「一切正常地跑着」，不能再兼职表示「没在跑」。running 与 ready 都是运行中，
+   区别由状态文字（运行中 / 已就绪）承担。基类即灰色，兜底未匹配到的状态。 */
 .renv-dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--dsw-alias-label-tertiary)}
-.renv-dot[data-state=running]{background:var(--dsw-static-deepseek-450,#4f8cff)}
-.renv-dot[data-state=ready]{background:var(--dsw-alias-state-success-primary)}
-.renv-dot[data-state=stopped]{background:var(--dsw-alias-state-success-primary)}
+.renv-dot[data-state=stopped]{background:var(--dsw-alias-label-tertiary)}
+.renv-dot[data-state=running],
+.renv-dot[data-state=ready]{background:var(--dsw-static-deepseek-450,#4f8cff)}
+.renv-dot[data-state=starting],
+.renv-dot[data-state=stopping]{background:var(--dsw-alias-state-warn-primary)}
 .renv-dot[data-state=failed]{background:var(--dsw-alias-state-error-primary)}
-.renv-dot[data-state=starting]{background:var(--dsw-alias-state-warn-primary)}
 .renv-logWrap{display:flex;flex-direction:column;gap:6px;min-height:160px}
 .renv-log{flex:1;min-height:140px;max-height:40vh;margin:0;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all}
 
