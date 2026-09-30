@@ -112,6 +112,45 @@ node ./scripts/read-session.mjs <会话id片段> [关键字]   # 读 DSH 会话�
 argv 组装、`CATALINA_BASE` 隔离、token 握手都有单测覆盖（`tests/tomcat.test.js`，含用本地 TCP 服务器
 接住 token 的优雅关闭断言），但没有跑过真的 Tomcat 进程。
 
+## Windows 上命令是怎么跑的（踩过的坑）
+
+运行配置里的命令要经过两层引号规则：Node 在 Windows 上会给每个 argv 元素加引号、并把内部
+的 `"` 转义，`cmd.exe` 再按自己的规则剥一层。**只包一层 `cmd.exe /d /s /c <整条命令>` 是坏的**，
+真机量到的反例：
+
+| 写法 | 结果 |
+|---|---|
+| `node.exe -e "process.exit(3)"` | node 收到字符串字面量，**退出 0**（不是 3） |
+| `"D:\Program Files\nodejs\node.exe" -v` | `'"D:\…\node.exe"' is not recognized` |
+| 去掉 `/s`、或外层再包一层引号 | 同样坏（后者被当成 UNC 路径） |
+| `shell: true`（Node 自己拼命令行） | 四种形状全对——但 DSH 的 `ctx.subprocess` 不做 shell 语义，用不了 |
+
+所以 `planCommand()` 的规则是：
+
+- 命令**没有** shell 语法（`&&` `||` `|` `>` `<` `^` `%VAR%`），且第一个 token 能解析成真实
+  `.exe`/`.com` → **自己按引号切成 argv 直接 spawn**（引号交给 Node 处理，结果正确）；
+- 否则（有 shell 语法，或目标是 `npm`/`pnpm` 这类 `.cmd` 垫片——DSH 的可执行解析只认
+  `.com`/`.exe`）→ 仍然 `cmd.exe /d /s /c`，并在日志里写一行说明为什么包了 shell。
+
+### 为什么还要补一个环境变量
+
+DSH 的 `scrubbedParentEnv()`（每个宿主子进程的环境基线）**会剥掉所有 `DSH_*` 变量**，
+但**保留 PATH**；而宿主 PATH 前面就是 `resources/runtime/dsh/bin`，那里放着 `node.cmd` /
+`pnpm.cmd` 垫片，它们只有在 `DSH_DESKTOP_NODE_EXECUTABLE` 存在时才能工作：
+
+```bat
+if defined DSH_DESKTOP_NODE_EXECUTABLE ( "%DSH_DESKTOP_NODE_EXECUTABLE%" %* ) else ( node %* )
+```
+
+`else` 分支的 `node` 又解析回这个垫片自己 → **自递归 → 静默退出 1，stdout/stderr 全空**。
+`app.asar` 里只给 app 自己的内部 spawn 设了这个变量（注释写着是给垫片做生命周期脚本用的），
+宿主环境里没有。所以本插件在 spawn 时按 app 的做法显式转发一次（`withNodeShim()`），
+让裸 `node` / `pnpm` / `npx` 在运行配置里能正常工作；只有在能确认 execPath 确实是 node
+（或宿主带着 `ELECTRON_RUN_AS_NODE=1`）时才设，避免让垫片去启动一个 GUI 程序。
+
+> 这是 DSH 层面的缺陷：PATH 保留了垫片目录，却把它依赖的变量剥掉了。同一根因也解释了
+> MCP 那边「裸 `npx` 的服务连不上」——两条路撞在同一个垫片上。
+
 ## 架构
 
 ```

@@ -1,6 +1,6 @@
 {
   "name": "dsh-run-env-manager",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Runtime environment manager for DSH: per-workspace run configurations, one-click start/stop, live logs and AI-assisted setup.",
@@ -53,7 +53,7 @@
   "scripts": {
     "build": "node ./scripts/build-client.mjs",
     "prepare": "pnpm run build",
-    "test": "node ./tests/environment.test.js && node ./tests/tomcat.test.js && node ./tests/decoder.test.js && node ./tests/ansi.test.js && node ./tests/kit-tab.test.js",
+    "test": "node ./tests/environment.test.js && node ./tests/tomcat.test.js && node ./tests/decoder.test.js && node ./tests/ansi.test.js && node ./tests/kit-tab.test.js && node ./tests/command.test.js",
     "validate": "node ./scripts/validate.mjs"
   }
 }

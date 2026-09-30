@@ -61,6 +61,16 @@ check('就绪用成功色（绿）', /state-success/.test(dotRule('ready')), dot
 check('异常用红', /state-error/.test(dotRule('failed')), dotRule('failed'));
 check('过渡态（启动中/停止中）用黄', /state-warn/.test(dotRule('starting')) && /state-warn/.test(dotRule('stopping')), dotRule('starting') + ' / ' + dotRule('stopping'));
 
+// 命令交给操作系统的规则（Windows 上「带引号的命令」曾经是坏的）：
+// 必须自己切引号直接 spawn，只在 shell 语法 / .cmd 目标时才包 cmd.exe。
+const processes = read('src/host/processes.js');
+for (const needle of ['planCommand', 'tokenizeWindows', 'withNodeShim', 'hasShellSyntax', 'resolveWindowsExecutable']) {
+  check(`processes.js 缺少 ${needle}`, processes.includes(needle));
+}
+check('不得再出现「只包一层 cmd」的老写法 shellArgv', !processes.includes('shellArgv'));
+check('spawn 必须补上被 DSH 剥掉的垫片变量', /env:\s*withNodeShim\(env\)/.test(processes));
+check('启动路径必须走 planCommand', /planCommand\(configuration\.command/.test(processes));
+
 const bundle = read('lib/client.js');
 check('状态文案必须本地化（不能再把状态枚举直接贴到界面上）', /statusStopped/.test(bundle) && !/\{run\.status\}/.test(clientEntry), 'bundle/entry');
 check('客户端产物必须带 __ModuleLoader__ 注册头', bundle.includes('__ModuleLoader__.load'));

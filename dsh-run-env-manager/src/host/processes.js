@@ -4,13 +4,16 @@
  * 几个来自 DSH 宿主的硬约束决定了这里的写法：
  *   1. `ctx.subprocess` 的 handle **没有 pid**，所以实例身份只能是「工作区 + 配置 id」
  *      这个键，停止只能 `terminate()`。也因此本插件管不了别处已跑着的进程。
- *   2. Windows 上 `npm`/`pnpm` 是 .cmd 垫片，Job runner 只解析 .com/.exe，必须包一层
- *      `cmd.exe /d /s /c`（POSIX 走 `bash -c`）。
+ *   2. Windows 上 `npm`/`pnpm` 是 .cmd 垫片，Job runner 只解析 .com/.exe，所以 .cmd
+ *      目标必须包一层 `cmd.exe /d /s /c`；但「命令里带引号」会让这层包装坏掉，
+ *      因此能直接跑的就直接跑——见下面 planCommand 的注释（POSIX 走 `bash -c`）。
  *   3. 输出**必须用 `stdio: 'pipe'` 自己解码**，不能用 collect 模式：collect 的
  *      `readFrom()` 内部是 `buffer.toString('utf8')`（硬编码、非 fatal），中文 Windows 上
  *      Maven/Gradle/老 CLI 写的是 GB18030 字节流，走 collect 必然是一屏 U+FFFD 乱码。
  *      代价是没有了 collect 的 spill 文件，日志只保留内存尾部（logTailChars）。
  */
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { normalizeRoot } from './contract.js';
 
 const READY_POLL_INTERVAL_MS = 500;
@@ -21,9 +24,172 @@ export function runKey(root, id) {
   return `${normalizeRoot(root)}\n${id}`;
 }
 
-/** 把命令包成宿主能执行的 argv（见文件头注释 2）。 */
-export function shellArgv(command, platform = process.platform) {
-  return platform === 'win32' ? ['cmd.exe', '/d', '/s', '/c', command] : ['bash', '-c', command];
+/* ── 命令怎么交给操作系统（Windows 上的坑都在这里）─────────────────────
+ *
+ * 只包一层 `cmd.exe /d /s /c` 是**不够**的：Node 在 Windows 上会把每个 argv 元素按
+ * 自己的规则加引号、并把内部的 `"` 转义成 `\"`，cmd 再按自己的规则剥一层，于是
+ * 「命令里带引号」的写法会被弄坏。真机上量到的结果是：
+ *
+ *   cmd /d /s /c node.exe -e "process.exit(3)"   → node 收到的是字符串字面量，退出 0（不是 3）
+ *   cmd /d /s /c "D:\...\node.exe" -e "..."     → '"D:\...\node.exe"' is not recognized
+ *
+ * 而这类写法在运行配置里很常见（路径含空格必须加引号、传参常常要引号）。所以：
+ *
+ *   - 命令里没有 shell 语法，且第一个 token 能解析成真实 .exe/.com
+ *     → **自己按引号切成 argv 直接 spawn**，引号交给 Node/libuv 处理（它是为真可执行文件
+ *       设计的，结果是正确的）；
+ *   - 否则（有 `&&`/`|`/`>`/`%VAR%`，或目标是 npm/pnpm 这种 .cmd 垫片）
+ *     → 仍然 `cmd.exe /d /s /c <整条命令>`：DSH 的可执行解析只认 .com/.exe，
+ *       .cmd 必须由 shell 来跑。
+ *
+ * POSIX 侧 `bash -c` 没有这个问题（argv 不做二次引号处理），保持原样。
+ * -------------------------------------------------------------------- */
+
+/**
+ * 去掉被引号包住的部分（引号内的 `>`、`|`、`=>` 都不是 shell 语法）。
+ */
+function stripQuoted(command) {
+  let text = '';
+  let quoted = false;
+  let quote = '';
+  for (const char of command) {
+    if (quoted) {
+      if (char === quote) quoted = false;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quoted = true;
+      quote = char;
+      continue;
+    }
+    text += char;
+  }
+  return { text, balanced: !quoted };
+}
+
+/**
+ * 有这些字符（**引号外**）就必须交给 shell：管道、串接、重定向、转义符，以及 %VAR% 展开。
+ *
+ * 只看引号外是必须的：`node -e "console.log('x');setInterval(()=>{},1000)"` 里的 `=>`
+ * 曾经被当成重定向、把整条命令推给 cmd，于是引号被弄坏——这正是「裸 node + 引号」跑不起来的原因。
+ *
+ * @param command - 用户写的命令行
+ * @returns 是否必须走 shell
+ */
+export function hasShellSyntax(command) {
+  const { text, balanced } = stripQuoted(command);
+  if (!balanced) return true; // 引号不闭合：交给 shell 去报错，别自己猜
+  return /[&|<>^]/.test(text) || /%[^%\s]+%/.test(text);
+}
+
+/**
+ * 把 Windows 命令行按引号规则切成 argv（自行实现，不依赖 shell）。
+ * 支持双引号包裹、`\"` 转义；引号本身不进结果。
+ *
+ * @param command - 用户写的命令行
+ * @returns argv 数组（可能为空）
+ */
+export function tokenizeWindows(command) {
+  const tokens = [];
+  let current = '';
+  let started = false;
+  let quoted = false;
+  for (let index = 0; index < command.length; index += 1) {
+    const char = command[index];
+    if (char === '\\' && command[index + 1] === '"') {
+      current += '"';
+      started = true;
+      index += 1;
+      continue;
+    }
+    if (char === '"') {
+      quoted = !quoted;
+      started = true;
+      continue;
+    }
+    if (!quoted && /\s/.test(char)) {
+      if (started) {
+        tokens.push(current);
+        current = '';
+        started = false;
+      }
+      continue;
+    }
+    current += char;
+    started = true;
+  }
+  if (started) tokens.push(current);
+  return tokens;
+}
+
+/** 只有 .com/.exe 能被直接 CreateProcess（.cmd/.bat 得靠 shell，见上面注释）。 */
+function directExecutable(candidate) {
+  return /\.(exe|com)$/i.test(candidate) && existsSync(candidate) ? candidate : undefined;
+}
+
+/**
+ * 解析第一个 token 到真实可执行文件；解析不到（或缺扩展名）就返回 undefined，调用方回落 shell。
+ *
+ * @param token - 命令的第一个 token
+ * @param env - 子进程环境（取 PATH）
+ * @returns 绝对路径或 undefined
+ */
+export function resolveWindowsExecutable(token, env = process.env) {
+  if (token === undefined || token === '') return undefined;
+  if (/[\\/]/.test(token)) return directExecutable(resolve(token));
+  const pathValue = env.PATH ?? env.Path ?? '';
+  for (const dir of String(pathValue).split(';').filter((part) => part !== '')) {
+    for (const extension of ['.exe', '.com']) {
+      const found = directExecutable(resolve(dir, `${token}${extension}`));
+      if (found !== undefined) return found;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * DSH 的 `scrubbedParentEnv()` 会剥掉所有 `DSH_*` 变量，却保留 PATH；而宿主 PATH 前面就是
+ * `resources/runtime/dsh/bin`，那里的 `node.cmd` / `pnpm.cmd` 垫片只有在
+ * `DSH_DESKTOP_NODE_EXECUTABLE` 存在时才能工作——否则走 `else node %*` 分支、
+ * 又解析回它自己，**自递归后静默退出 1（没有任何输出）**。
+ * app 内部 spawn 时正是这么设的（app.asar 注释："the bundled node shim uses it"），
+ * 这里照做，把同一份事实显式转发给子进程。
+ *
+ * 只在能确认「这个 execPath 确实是 node」时才设：
+ *   - CLI / headless：process.execPath 就是 node(.exe)；
+ *   - 桌面端：process.execPath 是 DSH Desktop.exe，但宿主带着 ELECTRON_RUN_AS_NODE=1，
+ *     垫片用它启动即 Node 模式。
+ * 两者都不满足就宁可不设，避免让垫片去启动一个 GUI 程序。
+ *
+ * @param env - 已经算好的子进程环境
+ * @param execPath - 当前进程的可执行文件
+ * @returns 补过变量的环境（不修改入参）
+ */
+export function withNodeShim(env, execPath = process.execPath) {
+  if (env.DSH_DESKTOP_NODE_EXECUTABLE !== undefined) return env;
+  const base = String(execPath ?? '');
+  const isNode = /(^|[\\/])node(\.exe)?$/i.test(base);
+  const electronNode = String(env.ELECTRON_RUN_AS_NODE ?? '') === '1';
+  if (!isNode && !electronNode) return env;
+  return { ...env, DSH_DESKTOP_NODE_EXECUTABLE: base };
+}
+
+/**
+ * 决定一条命令怎么跑。
+ *
+ * @param command - 用户写的命令行
+ * @param platform - 平台
+ * @param env - 子进程环境（用于 PATH 解析）
+ * @returns `{ argv, via }`：argv 直接交给 `ctx.subprocess.spawn`；via 说明走法，供日志解释
+ */
+export function planCommand(command, platform = process.platform, env = process.env) {
+  if (platform !== 'win32') return { argv: ['bash', '-c', command], via: 'shell' };
+  if (hasShellSyntax(command)) return { argv: ['cmd.exe', '/d', '/s', '/c', command], via: 'shell' };
+  const tokens = tokenizeWindows(command);
+  const executable = resolveWindowsExecutable(tokens[0], env);
+  if (executable === undefined) return { argv: ['cmd.exe', '/d', '/s', '/c', command], via: 'shell' };
+  // 用解析出来的绝对路径当 argv[0]：DSH 的解析层就不必再猜，含空格的路径也由 Node 正确加引号。
+  return { argv: [executable, ...tokens.slice(1)], via: 'direct' };
 }
 
 /* ── 输出解码（见文件头注释 3）────────────────────────────────────────── */
@@ -215,13 +381,21 @@ export class RunRegistry {
       }
     }
 
+    const launched = plan?.argv !== undefined
+      ? { argv: plan.argv, via: 'direct' }
+      : planCommand(configuration.command, process.platform, env);
+    if (launched.via === 'shell' && plan?.argv === undefined) {
+      // 让日志自己解释「为什么这条命令是被 cmd 包着跑的」——含引号的命令在这里有已知限制。
+      this.appendLog(run, `[run-env-manager] 经 cmd.exe 执行：${configuration.command}\n`, logTailChars);
+    }
+
     try {
       run.handle = this.ctx.subprocess.spawn({
-        argv: plan?.argv ?? shellArgv(configuration.command),
+        argv: launched.argv,
         cwd,
         stdio: { stdin: 'ignore', stdout: 'pipe', stderr: 'pipe' },
         graceMs: GRACE_MS,
-        env,
+        env: withNodeShim(env),
       });
     } catch (error) {
       run.status = 'failed';
@@ -261,11 +435,11 @@ export class RunRegistry {
     let handle;
     try {
       handle = this.ctx.subprocess.spawn({
-        argv: shellArgv(command),
+        argv: planCommand(command, process.platform, env).argv,
         cwd,
         stdio: { stdin: 'ignore', stdout: 'pipe', stderr: 'pipe' },
         graceMs: GRACE_MS,
-        env,
+        env: withNodeShim(env),
       });
     } catch (error) {
       this.appendLog(run, `构建启动失败：${error instanceof Error ? error.message : String(error)}\n`, run.logTailChars);
