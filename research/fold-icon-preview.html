@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>全部收起 / 全部展开 —— 图标预览</title>
+<style>
+  :root { color-scheme: dark light; }
+  body { margin: 0; padding: 28px 32px; font: 14px/1.6 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+         background: #1b1c1f; color: #e8e9eb; }
+  h1 { font-size: 17px; margin: 0 0 4px; font-weight: 600; }
+  p.sub { margin: 0 0 26px; color: #9aa0a6; font-size: 13px; }
+  .row { display: flex; gap: 40px; flex-wrap: wrap; margin-bottom: 34px; }
+  .card { border: 1px solid #34363c; border-radius: 10px; padding: 18px 20px 14px; min-width: 250px; background: #212226; }
+  .card h2 { font-size: 13px; font-weight: 600; margin: 0 0 2px; }
+  .card .hint { color: #9aa0a6; font-size: 12px; margin: 0 0 14px; }
+  .sizes { display: flex; align-items: flex-end; gap: 26px; }
+  .sizes figure { margin: 0; text-align: center; }
+  .sizes figcaption { color: #7f858c; font-size: 11px; margin-top: 6px; }
+  .zoom4 { transform: scale(4); transform-origin: center; }
+  .zoombox { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; }
+  .mock { display: flex; align-items: center; gap: 8px; border: 1px solid #34363c; border-radius: 8px; padding: 6px 10px; background: #212226; width: 300px; }
+  .mock .title { flex: 1; font-size: 13px; color: #c9ccd1; }
+  .iconbtn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 0; border-radius: 6px;
+             background: #2b2d31; color: #c9ccd1; }
+  .note { color: #9aa0a6; font-size: 12.5px; border-left: 2px solid #4c8dff; padding-left: 12px; }
+  code { background: #2b2d31; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  .swap { color: #e8e9eb; font-size: 13px; margin: -14px 0 30px; }
+</style>
+</head>
+<body>
+  <h1>页头按钮的两个状态（分类与项目的一次性收拢 / 摊开）</h1>
+  <p class="sub">同一个按钮，点一下换成另一个图标：双箭头朝上 = 收拢，朝下 = 摊开。</p>
+
+  <div class="row">
+    <div class="card">
+      <h2>全部收起</h2>
+      <p class="hint">双箭头朝上（向中间收拢）</p>
+      <div class="sizes">
+        <figure><svg id="fold1" width="16" height="16" viewBox="0 0 16 16" fill="none"></svg><figcaption>16px</figcaption></figure>
+        <figure><svg id="fold2" width="28" height="28" viewBox="0 0 16 16" fill="none"></svg><figcaption>28px</figcaption></figure>
+        <figure><div class="zoombox"><svg id="fold3" width="16" height="16" viewBox="0 0 16 16" fill="none"></svg></div><figcaption>×4 检视</figcaption></figure>
+      </div>
+    </div>
+    <div class="card">
+      <h2>全部展开</h2>
+      <p class="hint">双箭头朝下（向两侧摊开）</p>
+      <div class="sizes">
+        <figure><svg id="un1" width="16" height="16" viewBox="0 0 16 16" fill="none"></svg><figcaption>16px</figcaption></figure>
+        <figure><svg id="un2" width="28" height="28" viewBox="0 0 16 16" fill="none"></svg><figcaption>28px</figcaption></figure>
+        <figure><div class="zoombox"><svg id="un3" width="16" height="16" viewBox="0 0 16 16" fill="none"></svg></div><figcaption>×4 检视</figcaption></figure>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-bottom:22px">
+    <div class="mock"><span class="title">工作区</span><span class="iconbtn" id="btn1" title="全部收起"></span><span class="iconbtn">⚙</span><span class="iconbtn">＋</span></div>
+    <div class="mock"><span class="title">工作区</span><span class="iconbtn" id="btn2" title="全部展开"></span><span class="iconbtn">⚙</span><span class="iconbtn">＋</span></div>
+  </div>
+
+  <p class="note">两个状态是独立图标 <code>IconFoldAll16</code> / <code>IconUnfoldAll16</code>，按 <code>anyExpanded</code> 二选一渲染。
+  上一版做的是「横线 + 汇聚 / 散开」，16px 下两个状态几乎一样，已废弃；也禁止回到「一个图标 + <code>rotate(180deg)</code>」。</p>
+
+<script>
+  const FOLD = ['M3.4 8.4 8 3.8l4.6 4.6', 'M3.4 12.9 8 8.3l4.6 4.6'];
+  const UNFOLD = ['M3.4 3.4 8 8l4.6-4.6', 'M3.4 7.9 8 12.5l4.6-4.6'];
+  const drawInto = (svg, ds) => ds.forEach((d) => {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+  });
+  ['fold1', 'fold2', 'fold3'].forEach((id) => drawInto(document.getElementById(id), FOLD));
+  ['un1', 'un2', 'un3'].forEach((id) => drawInto(document.getElementById(id), UNFOLD));
+  const drawIntoButton = (id, ds) => { const host = document.getElementById(id); const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('width', '16'); svg.setAttribute('height', '16'); svg.setAttribute('viewBox', '0 0 16 16'); svg.setAttribute('fill', 'none'); drawInto(svg, ds); host.appendChild(svg); };
+  drawIntoButton('btn1', FOLD);
+  drawIntoButton('btn2', UNFOLD);
+  document.querySelectorAll('.zoombox svg').forEach((svg) => svg.classList.add('zoom4'));
+</script>
+</body>
+</html>

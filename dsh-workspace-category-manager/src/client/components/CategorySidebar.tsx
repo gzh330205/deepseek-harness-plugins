@@ -1,9 +1,9 @@
 import React from 'react';
 import { createElement as h } from 'react';
-import { useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, repoNameFromUrl, joinDisplayPath, workspaceId, workspaceLabel, errText, closedCategories, openWorkspaces, retainIds, persistExpansion, nextOverrideGeneration } from '../utils.js';
-import { COLLAPSED_CATEGORIES_FIELD, EXPANDED_WORKSPACES_FIELD } from '../constants.js';
+import { useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, repoNameFromUrl, joinDisplayPath, workspaceId, workspaceLabel, errText, closedCategories, closedTodayGroups, openWorkspaces, retainIds, persistExpansion, nextOverrideGeneration, startOfLocalDay, msUntilNextLocalDay, recentSessions, formatStamp, projectLabelOf, groupTodayRows, hiddenTodayOf, pruneHiddenToday } from '../utils.js';
+import { COLLAPSED_CATEGORIES_FIELD, COLLAPSED_TODAY_GROUPS_FIELD, EXPANDED_WORKSPACES_FIELD, TODAY_FOLDER_ID, HIDDEN_TODAY_FIELD } from '../constants.js';
 import { Dialog, CategoryForm } from './dialogs.jsx';
-import { IconFolderClose16, IconFolderOpen16, IconTriangleRightFill14, IconPlusOutline16, IconPersonalizationOutline16, IconProjectAddOutline16, IconEllipsisOutline16, IconTrashOutline16, IconTagOutline16 } from './icons.jsx';
+import { IconFolderClose16, IconFolderOpen16, IconTriangleRightFill14, IconPlusOutline16, IconPersonalizationOutline16, IconProjectAddOutline16, IconEllipsisOutline16, IconTrashOutline16, IconTagOutline16, IconClock16, IconEyeOffOutline16, IconLocate16, IconFoldAll16, IconUnfoldAll16 } from './icons.jsx';
 import { StateDot } from './StateDot.jsx';
 const EMPTY_STATUSES = new Map();
 const useSessionStatuses = (api) => React.useSyncExternalStore(
@@ -18,8 +18,8 @@ const visiblePendingKind = (kind) => kind === 'approval' || kind === 'plan-revie
  * A missing entry falls back to the list row, which still carries running/completed. */
 const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summary.id); const pendingKind = visiblePendingKind(raw?.kind ?? raw?.pendingInteraction?.kind); const running = raw?.running ?? summary.running === true; const completed = raw?.completionUnread ?? summary.completed === true; return pendingKind !== undefined ? 'warning' : running ? 'running' : completed ? 'done' : undefined; };
 
-    function CategorySidebar({ api, wide, expandSidebar, t }) {
-      const scope = api.configForms; const snapshot = useScope(scope); const workspaceState = useWorkspaceSnapshot(api.workspacesList); const sessionState = useSessionsSnapshot(api.sessionsList); const config = configOf(scope); const [failure, setFailure] = React.useState(''); const [collapseOverrides, setCollapseOverrides] = React.useState({}); const [orderBy, setOrderBy] = React.useState('manual'); const [menuOpen, setMenuOpen] = React.useState(false); const [addError, setAddError] = React.useState(null); const [menuFor, setMenuFor] = React.useState(null); const [renameTarget, setRenameTarget] = React.useState(null); const [renameDraft, setRenameDraft] = React.useState(''); const [renameBusy, setRenameBusy] = React.useState(false); const [renameError, setRenameError] = React.useState(''); const [deleteTarget, setDeleteTarget] = React.useState(null); const [deleteBusy, setDeleteBusy] = React.useState(false); const [deleteError, setDeleteError] = React.useState(''); const [addCategoryOpen, setAddCategoryOpen] = React.useState(false); const [addOpen, setAddOpen] = React.useState(false); const [addDraft, setAddDraft] = React.useState({ mode: 'local', path: '', group: '', url: '', branch: '', folder: '', parent: '' }); const [addBusy, setAddBusy] = React.useState(false); const [addFormError, setAddFormError] = React.useState(''); const [addCloning, setAddCloning] = React.useState(false); const [gitAvailable, setGitAvailable] = React.useState(false); const [dissolveTarget, setDissolveTarget] = React.useState(null); const [dissolveBusy, setDissolveBusy] = React.useState(false); const [dissolveError, setDissolveError] = React.useState(''); const dragRef = React.useRef({ kind: null, id: null, el: null, over: null }); const pendingOverrides = React.useRef(new Map());
+    function CategorySidebar({ api, wide, expandSidebar, t, now }) {
+            const scope = api.configForms; const snapshot = useScope(scope); const workspaceState = useWorkspaceSnapshot(api.workspacesList); const sessionState = useSessionsSnapshot(api.sessionsList); const config = configOf(scope); const [failure, setFailure] = React.useState(''); const [collapseOverrides, setCollapseOverrides] = React.useState({}); const [orderBy, setOrderBy] = React.useState('manual'); const [menuOpen, setMenuOpen] = React.useState(false); const [addError, setAddError] = React.useState(null); const [menuFor, setMenuFor] = React.useState(null); const [renameTarget, setRenameTarget] = React.useState(null); const [renameDraft, setRenameDraft] = React.useState(''); const [renameBusy, setRenameBusy] = React.useState(false); const [renameError, setRenameError] = React.useState(''); const [deleteTarget, setDeleteTarget] = React.useState(null); const [deleteBusy, setDeleteBusy] = React.useState(false); const [deleteError, setDeleteError] = React.useState(''); const [addCategoryOpen, setAddCategoryOpen] = React.useState(false); const [addOpen, setAddOpen] = React.useState(false); const [addDraft, setAddDraft] = React.useState({ mode: 'local', path: '', group: '', url: '', branch: '', folder: '', parent: '' }); const [addBusy, setAddBusy] = React.useState(false); const [addFormError, setAddFormError] = React.useState(''); const [addCloning, setAddCloning] = React.useState(false); const [gitAvailable, setGitAvailable] = React.useState(false); const [dissolveTarget, setDissolveTarget] = React.useState(null); const [dissolveBusy, setDissolveBusy] = React.useState(false); const [dissolveError, setDissolveError] = React.useState(''); const dragRef = React.useRef({ kind: null, id: null, el: null, over: null }); const pendingOverrides = React.useRef(new Map()); /* Bumped by the midnight/visibility effect so the Today window is recomputed while the app stays open. */ const [, setClockTick] = React.useState(0); /*「今天」的临时移除：id → 记录（隐藏）或 null（强制显示），Host 确认后自动退休。 */ const [hideOverrides, setHideOverrides] = React.useState({}); const [locateTarget, setLocateTarget] = React.useState(null);
       const list = workspaceState.items ?? []; const byId = sessionState.byId ?? {}; const currentId = currentSessionId(sessionState);
       const sessionStatuses = useSessionStatuses(api);
       const startSession = (workspace) => api.startSession(workspaceId(workspace));
@@ -36,10 +36,73 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
        * something the Host dropped (a removed category, a deleted workspace). */
       const persistedCollapsed = closedCategories(config);
       const persistedWorkspaces = openWorkspaces(config);
-      const idsOfCategories = () => new Set(['__uncategorized__', ...config.categories.map((category) => category.id)]);
+      const persistedGroups = closedTodayGroups(config);
+      const idsOfCategories = () => new Set([TODAY_FOLDER_ID, '__uncategorized__', ...config.categories.map((category) => category.id)]);
       const idsOfWorkspaces = () => new Set(list.map((workspace) => workspaceId(workspace)));
       const isCollapsed = (id) => { const entry = collapseOverrides[id]; return entry === undefined || entry.field !== COLLAPSED_CATEGORIES_FIELD ? persistedCollapsed.has(id) : entry.value; };
       const isWorkspaceOpen = (id) => { const entry = collapseOverrides[id]; return entry === undefined || entry.field !== EXPANDED_WORKSPACES_FIELD ? persistedWorkspaces.has(id) : entry.value; };
+      /* ---------------- 今天（跨项目）----------------
+       * `now` is the test seam: production passes nothing and reads the wall
+       * clock on every render, tests pin the window instead of racing midnight.
+       * The window is a local-day boundary, so it must come from a Date — a
+       * `ts % 86400000` shortcut breaks on non-UTC offsets and on DST days. */
+      const nowMs = typeof now === 'number' ? now : Date.now();
+      const dayStart = startOfLocalDay(nowMs);
+      const persistedHidden = hiddenTodayOf(config);
+      /* 点「从今天隐藏」要立刻消失，不能等设置回写（几百 ms 到一秒），所以乐观值
+       * 先行：id → 记录 = 现在隐藏，id → null = 现在强制显示（「恢复」用）。 */
+      const mergedHidden = () => {
+        const merged = { ...persistedHidden };
+        Object.entries(hideOverrides).forEach(([id, override]) => { if (override === null) delete merged[id]; else merged[id] = override; });
+        return merged;
+      };
+      const today = recentSessions(sessionState, { since: dayStart, currentId, archivedSessionIds: workspaceState.archivedSessionIds, hiddenToday: mergedHidden() });
+      const todayRows = today.rows;
+      const todayHidden = Object.keys(today.hidden).length;
+      /* 项目名不再逐行重复，而是单独成组：分组标题可折叠，分组内仍按时间倒序；
+       * 分组的 id 全集只在「今天」里出现过的项目，所以持久化的折叠列表不会残留。 */
+      const todayGroups = groupTodayRows(todayRows, list);
+      const idsOfTodayGroups = () => new Set(todayGroups.map((group) => group.key));
+      const isGroupCollapsed = (key) => { const entry = collapseOverrides[key]; return entry === undefined || entry.field !== COLLAPSED_TODAY_GROUPS_FIELD ? persistedGroups.has(key) : entry.value; };
+      const todayOpen = wide && !isCollapsed(TODAY_FOLDER_ID);
+      /* 「定位」用的反查索引：会话 → 归属工作区。一次遍历建好，避免每行各扫一遍列表。 */
+      const workspaceBySession = new Map();
+      list.forEach((workspace) => (workspace.sessionIds ?? []).forEach((sessionId) => workspaceBySession.set(sessionId, workspaceId(workspace))));
+      /* 乐观值一旦被 Host 快照确认就退休：隐藏值以「Host 的记录不旧于本地记录」为准，
+       * 强制显示以「Host 已经没有这条记录」为准。失效的记录不会一直留着。 */
+      React.useEffect(() => {
+        const ids = Object.keys(hideOverrides);
+        if (ids.length === 0) return;
+        const survivor = {};
+        for (const id of ids) {
+          const override = hideOverrides[id];
+          const stored = persistedHidden[id];
+          const settled = override === null ? stored === undefined : stored !== undefined && stored.at >= override.at;
+          if (!settled) survivor[id] = override;
+        }
+        if (Object.keys(survivor).length !== ids.length) setHideOverrides(survivor);
+      });
+      /* `phase: 'pending'` means no list pull has landed yet, so an empty member
+       * set there is "nothing arrived", not "nothing today" — the hint waits for
+       * the first accepted pull instead of claiming the day is empty. */
+      const sessionsReady = sessionState.phase === undefined || sessionState.phase === 'ready';
+      /* One collapse axis per field: its persisted suppression list and its live
+       * id universe. Keeping both in one place means a new axis (今天的分组) rides
+       * the same optimistic-override machinery instead of forking it. */
+      const persistedOf = (field) => field === COLLAPSED_CATEGORIES_FIELD ? persistedCollapsed : field === EXPANDED_WORKSPACES_FIELD ? persistedWorkspaces : persistedGroups;
+      const universeOf = (field) => field === COLLAPSED_CATEGORIES_FIELD ? idsOfCategories() : field === EXPANDED_WORKSPACES_FIELD ? idsOfWorkspaces() : idsOfTodayGroups();
+      /* Mid-midnight rollover: one timer aligned to the next local midnight,
+       * plus a visibility re-read, because a machine that slept through midnight
+       * has its timer throttled and would otherwise keep showing yesterday. */
+      React.useEffect(() => {
+        if (typeof document === 'undefined') return undefined;
+        let timer = 0;
+        const arm = () => { timer = setTimeout(() => { setClockTick((value) => value + 1); arm(); }, msUntilNextLocalDay(Date.now())); };
+        const onVisible = () => { if (document.visibilityState === 'visible') setClockTick((value) => value + 1); };
+        arm();
+        document.addEventListener('visibilitychange', onVisible);
+        return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', onVisible); };
+      }, []);
       /* An override is dropped once it is both settled (its write answered) and
        * confirmed by the snapshot, or once the id no longer exists — so the Host
        * stays the source of truth and a removed category/deleted workspace cannot
@@ -49,13 +112,12 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
       React.useEffect(() => {
         const ids = Object.keys(collapseOverrides);
         if (ids.length === 0) return;
-        const known = idsOfCategories(); const knownWorkspaces = idsOfWorkspaces();
         const survivor = {};
         for (const id of ids) {
           const entry = collapseOverrides[id];
-          const exists = entry.field === COLLAPSED_CATEGORIES_FIELD ? known.has(id) : knownWorkspaces.has(id);
+          const exists = universeOf(entry.field).has(id);
           const settled = !pendingOverrides.current.has(id);
-          const confirmed = entry.field === COLLAPSED_CATEGORIES_FIELD ? persistedCollapsed.has(id) === entry.value : persistedWorkspaces.has(id) === entry.value;
+          const confirmed = persistedOf(entry.field).has(id) === entry.value;
           if (exists && !(settled && confirmed)) survivor[id] = entry;
         }
         if (Object.keys(survivor).length !== ids.length) setCollapseOverrides(survivor);
@@ -71,7 +133,7 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
       /* The next persisted value is built from the Config list plus every
        * override still in flight — a snapshot older than a queued write must not
        * undo it, and two quick clicks must not clobber each other. */
-      const nextOverrides = (field) => { const known = field === COLLAPSED_CATEGORIES_FIELD ? new Set(persistedCollapsed) : new Set(persistedWorkspaces); pendingOverrides.current.forEach((entry) => { if (entry.field !== field) return; if (entry.value) known.add(entry.id); else known.delete(entry.id); }); return known; };
+      const nextOverrides = (field) => { const known = new Set(persistedOf(field)); pendingOverrides.current.forEach((entry) => { if (entry.field !== field) return; if (entry.value) known.add(entry.id); else known.delete(entry.id); }); return known; };
       const toggle = (id, field, nextValue, existingIds) => {
         const generation = nextOverrideGeneration();
         pendingOverrides.current.set(id, { id, field, value: nextValue, generation });
@@ -81,6 +143,50 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
       };
       const toggleFolder = (id) => { toggle(id, COLLAPSED_CATEGORIES_FIELD, !isCollapsed(id), idsOfCategories); };
       const toggleProject = (id) => { toggle(id, EXPANDED_WORKSPACES_FIELD, !isWorkspaceOpen(id), idsOfWorkspaces); };
+      const toggleTodayGroup = (key) => { toggle(key, COLLAPSED_TODAY_GROUPS_FIELD, !isGroupCollapsed(key), idsOfTodayGroups); };
+      /* 「定位到会话」：把这个会话在左边的分类树里露出来 —— 展开它所属的分类与项目，
+       * 再滚动到那一行并短暂高亮。展开走的是同一套乐观 + 落盘机制，所以点击当下就重绘。
+       * 没被任何工作区记账的会话（工作区被删了）在树里没有行，按钮就不出现。 */
+      const locateSession = (sessionId) => {
+        const owner = workspaceBySession.get(sessionId);
+        if (owner === undefined) return;
+        const category = config.assignments[owner] ?? '__uncategorized__';
+        if (isCollapsed(category)) toggle(category, COLLAPSED_CATEGORIES_FIELD, false, idsOfCategories);
+        if (!isWorkspaceOpen(owner)) toggle(owner, EXPANDED_WORKSPACES_FIELD, true, idsOfWorkspaces);
+        setLocateTarget({ id: sessionId, at: Date.now() });
+      };
+      /* 「定位到会话」的滚动有两个坑：① 会话行外面套着一层 `overflow:hidden` 的展开面板
+       * （它自己也算一个 scrollport），scrollIntoView 会把它当目标；② 「当前」列表里的行
+       * 与树里的行是同一份渲染，若共用一个定位属性，querySelector 会命中先出现的「当前」
+       * 行（它本来就在视野里），滚动就成了空操作。所以锚点只打在树里的行上，并直接用真正
+       * 的滚动容器算偏移；再叠一次延时校正，因为展开那 180ms 里行还没落到最终位置。 */
+      const revealLocated = (sessionId) => {
+        if (typeof document === 'undefined') return;
+        const target = document.querySelector(`[data-wcm-tree-session="${sessionId}"]`);
+        if (target === null) return;
+        const scroller = target.closest('.wcm-folders');
+        if (scroller === null) { if (typeof target.scrollIntoView === 'function') target.scrollIntoView({ block: 'nearest' }); return; }
+        const row = target.getBoundingClientRect(); const box = scroller.getBoundingClientRect(); const margin = 8;
+        if (row.top < box.top + margin) scroller.scrollTop += row.top - (box.top + margin);
+        else if (row.bottom > box.bottom - margin) scroller.scrollTop += row.bottom - (box.bottom - margin);
+      };
+      React.useEffect(() => {
+        if (locateTarget === null || typeof document === 'undefined') return undefined;
+        const id = locateTarget.id;
+        const first = setTimeout(() => revealLocated(id), 30);
+        const settle = setTimeout(() => revealLocated(id), 260);
+        const expire = setTimeout(() => setLocateTarget(null), 2200);
+        return () => { clearTimeout(first); clearTimeout(settle); clearTimeout(expire); };
+      }, [locateTarget]);
+      /* 「从今天隐藏」是临时移除，不是排除名单：记录里带着移除那一刻的活动戳，
+       * 只有**重新跟这个会话对话**（updatedAt 前进）才会让它失效、行自己回来 ——
+       * 没有恢复按钮，也没有定时器；写入前先剪枝，字段只保留还有效的条目。 */
+      const hideFromToday = (row) => {
+        const record = { at: Date.now(), updatedAt: row.at };
+        setHideOverrides((previous) => ({ ...previous, [row.id]: record }));
+        const merged = { ...mergedHidden(), [row.id]: record };
+        scope.set(HIDDEN_TODAY_FIELD, pruneHiddenToday(merged, sessionState)).catch((reason) => { setFailure(errText(reason)); });
+      };
       const sessionsOf = (workspace) => { const archived = new Set(workspaceState.archivedSessionIds ?? []); return (workspace.sessionIds ?? []).map((id) => byId[id]).filter((summary) => summary !== undefined && summary.origin !== 'subagent' && !archived.has(summary.id) && (!summary.blank || summary.id === currentId)); };
       const runningOf = (workspace) => (workspace.sessionIds ?? []).some((id) => byId[id]?.running === true);
       /* Unified status language across the three levels:
@@ -88,8 +194,11 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
        * - project row:  aggregated over its sessions (no animation): warning > running > done
        * - category row: aggregated over its projects: warning > running > done
        * Dots are static markers — the chase animation only ever appears on session rows. */
-      const statusOfWorkspace = (workspace) => { const rows = sessionsOf(workspace); const statuses = rows.map((s) => sessionStatusOf(s, sessionStatuses)).filter((s) => s !== undefined); if (statuses.includes('warning')) return 'warning'; if (statuses.includes('running')) return 'running'; if (statuses.includes('done')) return 'done'; return undefined; };
-      const statusOfCategory = (f) => { const statuses = f.projects.map(statusOfWorkspace).filter((s) => s !== undefined); if (statuses.length === 0) return undefined; if (statuses.includes('warning')) return 'warning'; if (statuses.includes('running')) return 'running'; return 'done'; };
+      /* One precedence for every aggregate row (category / project / today):
+       * warning > running > done, and no marker at all for an empty set. */
+      const aggregateStatus = (statuses) => { const known = statuses.filter((status) => status !== undefined); if (known.length === 0) return undefined; if (known.includes('warning')) return 'warning'; if (known.includes('running')) return 'running'; return 'done'; };
+      const statusOfWorkspace = (workspace) => aggregateStatus(sessionsOf(workspace).map((summary) => sessionStatusOf(summary, sessionStatuses)));
+      const statusOfCategory = (f) => aggregateStatus(f.projects.map(statusOfWorkspace));
       const statusDot = (status) => status !== undefined ? h('span', { className: `wcm-wsDot wcm-ws-${status}` }) : null;
       const sessionStatusDot = (status) => status === 'running' ? h(StateDot, { state: 'ongoing' }) : statusDot(status);
       /* Category/project rows: the icon stays and carries a corner badge (blue = running,
@@ -100,6 +209,26 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
       const projectsOf = (catId) => list.filter((workspace) => assignmentOf(workspaceId(workspace)) === catId);
       const orderProjects = (projects) => orderBy === 'updated' ? [...projects].sort((a, b) => latestUpdatedAt(b) - latestUpdatedAt(a)) : projects;
       const folders = config.categories.map((category) => ({ id: category.id, name: category.name, color: category.color, projects: orderProjects(projectsOf(category.id)) })).concat({ id: '__uncategorized__', name: t('uncategorized'), color: '#94a3b8', projects: orderProjects(projectsOf(undefined)) });
+      /* 一键「全部收起 / 全部展开」：作用于分类和项目**自身**的展开状态，复用既有的两个
+       * 抑制/允许列表（不新增字段）。做法是给每个 id 立一个乐观值（点击当下就重绘），两个
+       * 字段各写一次；写盘沿用同一套修剪，所以「当前」分组的折叠位不会被动到 —— 它不在
+       * folders 里，只是被 nextOverrides 原样带过去。 */
+      const applyExpansion = (changes) => {
+        if (changes.length === 0) return;
+        const generations = new Map(); const patched = {};
+        changes.forEach(({ id, field, value }) => { const generation = nextOverrideGeneration(); generations.set(id, generation); pendingOverrides.current.set(id, { id, field, value, generation }); patched[id] = { generation, field, value }; });
+        setCollapseOverrides((previous) => ({ ...previous, ...patched }));
+        for (const field of new Set(changes.map((change) => change.field))) {
+          persistExpansion(scope, field, retainIds(nextOverrides(field), universeOf(field))).then(() => { generations.forEach((generation, id) => { const entry = pendingOverrides.current.get(id); if (entry !== undefined && entry.generation === generation) pendingOverrides.current.delete(id); }); });
+        }
+      };
+      const anyExpanded = folders.some((folder) => !isCollapsed(folder.id)) || list.some((workspace) => isWorkspaceOpen(workspaceId(workspace)));
+      const foldAll = () => {
+        const changes = [];
+        folders.forEach((folder) => changes.push({ id: folder.id, field: COLLAPSED_CATEGORIES_FIELD, value: anyExpanded }));
+        list.forEach((workspace) => changes.push({ id: workspaceId(workspace), field: EXPANDED_WORKSPACES_FIELD, value: !anyExpanded }));
+        applyExpansion(changes);
+      };
       const openAddWorkspace = () => { setAddDraft({ mode: 'local', path: '', group: config.categories[0]?.id ?? '', url: '', branch: '', folder: '', parent: '' }); setAddFormError(''); setAddError(null); setAddCloning(false); setAddOpen(true); /* Probe the Host Git import capability so the tab only appears when usable. */ api.gitImportStatus().then((status) => { setGitAvailable(status.available === true); }).catch(() => { setGitAvailable(false); }); };
       const browseDirectory = async (field) => { if (addBusy) return; setAddBusy(true); setAddFormError(''); try { const path = await api.pickDirectory(); if (typeof path === 'string' && path !== '') setAddDraft((draft) => ({ ...draft, [field]: path })); } catch (error) { setAddFormError(errText(error)); } finally { setAddBusy(false); } };
       const saveAddWorkspace = async () => { if (addBusy) return; setAddBusy(true); setAddFormError(''); try { let path = addDraft.path.trim(); if (addDraft.mode === 'git') { const url = addDraft.url.trim(); if (url === '') throw new Error(t('gitUrlRequired')); const parent = addDraft.parent.trim(); if (parent === '') throw new Error(t('gitParentRequired')); setAddCloning(true); path = await api.cloneRepository({ url, parentPath: parent, folderName: addDraft.folder.trim(), branch: addDraft.branch.trim() }); } else if (path === '') { return; } const workspace = await api.createWorkspace({ path }); const wid = workspaceId(workspace); const assignments = { ...config.assignments }; const group = addDraft.group; if (group === '' || group === '__uncategorized__') delete assignments[wid]; else assignments[wid] = group; await scope.set('assignments', assignments); setAddOpen(false); api.startSession(wid); } catch (error) { setAddFormError(errText(error)); } finally { setAddCloning(false); setAddBusy(false); } };
@@ -115,6 +244,8 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
       const dropOnProject = (id) => (event) => { event.preventDefault(); commitDrop(dragRef.current.id, id, rowHalf(event)); clearDrag(); };
       const dragEnd = () => { clearDrag(); };
       const closeMenus = () => { setMenuFor(null); setMenuOpen(false); };
+      /* Project menus are opened from the category tree only: the「当前」group headers
+       * deliberately carry no project actions. */
       const openMenuAt = (kind, id, event) => { event.preventDefault(); event.stopPropagation(); setMenuFor({ kind, id, x: event.clientX, y: event.clientY }); };
       const confirmRename = async () => { if (renameTarget === null || renameBusy) return; const title = renameDraft.trim(); if (title === '') return; setRenameBusy(true); setRenameError(''); try { if (renameTarget.kind === 'workspace') await api.renameWorkspace(renameTarget.id, title); else await api.renameSession(renameTarget.id, title); setRenameTarget(null); } catch (error) { setRenameError(errText(error)); } finally { setRenameBusy(false); } };
       const confirmDelete = async () => { if (deleteTarget === null || deleteBusy) return; setDeleteBusy(true); setDeleteError(''); try { await api.deleteWorkspace(deleteTarget.id); setDeleteTarget(null); } catch (error) { setDeleteError(errText(error)); } finally { setDeleteBusy(false); } };
@@ -126,11 +257,27 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
       const menuItem = (label, danger, onPick) => h('button', { className: `wcm-menuItem${danger ? ' wcm-menuDanger' : ''}`, onClick: () => { closeMenus(); onPick(); } }, h('span', { className: 'wcm-menuText' }, label));
       const popover = (...items) => [h('div', { className: 'wcm-menuMask', key: 'mask', onClick: closeMenus }), h('div', { className: 'wcm-menu wcm-menuCompact', key: 'menu' }, ...items)];
       const popoverAt = (x, y, ...items) => [h('div', { className: 'wcm-menuMask', key: 'mask', onClick: closeMenus }), h('div', { className: 'wcm-menu wcm-menuCompact wcm-menuFixed', key: 'menu', style: { left: x, top: y } }, ...items)];
-      const project = (workspace) => { const id = workspaceId(workspace); const rows = sessionsOf(workspace); const expanded = wide && isWorkspaceOpen(id); const wsStatus = statusOfWorkspace(workspace); const label = workspaceLabel(workspace); const act = () => { if (wide) toggleProject(id); else startSession(workspace); }; const wsMenuOpen = menuFor !== null && menuFor.kind === 'workspace' && menuFor.id === id; return h('div', { className: `wcm-projectRow${expanded ? ' wcm-open' : ''}`, key: id, draggable: wide, title: workspace.path, role: 'button', tabIndex: 0, onClick: act, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); act(); } }, onDragStart: wide ? dragStart('project', id) : undefined, onDragOver: wide ? dragOverProject(id) : undefined, onDrop: wide ? dropOnProject(id) : undefined, onDragEnd: wide ? dragEnd : undefined, onContextMenu: wide ? (event) => openMenuAt('workspace', id, event) : undefined }, h('div', { className: 'wcm-projectLine' }, statusIconSlot(wsStatus, expanded ? h(IconFolderOpen16) : h(IconFolderClose16)), h('span', { className: 'wcm-projectLabel' }, label), wide ? h('button', { className: 'wcm-projectAdd', title: t('newSession'), onClick: (event) => { event.stopPropagation(); startSession(workspace); } }, h(IconPlusOutline16)) : null), wsMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t('rename'), false, () => { setRenameTarget({ kind: 'workspace', id, title: label }); setRenameDraft(label); setRenameError(''); }), menuItem(t('deleteWorkspace'), true, () => setDeleteTarget({ id, label }))) : null, h('div', { className: `wcm-sessions${expanded ? '' : ' wcm-closed'}` }, h('div', { className: 'wcm-sessionsInner' }, rows.map((summary) => { const status = sessionStatusOf(summary, sessionStatuses); const showStatus = status !== undefined; const title = summary.blank ? t('newSession') : summary.displayTitle ?? summary.title ?? summary.id; const openIt = () => { openSession(summary.id); }; const sessMenuOpen = menuFor !== null && menuFor.kind === 'session' && menuFor.id === summary.id; return h('div', { className: `wcm-session${summary.id === currentId ? ' wcm-current' : ''}`, key: summary.id, role: 'button', tabIndex: 0, title: summary.cwd, onClick: (event) => { event.stopPropagation(); openIt(); }, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openIt(); } }, onContextMenu: (event) => openMenuAt('session', summary.id, event) }, h('span', { className: 'wcm-sessionStatus' }, showStatus ? sessionStatusDot(status) : null), h('span', { className: 'wcm-sessionTitle' }, title), sessMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t('rename'), false, () => { setRenameTarget({ kind: 'session', id: summary.id, title }); setRenameDraft(title); setRenameError(''); }), menuItem(t('fork'), false, () => forkSession(summary.id)), menuItem(t('archive'), false, () => archiveSession(summary.id))) : null); })))); };
+      /* One definition of the project menu: right-clicking the project row and the
+       *「当前」group header's locate button must offer exactly the same actions. */
+      const workspaceMenuItems = (id, label) => [menuItem(t('rename'), false, () => { setRenameTarget({ kind: 'workspace', id, title: label }); setRenameDraft(label); setRenameError(''); }), menuItem(t('deleteWorkspace'), true, () => setDeleteTarget({ id, label }))];
+      const sessionRow = (summary, extras) => { const opts = extras ?? {}; const status = sessionStatusOf(summary, sessionStatuses); const showStatus = status !== undefined; const title = summary.blank ? t('newSession') : summary.displayTitle ?? summary.title ?? summary.id; const openIt = () => { openSession(summary.id); }; const sessMenuOpen = menuFor !== null && menuFor.kind === 'session' && menuFor.id === summary.id; return h('div', { className: `wcm-session${summary.id === currentId ? ' wcm-current' : ''}${opts.highlight === true ? ' wcm-locateHit' : ''}`, key: summary.id, role: 'button', tabIndex: 0, ...(opts.anchor === true ? { 'data-wcm-tree-session': summary.id } : {}), title: opts.tooltip ?? summary.cwd, onClick: (event) => { event.stopPropagation(); openIt(); }, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openIt(); } }, onContextMenu: (event) => openMenuAt('session', summary.id, event) }, h('span', { className: 'wcm-sessionStatus' }, showStatus ? sessionStatusDot(status) : null), ...(opts.leading ?? []), h('span', { className: 'wcm-sessionTitle' }, title), ...(opts.trailing ?? []), sessMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t('rename'), false, () => { setRenameTarget({ kind: 'session', id: summary.id, title }); setRenameDraft(title); setRenameError(''); }), menuItem(t('fork'), false, () => forkSession(summary.id)), menuItem(t('archive'), false, () => archiveSession(summary.id))) : null); };
+            const project = (workspace) => { const id = workspaceId(workspace); const rows = sessionsOf(workspace); const expanded = wide && isWorkspaceOpen(id); const wsStatus = statusOfWorkspace(workspace); const label = workspaceLabel(workspace); const act = () => { if (wide) toggleProject(id); else startSession(workspace); }; const wsMenuOpen = menuFor !== null && menuFor.kind === 'workspace' && menuFor.id === id; return h('div', { className: `wcm-projectRow${expanded ? ' wcm-open' : ''}`, key: id, draggable: wide, title: workspace.path, role: 'button', tabIndex: 0, onClick: act, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); act(); } }, onDragStart: wide ? dragStart('project', id) : undefined, onDragOver: wide ? dragOverProject(id) : undefined, onDrop: wide ? dropOnProject(id) : undefined, onDragEnd: wide ? dragEnd : undefined, onContextMenu: wide ? (event) => openMenuAt('workspace', id, event) : undefined }, h('div', { className: 'wcm-projectLine' }, statusIconSlot(wsStatus, expanded ? h(IconFolderOpen16) : h(IconFolderClose16)), h('span', { className: 'wcm-projectLabel' }, label), wide ? h('button', { className: 'wcm-projectAdd', title: t('newSession'), onClick: (event) => { event.stopPropagation(); startSession(workspace); } }, h(IconPlusOutline16)) : null), wsMenuOpen ? popoverAt(menuFor.x, menuFor.y, ...workspaceMenuItems(id, label)) : null, h('div', { className: `wcm-sessions${expanded ? '' : ' wcm-closed'}` }, h('div', { className: 'wcm-sessionsInner' }, rows.map((summary) => sessionRow(summary, { anchor: true, highlight: locateTarget !== null && locateTarget.id === summary.id }))))); };
       const folder = (f) => { const isUncategorized = f.id === '__uncategorized__'; const open = wide && !isCollapsed(f.id); const status = statusOfCategory(f); const onToggle = () => { if (wide) toggleFolder(f.id); else if (expandSidebar !== undefined) expandSidebar(); }; return h('div', { className: 'wcm-folderWrap', key: f.id }, h('div', { className: `wcm-folderRow${open ? ' wcm-open' : ''}`, draggable: wide && !isUncategorized, role: 'button', tabIndex: 0, title: f.name, onClick: onToggle, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onToggle(); } }, onDragStart: wide && !isUncategorized ? dragStart('folder', f.id) : undefined, onDragOver: wide ? dragOverFolder(f.id) : undefined, onDrop: wide ? dropOnFolder(f.id) : undefined, onDragEnd: wide ? dragEnd : undefined, onContextMenu: wide && !isUncategorized ? (event) => openMenuAt('folder', f.id, event) : undefined }, statusIconSlot(status, h('span', { className: 'wcm-rowIcon wcm-rowIconCategory', style: { color: f.color } }, h(IconTagOutline16))), h('span', { className: 'wcm-folderLabel' }, f.name), h('span', { className: 'wcm-folderCount' }, f.projects.length), menuFor !== null && menuFor.kind === 'folder' && menuFor.id === f.id ? popoverAt(menuFor.x, menuFor.y, menuItem(t('dissolveCategory'), true, () => setDissolveTarget({ id: f.id, name: f.name }))) : null), h('div', { className: `wcm-folderProjects${open ? '' : ' wcm-closed'}` }, h('div', { className: 'wcm-folderProjectsInner' }, f.projects.map(project)))); };
-      const folderTree = expansionReady ? h('div', { className: 'wcm-folders' }, folders.map(folder)) : null;
+      /* 「今天」is a view over the same Sessions, not a category: it renders
+       * outside the `folders` array so category ordering, drag/drop and dissolve
+       * keep operating on real categories only. */
+      const todayNode = h('div', { className: 'wcm-folderWrap', key: TODAY_FOLDER_ID },
+        h('div', { className: `wcm-folderRow wcm-todayRow${todayOpen ? ' wcm-open' : ''}`, role: 'button', tabIndex: 0, title: t('today'), onClick: () => { if (wide) toggleFolder(TODAY_FOLDER_ID); else if (expandSidebar !== undefined) expandSidebar(); }, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (wide) toggleFolder(TODAY_FOLDER_ID); else if (expandSidebar !== undefined) expandSidebar(); } } },
+          statusIconSlot(aggregateStatus(todayRows.map((row) => sessionStatusOf(row.summary, sessionStatuses))), h(IconClock16)),
+          h('span', { className: 'wcm-folderLabel' }, t('today')),
+          h('span', { className: 'wcm-folderCount' }, todayRows.length)),
+        h('div', { className: `wcm-sessions${todayOpen ? '' : ' wcm-closed'}` },
+          h('div', { className: 'wcm-sessionsInner' }, todayRows.length > 0
+            ? todayGroups.map((group) => { const open = wide && !isGroupCollapsed(group.key); const label = group.label === '' ? t('uncategorized') : group.label; return h('div', { className: 'wcm-todayGroupWrap', key: group.key }, h('button', { className: `wcm-todayGroup${open ? ' wcm-open' : ''}`, type: 'button', title: `${label} · ${group.rows.length}`, 'aria-expanded': open, onClick: (event) => { event.stopPropagation(); toggleTodayGroup(group.key); } }, h('span', { className: 'wcm-todayGroupCaret' }, h(IconTriangleRightFill14)), h('span', { className: 'wcm-todayGroupLabel' }, label), h('span', { className: 'wcm-todayGroupCount' }, group.rows.length)), h('div', { className: `wcm-todayGroupRows${open ? '' : ' wcm-closed'}` }, group.rows.map((row) => { const rowLabel = projectLabelOf(row.summary.cwd, list); const tooltip = rowLabel === '' ? row.summary.cwd : `${rowLabel} · ${row.summary.cwd ?? ''}${row.fresh ? '' : ` · ${t('todayOvernight')}`}`; return sessionRow(row.summary, { tooltip, leading: [h('span', { className: 'wcm-todayTime', key: 'time' }, formatStamp(row.at, dayStart))], trailing: [wide && workspaceBySession.has(row.id) ? h('button', { className: 'wcm-sessionLocate', key: 'locate', type: 'button', title: t('locateSession'), 'aria-label': t('locateSession'), onClick: (event) => { event.stopPropagation(); locateSession(row.id); } }, h(IconLocate16)) : null, wide ? h('button', { className: 'wcm-todayHide', key: 'hide', type: 'button', title: t('todayHide'), 'aria-label': t('todayHide'), onClick: (event) => { event.stopPropagation(); hideFromToday(row); } }, h(IconEyeOffOutline16)) : null] }); }))); })
+            : sessionsReady && todayHidden === 0 ? h('p', { className: 'wcm-todayEmpty', key: 'today-empty' }, t('todayEmpty')) : null)));
+      const folderTree = expansionReady ? h('div', { className: 'wcm-folders' }, todayNode, folders.map(folder)) : null;
       const sortItem = (mode, label) => h('button', { className: `wcm-menuItem${orderBy === mode ? ' wcm-menuItemOn' : ''}`, onClick: () => { setOrderBy(mode); setMenuOpen(false); } }, h('span', { className: 'wcm-menuText' }, label), orderBy === mode ? h('span', { className: 'wcm-menuCheck' }, '✓') : null);
-      const headerActions = h('div', { className: 'wcm-sidebarActions' }, h('button', { className: 'wcm-iconBtn', title: t('viewOptions'), 'aria-label': t('viewOptions'), onClick: () => { setMenuFor(null); setMenuOpen((value) => !value); } }, h(IconPersonalizationOutline16)), h('button', { className: 'wcm-iconBtn', title: t('addCategory'), 'aria-label': t('addCategory'), onClick: () => setAddCategoryOpen(true) }, h(IconPlusOutline16)), api.canPickDirectory() ? h('button', { className: 'wcm-iconBtn', title: t('addWorkspace'), 'aria-label': t('addWorkspace'), onClick: openAddWorkspace }, h(IconProjectAddOutline16)) : null, menuOpen ? h('div', { className: 'wcm-menuWrap' }, h('div', { className: 'wcm-menuMask', onClick: () => setMenuOpen(false) }), h('div', { className: 'wcm-menu' }, h('div', { className: 'wcm-menuLabel' }, t('orderByLabel')), sortItem('manual', t('orderManual')), sortItem('updated', t('orderUpdated')))) : null);
+      const headerActions = h('div', { className: 'wcm-sidebarActions' }, h('button', { className: 'wcm-iconBtn', title: t('viewOptions'), 'aria-label': t('viewOptions'), onClick: () => { setMenuFor(null); setMenuOpen((value) => !value); } }, h(IconPersonalizationOutline16)), h('button', { className: 'wcm-iconBtn', title: anyExpanded ? t('foldAll') : t('unfoldAll'), 'aria-label': anyExpanded ? t('foldAll') : t('unfoldAll'), 'aria-expanded': anyExpanded, onClick: foldAll }, h(anyExpanded ? IconFoldAll16 : IconUnfoldAll16)), h('button', { className: 'wcm-iconBtn', title: t('addCategory'), 'aria-label': t('addCategory'), onClick: () => setAddCategoryOpen(true) }, h(IconPlusOutline16)), api.canPickDirectory() ? h('button', { className: 'wcm-iconBtn', title: t('addWorkspace'), 'aria-label': t('addWorkspace'), onClick: openAddWorkspace }, h(IconProjectAddOutline16)) : null, menuOpen ? h('div', { className: 'wcm-menuWrap' }, h('div', { className: 'wcm-menuMask', onClick: () => setMenuOpen(false) }), h('div', { className: 'wcm-menu' }, h('div', { className: 'wcm-menuLabel' }, t('orderByLabel')), sortItem('manual', t('orderManual')), sortItem('updated', t('orderUpdated')))) : null);
       const errorDialog = addError ? h(Dialog, { title: t('addWorkspaceError'), close: () => setAddError(null) }, h('p', { className: 'wcm-muted' }, addError), h('div', { className: 'wcm-actions' }, h('button', { onClick: () => setAddError(null) }, t('close')), h('button', { className: 'wcm-primary', onClick: () => { setAddError(null); openAddWorkspace(); } }, t('retry')))) : null;
       const renameDialog = renameTarget !== null ? h(Dialog, { title: renameTarget.kind === 'workspace' ? t('renameWorkspaceTitle') : t('renameSessionTitle'), close: () => { if (!renameBusy) setRenameTarget(null); } }, h('input', { className: 'wcm-renameInput', value: renameDraft, disabled: renameBusy, placeholder: t('rename'), onChange: (event) => setRenameDraft(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') confirmRename(); } }), renameError !== '' ? h('p', { className: 'wcm-error' }, renameError) : null, h('div', { className: 'wcm-actions' }, h('button', { onClick: () => setRenameTarget(null), disabled: renameBusy }, t('cancel')), h('button', { className: 'wcm-primary', onClick: confirmRename, disabled: renameBusy || renameDraft.trim() === '' }, t('save')))) : null;
       const deleteDialog = deleteTarget !== null ? h(Dialog, { title: t('deleteWorkspace'), close: () => { if (!deleteBusy) setDeleteTarget(null); } }, h('p', { className: 'wcm-muted' }, t('deleteWorkspaceText', { name: deleteTarget.label })), deleteError !== '' ? h('p', { className: 'wcm-error' }, deleteError) : null, h('div', { className: 'wcm-actions' }, h('button', { onClick: () => setDeleteTarget(null), disabled: deleteBusy }, t('cancel')), h('button', { className: 'wcm-danger', onClick: confirmDelete, disabled: deleteBusy }, t('confirm')))) : null;

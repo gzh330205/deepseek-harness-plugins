@@ -37,6 +37,21 @@ export const Config = z.object({
    * the persisted value small and the "expanded" default implicit. */
   collapsedCategories: z.array(z.string()).default([]).volatile(),
   expandedWorkspaces: z.array(z.string()).default([]).volatile(),
+  /* 「今天」列表里被临时移除的会话：id → 移除那一刻观察到的事实（`at` 是移除的墙钟
+   * 时间，用于识别同一次点击的落盘；`updatedAt` 是当时的会话活动戳）。只有「重新跟
+   * 这个会话对话」让 `updatedAt` 前进时，这条记录才失效、行才回来——所以它是「临时
+   * 移除」而不是排除名单，也不会随使用无限增长（下次写入顺带剪掉失效项）。 */
+  hiddenToday: z.dict(z.object({
+    /* 两个事实都给默认值而不是 required：客户端写的记录一定是完整的，但手改过
+     * patch 的残缺记录不该让整份配置校验失败（默认值下这条记录不隐藏任何东西，
+     * 下次写入就会被剪掉）。 */
+    at: z.number().default(0),
+    updatedAt: z.number().default(0),
+  })).default({}).volatile(),
+  /* 「今天」里按项目分组后，被收起的项目分组（同样是 SUPPRESSION 列表：只存收起
+   * 的那一侧，所以默认是「今天有哪些项目就都展开」）。分组键由工作区身份或目录路径
+   * 派生，不是显示名，所以重命名项目不会丢折叠状态。 */
+  collapsedTodayGroups: z.array(z.string()).default([]).volatile(),
 });
 
 export const inject = [];

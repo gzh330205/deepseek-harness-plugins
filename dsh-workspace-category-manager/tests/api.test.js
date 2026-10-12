@@ -217,7 +217,21 @@ props = entriesFor(true, eScope.bind);
 /* Expansion is now persisted, so a re-render keeps whatever the previous
  * interaction left behind. Tests that need rows on screen say so explicitly
  * instead of depending on the old "every render starts collapsed" behaviour. */
-const renderRows = (rendered) => { hookIndex = 0; return collectSimple(rendered['component:sidebar.workspaces']({ api: rendered['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} })); };
+const renderTree = (rendered) => { hookIndex = 0; return rendered['component:sidebar.workspaces']({ api: rendered['sidebar.workspaces'].api, wide: true, t: (k) => k, expandSidebar: () => {} }); };
+const renderRows = (rendered) => collectSimple(renderTree(rendered));
+/* A flat row list cannot tell a session row's animated dot from a folder row's,
+ * so status-dot invariants are checked against the real tree. */
+const countChasesOutsideSessions = (node, inSession) => {
+  if (Array.isArray(node)) return node.reduce((total, child) => total + countChasesOutsideSessions(child, inSession), 0);
+  if (!node || typeof node !== 'object') return 0;
+  const className = typeof node.props?.className === 'string' ? node.props.className : '';
+  const inside = inSession || className.split(' ').includes('wcm-session');
+  let total = className === 'wcm-dotMatrix' && !inside ? 1 : 0;
+  const children = node.props?.children;
+  if (Array.isArray(children)) total += children.reduce((sum, child) => sum + countChasesOutsideSessions(child, inside), 0);
+  else if (children && typeof children === 'object') total += countChasesOutsideSessions(children, inside);
+  return total;
+};
 const expandProjects = (rendered) => {
   const initial = renderRows(rendered);
   for (const row of initial) if (row.cls.includes('wcm-projectRow') && !row.cls.includes('wcm-open')) row.el.props.onClick({ stopPropagation() {}, preventDefault() {} });
@@ -240,7 +254,10 @@ assert(rows.filter((r) => r.cls === 'wcm-sessions wcm-closed').length >= 1, 'a c
 rows = expandProjects(props);
 assert(rows.some((r) => r.cls === 'wcm-dotMatrix'), 'session row must keep the chase animation');
 assert(rows.some((r) => r.cls.startsWith('wcm-sessions') && !r.cls.includes('wcm-closed')), 'the expanded project must expose its session container');
-assert(rows.filter((r) => r.cls === 'wcm-dotMatrix').length === 1, 'chase must appear only on the running session row');
+assert(rows.filter((r) => r.cls === 'wcm-dotMatrix').length >= 1, 'session row must keep the chase animation');
+/* The Today group lists that same running Session, so the chase appears once per
+ * Session ROW; what must never animate is a folder or project row. */
+assert(countChasesOutsideSessions(renderTree(props), false) === 0, 'chase must appear only on the running session rows');
 // done state -> corner badges on category + project, halo dot on the session row
 props = entriesFor(true);
 const doneProps = { ...props };
@@ -558,7 +575,9 @@ loading.status = 'ready';
 hookState = [];
 rows = renderRows(props);
 assert(rows.some((r) => r.cls === 'wcm-folders'), 'the tree must appear once the settings section arrives');
-assert(rows.find((r) => r.cls.startsWith('wcm-folderRow')).cls.includes('wcm-open') === false, 'the stored collapsed state must apply on the first real render');
+/* The Today group is the tree's first row and is expanded by default, so this
+ * invariant is about the real CATEGORY rows. */
+assert(rows.find((r) => r.cls.startsWith('wcm-folderRow') && !r.cls.includes('wcm-todayRow')).cls.includes('wcm-open') === false, 'the stored collapsed state must apply on the first real render');
 
 // O: a toggle must repaint from the click, not after the Config round trip.
 // The settings write is a remote call, so rendering straight from the Config
@@ -658,5 +677,278 @@ suiteSlots.setDeclared('settings.pluginKit.tab', false);
 assert(suiteSlots.ids('settings.section').includes('workspace-categories'), 'suite collapsed: the fallback section must come back');
 assert(!suiteSlots.ids('settings.pluginKit.tab').includes('workspace-categories'), 'suite collapsed: the suite entry must be gone');
 
-console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename, Git import, restart-stable sidebar expansion, optimistic animated toggles, suite settings migration');
+// P: 「今天」cross-project view — a pure projection of the Session list.
+// `updatedAt` is max(createdAt, lastPromptAt) and the Host only advances it on a
+// durable USER message, so the window answers "did I talk to this session
+// today?" rather than "is work happening in it"; a session still running across
+// midnight therefore has to be admitted by its running flag, not by its clock.
+// Subagent children, archived rows and blank New Session rows stay out (the
+// subagent case is the one measured on this machine: a burst of depth-1
+// children sharing their parent's minute).
+const dayAt = (offsetDays, hour, minute = 0) => { const date = new Date(); date.setDate(date.getDate() + offsetDays); date.setHours(hour, minute, 0, 0); return date.getTime(); };
+const todayNoon = dayAt(0, 12);
+const session = (id, extra) => ({ id, displayTitle: id, blank: false, running: false, retainedBy: {}, updatedAt: todayNoon, ...extra });
+const svcP = servicesFor(true);
+const workspacesP = { items: [{ workspaceId: 'a', title: 'Proj A', path: 'C:\\a', sessionIds: [] }], archivedSessionIds: ['s-archived'], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null };
+svcP.workspaces = { ...svcP.workspaces, list: { subscribe: () => () => {}, getSnapshot: () => workspacesP } };
+const pScope = freshScope({});
+const propsFor = (svc, bind) => { const out = {}; const configFormsSvc = { get: () => bind() };
+  plugin.apply({ effect: () => () => {}, locale: { register: () => {}, bind: () => (key) => key }, get: (name) => name === 'configForms' ? configFormsSvc : svc[name], configForms: { get: () => bind() }, slots: slotsFake(out) });
+  return out; };
+const renderToday = (rendered, now) => { hookIndex = 0; return collectSimple(rendered['component:sidebar.workspaces']({ api: rendered['sidebar.workspaces'].api, wide: true, t: (key) => key, now, expandSidebar: () => {} })); };
+const collectIn = (root, cls) => { const out = []; (function walk(node) { if (Array.isArray(node)) return node.forEach(walk); if (!node || typeof node !== 'object') return; const name = node.props?.className; if (typeof name === 'string' && name.split(' ').includes(cls)) out.push(node); const children = node.props?.children; if (Array.isArray(children)) children.forEach(walk); else if (children && typeof children === 'object') walk(children); })(root); return out; };
+const wrapOf = (rendered) => rendered.find((row) => row.cls === 'wcm-folderWrap' && row.el.props.key === '__today__');
+const textIn = (wrap, cls) => collectIn(wrap.el, cls).map((node) => [].concat(node.props.children).join(''));
+const idsIn = (wrap) => collectIn(wrap.el, 'wcm-session').map((node) => node.props.key);
+// empty state: an idle older session is neither today's nor running, and the
+// group must say so instead of rendering a bare header
+svcP.setList({ current: null, ids: ['s-idle'], byId: { 's-idle': session('s-idle', { displayTitle: '前天聊的', updatedAt: dayAt(-2, 10) }) } });
+hookState = [];
+let todayWrap = wrapOf(renderToday(propsFor(svcP, pScope.bind), todayNoon));
+assert(todayWrap, 'the Today group must render even with nothing in it');
+assert(textIn(todayWrap, 'wcm-folderCount')[0] === '0', 'an empty Today group must count 0');
+assert(collectIn(todayWrap.el, 'wcm-todayEmpty').length === 1, 'an empty Today group must show its hint');
+assert(idsIn(todayWrap).length === 0, 'an idle older session must not enter the Today list');
+// `phase: 'pending'` is "nothing arrived yet", not "nothing today"
+svcP.setList({ current: null, ids: [], byId: {}, phase: 'pending' });
+hookState = [];
+todayWrap = wrapOf(renderToday(propsFor(svcP, pScope.bind), todayNoon));
+assert(textIn(todayWrap, 'wcm-folderCount')[0] === '0' && collectIn(todayWrap.el, 'wcm-todayEmpty').length === 0, 'an unloaded Session list must not claim the day is empty');
+// full projection: today's prompts, a session created earlier today, the running
+// overnight one, and every exclusion rule at once
+const todayIds = ['s-noon', 's-sub', 's-archived', 's-blank', 's-today', 's-blank-current', 's-early', 's-overnight', 's-yesterday'];
+const todayBase = {
+  's-noon': session('s-noon', { displayTitle: '今天中午发过话', updatedAt: dayAt(0, 12), cwd: 'C:\\a' }),
+  's-sub': session('s-sub', { displayTitle: '子代理会话', updatedAt: dayAt(0, 11), cwd: 'C:\\a', origin: 'subagent' }),
+  's-archived': session('s-archived', { displayTitle: '已归档', updatedAt: dayAt(0, 10), cwd: 'C:\\a' }),
+  's-blank': session('s-blank', { displayTitle: '空白会话', updatedAt: dayAt(0, 9, 30), cwd: 'C:\\a', blank: true }),
+  's-today': session('s-today', { displayTitle: '今天上午发过话', updatedAt: dayAt(0, 9), cwd: 'C:\\a' }),
+  's-blank-current': session('s-blank-current', { displayTitle: '新会话', updatedAt: dayAt(0, 8), cwd: 'C:\\a', blank: true }),
+  's-early': session('s-early', { displayTitle: '昨天建的，今早继续', updatedAt: dayAt(0, 7), cwd: 'C:\\gone\\beta' }),
+  's-overnight': session('s-overnight', { displayTitle: '跨天还在跑', updatedAt: dayAt(-1, 22), running: true, cwd: 'C:\\a' }),
+  's-yesterday': session('s-yesterday', { displayTitle: '昨天聊完就不动了', updatedAt: dayAt(-1, 21), cwd: 'C:\\a' }),
+};
+const setTodayList = (patch = {}) => svcP.setList({ current: 's-blank-current', ids: todayIds, byId: { ...todayBase, ...patch } });
+setTodayList();
+hookState = [];
+let propsP = propsFor(svcP, pScope.bind);
+let rowsP = renderToday(propsP, todayNoon);
+todayWrap = wrapOf(rowsP);
+assert(rowsP.find((row) => row.cls === 'wcm-folderWrap') === todayWrap, 'the Today group must lead the category tree');
+assert(textIn(todayWrap, 'wcm-folderCount')[0] === '5', `the Today count must be 5, got ${textIn(todayWrap, 'wcm-folderCount')[0]}`);
+/* 行按项目分组，项目名只在分组标题上出现一次；组内仍按时间倒序，分组之间按「组里最新
+ * 的那条」排序（Proj A 的 12:00 在 beta 的 07:00 之前）。 */
+assert(JSON.stringify(textIn(todayWrap, 'wcm-todayGroupLabel')) === JSON.stringify(['Proj A', 'beta']), `project groups must lead with the most recently touched project, got ${JSON.stringify(textIn(todayWrap, 'wcm-todayGroupLabel'))}`);
+assert(JSON.stringify(textIn(todayWrap, 'wcm-todayGroupCount')) === JSON.stringify(['4', '1']), `each group must count its own rows, got ${JSON.stringify(textIn(todayWrap, 'wcm-todayGroupCount'))}`);
+assert(JSON.stringify(textIn(todayWrap, 'wcm-sessionTitle')) === JSON.stringify(['今天中午发过话', '今天上午发过话', 'newSession', '跨天还在跑', '昨天建的，今早继续']), `rows must stay newest-first inside their group (the selected blank keeps the New Session label), got ${JSON.stringify(textIn(todayWrap, 'wcm-sessionTitle'))}`);
+const yesterdayStamp = (() => { const date = new Date(dayAt(-1, 22)); return `${date.getMonth() + 1}/${date.getDate()}`; })();
+assert(JSON.stringify(textIn(todayWrap, 'wcm-todayTime')) === JSON.stringify(['12:00', '09:00', '08:00', yesterdayStamp, '07:00']), `an overnight runner must show its date, got ${JSON.stringify(textIn(todayWrap, 'wcm-todayTime'))}`);
+assert(collectIn(todayWrap.el, 'wcm-todayProject').length === 0, 'the project name must live on the group header, never repeated per row');
+assert(JSON.stringify(idsIn(todayWrap)) === JSON.stringify(['s-noon', 's-today', 's-blank-current', 's-overnight', 's-early']), `exclusions regressed, got ${JSON.stringify(idsIn(todayWrap))}`);
+// one click opens the session; the Today group itself is a view, not a category
+calls.length = 0;
+collectIn(todayWrap.el, 'wcm-session')[0].props.onClick({ stopPropagation() {}, preventDefault() {} });
+assert(calls.some(([kind, id]) => kind === 'uiWorkspace.openSession' && id === 's-noon'), 'a Today row must open its session through uiWorkspace');
+// 分组标题可以单独折叠，而且折叠状态落盘（键是工作区身份 / 目录路径，不是显示名）
+const groupOf = (rendered, label) => collectIn(wrapOf(rendered).el, 'wcm-todayGroup').find((node) => collectIn(node, 'wcm-todayGroupLabel').map((child) => [].concat(child.props.children).join('')).includes(label));
+const groupHeaderOf = (rendered, label) => groupOf(rendered, label);
+assert(groupHeaderOf(rowsP, 'Proj A'), 'each project group must expose a foldable header');
+calls.length = 0;
+groupHeaderOf(rowsP, 'Proj A').props.onClick({ stopPropagation() {}, preventDefault() {} });
+const groupWrites = calls.filter(([kind, key]) => kind === 'scope.set' && key === 'collapsedTodayGroups').map(([, , value]) => value);
+assert(JSON.stringify(groupWrites[groupWrites.length - 1]) === JSON.stringify(['w:a']), `folding a project group must persist its identity key, got ${JSON.stringify(groupWrites)}`);
+rowsP = renderToday(propsP, todayNoon);
+const foldedHeader = groupHeaderOf(rowsP, 'Proj A');
+assert(foldedHeader && !foldedHeader.props.className.includes('wcm-open'), 'the clicked project group must repaint folded immediately');
+assert(collectIn(wrapOf(rowsP).el, 'wcm-session').length === 5, 'a folded group must still render its rows for the CSS transition');
+hookState = [];
+rowsP = renderToday(propsFor(svcP, pScope.bind), todayNoon);
+assert(!groupHeaderOf(rowsP, 'Proj A').props.className.includes('wcm-open'), 'the folded project group must survive a remount');
+/* 「当前」里不放项目操作按钮：分组标题只有 折叠箭头 + 名称 + 数字，点它只折叠、不弹菜单。
+ * 项目菜单仍然只有一个入口——分类树里右键项目行（共用同一份菜单项定义）。 */
+const groupChildren = (rendered, label) => { const group = groupOf(rendered, label); return group === undefined ? [] : [].concat(group.props.children).filter((child) => child !== null && child !== undefined); };
+assert(JSON.stringify(groupChildren(rowsP, 'Proj A').map((child) => String(child.props.className))) === JSON.stringify(['wcm-todayGroupCaret', 'wcm-todayGroupLabel', 'wcm-todayGroupCount']), `a「当前」group header must carry only its caret, label and count, got ${JSON.stringify(groupChildren(rowsP, 'Proj A').map((child) => child.props.className))}`);
+calls.length = 0;
+groupHeaderOf(rowsP, 'Proj A').props.onClick({ stopPropagation() {}, preventDefault() {}, clientX: 30, clientY: 40 });
+rowsP = renderToday(propsP, todayNoon);
+assert(rowsP.filter((row) => String(row.cls).split(' ').includes('wcm-menu')).length === 0, 'a「当前」group header must not open a project menu');
+/* 「定位到会话」：行内的定位按钮（紧挨着隐藏按钮），把这个会话在左侧分类树里露出来 ——
+ * 展开它所属的分类与项目，并把树里那一行高亮。没被任何工作区记账的会话（工作区被删了）
+ * 在树里没有行，按钮就不出现。 */
+workspacesP.items[0].sessionIds = ['s-noon'];
+const locateScope = freshScope({ categories: [{ id: 'c1', name: '客户项目', color: '#4f8cff' }], assignments: { a: 'c1' }, collapsedCategories: ['c1'], expandedWorkspaces: [] });
+hookState = [];
+const propsL = propsFor(svcP, locateScope.bind);
+let rowsL = renderToday(propsL, todayNoon);
+const rowNodeIn = (rendered, id) => collectIn(wrapOf(rendered).el, 'wcm-session').find((node) => node.props.key === id);
+const locateIn = (rendered, id) => { const row = rowNodeIn(rendered, id); return row === undefined ? undefined : collectIn(row, 'wcm-sessionLocate')[0]; };
+const hideIn = (rendered, id) => { const row = rowNodeIn(rendered, id); return row === undefined ? undefined : collectIn(row, 'wcm-todayHide')[0]; };
+assert(locateIn(rowsL, 's-noon') && hideIn(rowsL, 's-noon'), 'a locatable row must offer the locate button beside the hide button');
+assert(!locateIn(rowsL, 's-early'), 'a session accounted to no workspace has nowhere to be located');
+assert(!rowsL.some((row) => String(row.cls).includes('wcm-locateHit')), 'nothing may be highlighted before the first locate');
+calls.length = 0;
+locateIn(rowsL, 's-noon').props.onClick({ stopPropagation() {}, preventDefault() {} });
+const writeOf = (key) => calls.filter(([kind, name]) => kind === 'scope.set' && name === key).map(([, , value]) => value).pop();
+assert(JSON.stringify(writeOf('collapsedCategories')) === JSON.stringify([]), `locating must expand the owning category, got ${JSON.stringify(writeOf('collapsedCategories'))}`);
+assert(JSON.stringify(writeOf('expandedWorkspaces')) === JSON.stringify(['a']), `locating must expand the owning project, got ${JSON.stringify(writeOf('expandedWorkspaces'))}`);
+rowsL = renderToday(propsL, todayNoon);
+const hits = rowsL.filter((row) => String(row.cls).includes('wcm-locateHit'));
+assert(hits.length === 1 && hits[0].el.props['data-wcm-tree-session'] === 's-noon', `the located session must be highlighted in the tree, got ${hits.length}`);
+// 定位锚点只能打在树里的行上：「当前」行如果也带同一个属性，querySelector 会命中它（它本来就在视野里），滚动就成了空操作
+assert(rowNodeIn(rowsL, 's-noon').props['data-wcm-tree-session'] === undefined, 'the「当前」row must not carry the tree anchor, or the locator would scroll to itself');
+// 已经露出来的会话再点一次不该重复写配置
+calls.length = 0;
+locateIn(rowsL, 's-noon').props.onClick({ stopPropagation() {}, preventDefault() {} });
+assert(!calls.some(([kind]) => kind === 'scope.set'), 'locating an already visible session must not write the Config again');
+workspacesP.items[0].sessionIds = [];
+/* 一键「全部收起 / 全部展开」：作用在分类和项目**自身**的折叠状态上（复用 collapsedCategories
+ * / expandedWorkspaces，不新增字段），并且不得顺带改动「当前」分组的折叠位。 */
+const svcB = servicesFor(true);
+const workspacesB = { items: [{ workspaceId: 'w1', title: 'Alpha', path: 'C:\\a', sessionIds: ['s1'] }, { workspaceId: 'w2', title: 'Beta', path: 'C:\\b', sessionIds: [] }], archivedSessionIds: [], pinnedSessionIds: [], state: 'idle', phase: 'ready', error: null };
+svcB.workspaces = { ...svcB.workspaces, list: { subscribe: () => () => {}, getSnapshot: () => workspacesB } };
+svcB.setList({ current: null, ids: ['s1'], byId: { s1: session('s1', { displayTitle: 'Alpha 的会话', updatedAt: dayAt(0, 9), cwd: 'C:\\a' }) } });
+const bulkScope = freshScope({ categories: [{ id: 'c1', name: '客户项目', color: '#4f8cff' }, { id: 'c2', name: '内部工具', color: '#ff8c4f' }], assignments: { w1: 'c1' }, collapsedCategories: ['__today__', 'c2'], expandedWorkspaces: ['w1'] });
+hookState = [];
+const propsB = propsFor(svcB, bulkScope.bind);
+const bulkWrites = (key) => calls.filter(([kind, name]) => kind === 'scope.set' && name === key).map(([, , value]) => value);
+const sortedJson = (value) => JSON.stringify([...value].sort());
+const rowsWith = (rows, token) => rows.filter((row) => String(row.cls).includes(token));
+const categoryRows = (rows) => rowsWith(rows, 'wcm-folderRow').filter((row) => !String(row.cls).includes('wcm-todayRow'));
+// 测试桩会立刻执行函数组件，所以比不了组件引用——比图标实际画出来的路径（几何）。
+const iconShapeOf = (rendered) => { const children = bulkToggleOf(rendered).el.props.children; const svg = Array.isArray(children) ? children[0] : children; const parts = Array.isArray(svg.props.children) ? svg.props.children : [svg.props.children]; return JSON.stringify(parts.map((node) => node.props.d ?? '')); };
+const bulkToggleOf = (rendered) => rendered.find((row) => row.cls === 'wcm-iconBtn' && (row.el.props.title === 'foldAll' || row.el.props.title === 'unfoldAll'));
+let rowsB = renderToday(propsB, todayNoon);
+assert(!rowsB.some((row) => String(row.cls).includes('wcm-categories')), 'the directory must not be hidden as a whole container any more');
+assert(bulkToggleOf(rowsB) && bulkToggleOf(rowsB).el.props.title === 'foldAll', 'with something open the header must offer Collapse all');
+const openIcon = iconShapeOf(rowsB);
+// 方向由真实展开状态推导，两条轴各自独立成立：分类开着（项目全合）或项目开着（分类全合）
+// 都应该是「全部收起」——否则「全部收起」会漏掉另一半。
+hookState = [];
+const openCategoryOnly = freshScope({ categories: [{ id: 'c1', name: '客户项目', color: '#4f8cff' }, { id: 'c2', name: '内部工具', color: '#ff8c4f' }], assignments: {}, collapsedCategories: ['__today__', 'c2'], expandedWorkspaces: [] });
+assert(bulkToggleOf(renderToday(propsFor(svcB, openCategoryOnly.bind), todayNoon)).el.props.title === 'foldAll', 'an open category alone must still offer Collapse all');
+hookState = [];
+const openProjectOnly = freshScope({ categories: [{ id: 'c1', name: '客户项目', color: '#4f8cff' }], assignments: { w1: 'c1' }, collapsedCategories: ['__today__', 'c1', '__uncategorized__'], expandedWorkspaces: ['w1'] });
+assert(bulkToggleOf(renderToday(propsFor(svcB, openProjectOnly.bind), todayNoon)).el.props.title === 'foldAll', 'an open project alone must still offer Collapse all');
+hookState = [];
+rowsB = renderToday(propsB, todayNoon);
+// 全部收起：分类全收、项目全收，会话行随之从树里消失（只剩「当前」里那一行）
+calls.length = 0;
+bulkToggleOf(rowsB).el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+assert(sortedJson(bulkWrites('collapsedCategories').pop() ?? []) === sortedJson(['__today__', 'c1', 'c2', '__uncategorized__']), `Collapse all must fold every category and keep the Current fold bit, got ${JSON.stringify(bulkWrites('collapsedCategories'))}`);
+assert(JSON.stringify(bulkWrites('expandedWorkspaces').pop() ?? null) === JSON.stringify([]), `Collapse all must fold every project, got ${JSON.stringify(bulkWrites('expandedWorkspaces'))}`);
+rowsB = renderToday(propsB, todayNoon);
+assert(categoryRows(rowsB).every((row) => !String(row.cls).includes('wcm-open')), 'every category row must repaint folded');
+assert(iconShapeOf(rowsB) !== openIcon, 'the icon must switch to the other glyph instead of rotating in place');
+assert(rowsWith(rowsB, 'wcm-projectRow').length === 2, 'both projects must be rendered for the fold assertions to mean anything');
+assert(rowsWith(rowsB, 'wcm-projectRow').every((row) => !String(row.cls).includes('wcm-open')), 'no project row may stay open after Collapse all');
+assert(bulkToggleOf(rowsB).el.props.title === 'unfoldAll', 'the toggle must flip to Expand all once everything is folded');
+assert(!collectIn(wrapOf(rowsB).el, 'wcm-folderRow')[0].props.className.includes('wcm-open'), 'the Current group must keep its own fold bit (it was folded and stays folded)');
+// 全部展开：分类全开、项目全开（树里重新出现会话行）
+calls.length = 0;
+bulkToggleOf(rowsB).el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+assert(sortedJson(bulkWrites('collapsedCategories').pop() ?? []) === sortedJson(['__today__']), `Expand all must open every category and still keep the Current fold bit, got ${JSON.stringify(bulkWrites('collapsedCategories'))}`);
+assert(sortedJson(bulkWrites('expandedWorkspaces').pop() ?? []) === sortedJson(['w1', 'w2']), `Expand all must open every project, got ${JSON.stringify(bulkWrites('expandedWorkspaces'))}`);
+rowsB = renderToday(propsB, todayNoon);
+assert(rowsWith(rowsB, 'wcm-projectRow').filter((row) => String(row.cls).includes('wcm-open')).length === 2, 'every project must repaint expanded');
+assert(categoryRows(rowsB).every((row) => String(row.cls).includes('wcm-open')), 'every category row must repaint expanded after Expand all');
+assert(categoryRows(rowsB).every((row) => String(row.cls).includes('wcm-open')), 'every category row must repaint expanded');
+assert(iconShapeOf(rowsB) === openIcon, 'expanding must switch the icon back to the first glyph');
+// 点击立刻生效（回写未落地也已画完）
+const optimisticBulk = { categories: [{ id: 'c1', name: '客户项目', color: '#4f8cff' }], assignments: {}, collapsedCategories: [], expandedWorkspaces: [], hiddenToday: {} };
+const optimisticBulkBind = () => ({ subscribe: () => () => {}, getSnapshot: () => ({ value: optimisticBulk, status: 'ready', writable: true }), set: (key, value) => { calls.push(['scope.set', key, value]); return new Promise(() => {}); } });
+hookState = [];
+const propsOB = propsFor(svcB, optimisticBulkBind);
+let rowsOB = renderToday(propsOB, todayNoon);
+bulkToggleOf(rowsOB).el.props.onClick({ stopPropagation() {}, preventDefault() {} });
+rowsOB = renderToday(propsOB, todayNoon);
+assert(categoryRows(rowsOB).every((row) => !String(row.cls).includes('wcm-open')), 'Collapse all must repaint before the settings write lands');
+assert(String(rowsWith(rowsOB, 'wcm-folderRow').find((row) => String(row.cls).includes('wcm-todayRow')).cls).includes('wcm-open'), 'the Current group is not a category: Collapse all must leave it alone');
+assert(optimisticBulk.collapsedCategories.length === 0, 'the optimistic paint must not require the Config to have changed');
+hookState = [];
+rowsP = renderToday(propsP, todayNoon);
+const todayRow = collectIn(wrapOf(rowsP).el, 'wcm-folderRow')[0];
+assert(todayRow.props.draggable === undefined, 'the Today group must not be draggable like a category');
+calls.length = 0;
+todayRow.props.onClick({ stopPropagation() {}, preventDefault() {} });
+const collapsedWritesP = calls.filter(([kind, key]) => kind === 'scope.set' && key === 'collapsedCategories').map(([, , value]) => value);
+assert(JSON.stringify(collapsedWritesP[collapsedWritesP.length - 1]) === JSON.stringify(['__today__']), `collapsing Today must persist __today__ itself, got ${JSON.stringify(collapsedWritesP)}`);
+rowsP = renderToday(propsP, todayNoon);
+assert(!collectIn(wrapOf(rowsP).el, 'wcm-folderRow')[0].props.className.includes('wcm-open'), 'the clicked Today group must repaint collapsed immediately');
+// a remount reads the persisted suppression list, exactly like a restart
+hookState = [];
+rowsP = renderToday(propsFor(svcP, pScope.bind), todayNoon);
+assert(!collectIn(wrapOf(rowsP).el, 'wcm-folderRow')[0].props.className.includes('wcm-open'), 'the collapsed Today group must survive a remount');
+assert(collectIn(wrapOf(rowsP).el, 'wcm-session').length === 5, 'a collapsed Today group must still render its rows for the CSS transition');
+// rolling past midnight keeps only what is still running
+rowsP = renderToday(propsP, dayAt(1, 12));
+todayWrap = wrapOf(rowsP);
+assert(textIn(todayWrap, 'wcm-folderCount')[0] === '1' && JSON.stringify(textIn(todayWrap, 'wcm-sessionTitle')) === JSON.stringify(['跨天还在跑']), `after midnight only the running session stays, got ${JSON.stringify(textIn(todayWrap, 'wcm-sessionTitle'))}`);
+
+// P2: 「从今天隐藏」是临时移除，不是排除名单。记录里带着移除那一刻的活动事实
+// （updatedAt / running），会话之后出现当时没有的活动就自动回来——新的用户消息，
+// 或者从非运行变为运行，都不需要定时器或额外的扫描。
+const rowNodeOf = (wrap, id) => collectIn(wrap.el, 'wcm-session').find((node) => node.props.key === id);
+const hideButtonIn = (wrap, id) => { const row = rowNodeOf(wrap, id); return row === undefined ? undefined : collectIn(row, 'wcm-todayHide')[0]; };
+const hideWrites = () => calls.filter(([kind, key]) => kind === 'scope.set' && key === 'hiddenToday').map(([, , value]) => value);
+const hideScope = freshScope({});
+calls.length = 0;
+hookState = [];
+let propsDismiss = propsFor(svcP, hideScope.bind);
+assert(hideButtonIn(wrapOf(renderToday(propsDismiss, todayNoon)), 's-noon'), 'every Today row must expose its hide button');
+// 点击必须立刻生效，即使设置回写还没落地：这个 scope 既不改值也不 resolve
+const optimisticTarget = { categories: [], assignments: {}, collapsedCategories: [], expandedWorkspaces: [] };
+const optimisticBind = () => ({ subscribe: () => () => {}, getSnapshot: () => ({ value: optimisticTarget, status: 'ready', writable: true }), set: (key, value) => { calls.push(['scope.set', key, value]); return new Promise(() => {}); } });
+hookState = [];
+const propsO = propsFor(svcP, optimisticBind);
+hideButtonIn(wrapOf(renderToday(propsO, todayNoon)), 's-noon').props.onClick({ stopPropagation() {}, preventDefault() {} });
+let rowsO = renderToday(propsO, todayNoon);
+assert(!idsIn(wrapOf(rowsO)).includes('s-noon') && textIn(wrapOf(rowsO), 'wcm-folderCount')[0] === '4', 'hiding must repaint immediately, before the settings write lands');
+assert(calls.some(([kind, key]) => kind === 'scope.set' && key === 'hiddenToday'), 'the dismissal must still reach the Config');
+// 真实 scope：记录内容、跨挂载保留
+calls.length = 0;
+hookState = [];
+propsDismiss = propsFor(svcP, hideScope.bind);
+hideButtonIn(wrapOf(renderToday(propsDismiss, todayNoon)), 's-noon').props.onClick({ stopPropagation() {}, preventDefault() {} });
+const record = hideWrites().pop()['s-noon'];
+assert(record !== undefined && record.updatedAt === dayAt(0, 12) && typeof record.at === 'number' && !('running' in record), `the dismissal must capture only the activity stamp, got ${JSON.stringify(record)}`);
+hookState = [];
+let rowsHidden = renderToday(propsFor(svcP, hideScope.bind), todayNoon);
+assert(!idsIn(wrapOf(rowsHidden)).includes('s-noon'), 'a dismissal must survive a remount (it lives in the Config, not in React state)');
+assert(textIn(wrapOf(rowsHidden), 'wcm-folderCount')[0] === '4', 'the count must follow the visible rows');
+assert(collectIn(wrapOf(rowsHidden).el, 'wcm-todayRestore').length === 0, 'there must be no restore button: talking to the session is the only way back');
+// 重新跟这个会话对话（新的用户消息）-> 自己回来
+setTodayList({ 's-noon': { ...todayBase['s-noon'], updatedAt: dayAt(0, 13) } });
+hookState = [];
+let rowsBack = renderToday(propsFor(svcP, hideScope.bind), todayNoon);
+assert(idsIn(wrapOf(rowsBack)).includes('s-noon') && textIn(wrapOf(rowsBack), 'wcm-folderCount')[0] === '5', 'talking to the session again must bring it back');
+// 失效的记录不能带进下一次落盘
+hideButtonIn(wrapOf(rowsBack), 's-today').props.onClick({ stopPropagation() {}, preventDefault() {} });
+const pruned = hideWrites().pop();
+assert(pruned['s-today'] !== undefined && pruned['s-noon'] === undefined, `a dismissal that no longer hides anything must be pruned, got ${JSON.stringify(pruned)}`);
+// 隐藏后它自己跑起来（没有新消息）：不回来 —— 只有你重新跟它对话才算
+hookState = [];
+let rowsH3 = renderToday(propsFor(svcP, hideScope.bind), todayNoon);
+assert(!idsIn(wrapOf(rowsH3)).includes('s-today'), 'the just-hidden row must stay hidden');
+hideButtonIn(wrapOf(rowsH3), 's-early').props.onClick({ stopPropagation() {}, preventDefault() {} });
+setTodayList({ 's-early': { ...todayBase['s-early'], running: true } });
+hookState = [];
+let rowsH4 = renderToday(propsFor(svcP, hideScope.bind), todayNoon);
+assert(!idsIn(wrapOf(rowsH4)).includes('s-early'), 'a session that starts running again must stay hidden until it is talked to');
+// 再对话一次就回来（哪怕它当时在跑）
+setTodayList({ 's-early': { ...todayBase['s-early'], running: true, updatedAt: dayAt(0, 7, 30) } });
+hookState = [];
+let rowsH5 = renderToday(propsFor(svcP, hideScope.bind), todayNoon);
+assert(idsIn(wrapOf(rowsH5)).includes('s-early'), 'a new prompt must bring back even a session that was running');
+// 把今天唯一的会话隐藏掉：不能一边说「今天还没有运行过会话」，一边又什么都没有
+svcP.setList({ current: null, ids: ['s-only'], byId: { 's-only': session('s-only', { displayTitle: '今天唯一的会话', updatedAt: dayAt(0, 9), cwd: 'C:\\a' }) } });
+const onlyScope = freshScope({});
+hookState = [];
+let rowsOnly = renderToday(propsFor(svcP, onlyScope.bind), todayNoon);
+hideButtonIn(wrapOf(rowsOnly), 's-only').props.onClick({ stopPropagation() {}, preventDefault() {} });
+hookState = [];
+let rowsEmpty = renderToday(propsFor(svcP, onlyScope.bind), todayNoon);
+assert(textIn(wrapOf(rowsEmpty), 'wcm-folderCount')[0] === '0' && idsIn(wrapOf(rowsEmpty)).length === 0, 'the hidden-only group is empty');
+assert(collectIn(wrapOf(rowsEmpty).el, 'wcm-todayEmpty').length === 0, 'hiding every row must not claim the day is empty');
+
+console.log('tests OK: built bundle — loader contract, modern/legacy/degradation, registrations, row icon slots, unified status dots, lazy uiWorkspace, context menus, pending-interaction warnings, session navigation + rename, Git import, restart-stable sidebar expansion, optimistic animated toggles, cross-project Today view with temporary dismissal, suite settings migration');
 

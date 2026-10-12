@@ -61,13 +61,48 @@ var styles_default = `\r
 .wcm-sessions.wcm-closed,.wcm-folderProjects.wcm-closed{height:0;padding-top:0;padding-bottom:0;margin-top:0;margin-bottom:0;opacity:0;pointer-events:none}\r
 .wcm-sessions.wcm-closed .wcm-sessionsInner,.wcm-folderProjects.wcm-closed .wcm-folderProjectsInner{visibility:hidden;transform:translateY(-4px)}\r
 @media (prefers-reduced-motion:reduce){.wcm-sessions,.wcm-folderProjects,.wcm-sessionsInner,.wcm-folderProjectsInner{transition:none}}\r
-`;
+/* \u300C\u4ECA\u5929\u300D\uFF1A\u8DE8\u9879\u76EE\u4F1A\u8BDD\u5217\u8868\u6302\u5728\u5206\u7C7B\u6811\u9876\u90E8\u3002\u5206\u7EC4\u884C\u590D\u7528 .wcm-folderRow\uFF0C\u4F1A\u8BDD\u9762\u677F\u590D\u7528\r
+   .wcm-sessions\uFF08\u5C55\u5F00\u52A8\u753B\u4E0E\u7F29\u8FDB\u90FD\u8DDF\u7740\u8D70\uFF09\uFF0C\u6240\u4EE5\u53EA\u9700\u8981\u7ED9\u884C\u5185\u591A\u51FA\u7684\u4E24\u683C\u548C\u7A7A\u6001\u5B9A\u6837\u5F0F\uFF1A\r
+   \u5DE6\u4FA7\u662F\u65F6\u523B/\u65E5\u671F\uFF08\u56FA\u5B9A\u5BBD\u5EA6\u4FDD\u8BC1\u7EB5\u5411\u5BF9\u9F50\uFF09\uFF0C\u53F3\u4FA7\u662F\u9879\u76EE\u540D\uFF08\u6807\u9898\u5148\u8BA9\u4F4D\u3001\u5B83\u9760\u53F3\u4E0D\u622A\u65AD\uFF09\u3002 */\r
+.wcm-todayTime{flex:none;min-width:34px;padding-right:2px;font-size:11px;line-height:1;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary)}\r
+/* \u300C\u4ECA\u5929\u300D\u6309\u9879\u76EE\u5206\u7EC4\uFF1A\u5206\u7EC4\u6807\u9898\u662F\u6309\u94AE\uFF08\u53EF\u6298\u53E0\uFF09\uFF0C\u7EC4\u5185\u884C\u53EA\u7559 \u72B6\u6001\u70B9 + \u65F6\u523B + \u6807\u9898 +\r
+   \u60AC\u505C\u51FA\u73B0\u7684\u9690\u85CF\u6309\u94AE\u2014\u2014\u9879\u76EE\u540D\u4E0D\u518D\u9010\u884C\u91CD\u590D\u3002\u5206\u7EC4\u884C\u4E0E\u7EC4\u5185\u884C\u90FD\u590D\u7528\u73B0\u6709\u5C55\u5F00\u52A8\u753B\u3002 */\r
+.wcm-todayGroup{display:flex;align-items:center;gap:4px;width:100%;height:24px;box-sizing:border-box;padding:0 4px!important;border:0!important;border-radius:6px!important;font:inherit;font-size:11px!important;font-weight:600;text-align:left;color:var(--dsw-alias-label-secondary)!important;background:transparent!important;cursor:pointer}\r
+.wcm-todayGroup:hover{background:var(--dsw-alias-interactive-bg-hover)!important}\r
+.wcm-todayGroupCaret{display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--dsw-alias-label-tertiary);transition:transform .12s}\r
+.wcm-todayGroup.wcm-open .wcm-todayGroupCaret{transform:rotate(90deg)}\r
+.wcm-todayGroupLabel{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\r
+.wcm-todayGroupCount{flex:none;padding-right:8px;font-size:10px;color:var(--dsw-alias-label-tertiary)}\r
+.wcm-todayGroupRows{display:flex;flex-direction:column;gap:1px;overflow:hidden;padding-left:10px;transition:height .18s ease,padding .18s ease,margin .18s ease,opacity .18s ease}\r
+.wcm-todayGroupRows.wcm-closed{height:0;padding-top:0;padding-bottom:0;padding-left:10px;margin-top:0;margin-bottom:0;opacity:0;pointer-events:none}\r
+@media (prefers-reduced-motion:reduce){.wcm-todayGroupRows{transition:none}}\r
+.wcm-todayEmpty{margin:2px 0 2px 4px;font-size:12px;color:var(--dsw-alias-label-tertiary)}\r
+/* \u300C\u6298\u53E0\u76EE\u5F55\u300D\uFF1A\u9875\u5934\u6309\u94AE\u91CC\u7684\u56FE\u6807\u968F\u72B6\u6001\u7FFB\u8F6C\u3002 */\r
+/* \u5206\u7C7B\u76EE\u5F55\u6574\u6BB5\u6298\u53E0\u3002\u7ED3\u6784\u548C\u5176\u5B83\u6298\u53E0\u9762\u677F\u4E00\u81F4\uFF1A\u5916\u5C42\u53EA\u627F\u62C5 height/\u900F\u660E\u5EA6\u8FC7\u6E21\uFF0C\u884C\u90FD\u5728\u552F\u4E00\u7684\r
+   \u5185\u5C42\u91CC\uFF08\u884C\u82E5\u5F53\u7F51\u683C\u8F68\u9053\u4F1A\u5404\u81EA\u4FDD\u7559\u9AD8\u5EA6\uFF0C\u6536\u8D77\u65F6\u4ECD\u5360\u4F4D\uFF09\u3002\u300C\u5F53\u524D\u300D\u5217\u8868\u5728\u8FD9\u4E00\u5C42\u4E4B\u5916\uFF0C\u6C38\u4E0D\u6536\u8D77\u3002 */\r
+/* \u300C\u5B9A\u4F4D\u300D\u4E0E\u300C\u4ECE\u300C\u5F53\u524D\u300D\u9690\u85CF\u300D\u53EA\u5728\u884C\u60AC\u505C/\u805A\u7126\u65F6\u9732\u51FA\uFF08\u548C\u9879\u76EE\u884C\u7684 + \u540C\u4E00\u5957\u60EF\u4F8B\uFF09\uFF0C\u4E0D\u7834\u574F\u626B\u63CF\u8282\u594F\u3002 */\r
+.wcm-todayHide{flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px!important;height:22px!important;padding:0!important;border:0!important;border-radius:6px!important;opacity:0;color:var(--dsw-alias-label-tertiary)!important;background:transparent!important}\r
+.wcm-session:hover .wcm-todayHide,.wcm-session:focus-within .wcm-todayHide{opacity:1}\r
+/* \u300C\u5B9A\u4F4D\u5230\u4F1A\u8BDD\u300D\u4E0E\u300C\u9690\u85CF\u300D\u5E76\u6392\uFF0C\u540C\u6837\u662F\u60AC\u505C/\u805A\u7126\u9732\u51FA\u3001\u5360\u4F4D\u56FA\u5B9A\u6240\u4EE5\u4E0D\u4F1A\u4E92\u76F8\u6324\u3002 */\r
+.wcm-sessionLocate{flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px!important;height:22px!important;padding:0!important;border:0!important;border-radius:6px!important;opacity:0;color:var(--dsw-alias-label-tertiary)!important;background:transparent!important}\r
+.wcm-session:hover .wcm-sessionLocate,.wcm-session:focus-within .wcm-sessionLocate{opacity:1}\r
+.wcm-sessionLocate:hover{color:var(--dsw-alias-label-primary)!important;background:var(--dsw-alias-interactive-bg-hover)!important}\r
+/* \u5B9A\u4F4D\u547D\u4E2D\u7684\u90A3\u4E00\u884C\u95EA\u4E00\u4E0B\uFF0C\u8BF4\u660E\u300C\u5C31\u662F\u8FD9\u4E00\u6761\u300D\u3002 */\r
+.wcm-session.wcm-locateHit{animation:wcm-locate-hit 1.5s ease-out 1}\r
+@keyframes wcm-locate-hit{0%{background-color:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 2px var(--dsw-alias-brand-primary)}70%{background-color:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 2px var(--dsw-alias-brand-primary)}100%{background-color:transparent;box-shadow:inset 0 0 0 2px transparent}}\r
+@media (prefers-reduced-motion:reduce){.wcm-session.wcm-locateHit{animation:none;background-color:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 2px var(--dsw-alias-brand-primary)}}\r
+.wcm-todayHide:hover{color:var(--dsw-alias-label-primary)!important;background:var(--dsw-alias-interactive-bg-hover)!important}\r
+\r
+.wcm-folderCount{padding-right:8px}`;
 
 // src/client/constants.ts
 var NS = "settings.workspaceCategories";
 var SETTINGS_NAMESPACE = "workspace-category-manager";
 var COLLAPSED_CATEGORIES_FIELD = "collapsedCategories";
 var EXPANDED_WORKSPACES_FIELD = "expandedWorkspaces";
+var TODAY_FOLDER_ID = "__today__";
+var HIDDEN_TODAY_FIELD = "hiddenToday";
+var COLLAPSED_TODAY_GROUPS_FIELD = "collapsedTodayGroups";
 
 // src/client/api.ts
 function createDshApi(ctx) {
@@ -224,6 +259,7 @@ var expansionIds = (raw, field) => {
 };
 var closedCategories = (raw) => expansionIds(raw, COLLAPSED_CATEGORIES_FIELD);
 var openWorkspaces = (raw) => expansionIds(raw, EXPANDED_WORKSPACES_FIELD);
+var closedTodayGroups = (raw) => expansionIds(raw, COLLAPSED_TODAY_GROUPS_FIELD);
 var retainIds = (ids, existingIds) => {
   const known = existingIds instanceof Set ? existingIds : new Set(existingIds);
   return [...ids].filter((id) => known.has(id));
@@ -262,6 +298,94 @@ function workspaceId(workspace) {
 }
 function workspaceLabel(workspace) {
   return workspace.title || workspace.path?.replace(/.*[\\/]/, "") || workspace.workspaceId;
+}
+function startOfLocalDay(now) {
+  const date = new Date(typeof now === "number" ? now : Date.now());
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+function msUntilNextLocalDay(now) {
+  const at = typeof now === "number" ? now : Date.now();
+  const next = new Date(at);
+  next.setHours(24, 0, 0, 0);
+  return Math.max(1e3, next.getTime() - at);
+}
+function recentSessions(state, options) {
+  const opts = options ?? {};
+  const since = typeof opts.since === "number" ? opts.since : 0;
+  const byId = state?.byId ?? {};
+  const ids = Array.isArray(state?.ids) && state.ids.length > 0 ? state.ids : Object.keys(byId);
+  const archived = new Set(Array.isArray(opts.archivedSessionIds) ? opts.archivedSessionIds : []);
+  const hidden = pruneHiddenToday(opts.hiddenToday, state);
+  const rows = [];
+  for (const id of ids) {
+    const summary = byId[id];
+    if (summary === void 0) continue;
+    if (summary.origin === "subagent") continue;
+    if (archived.has(id)) continue;
+    if (summary.blank === true && id !== opts.currentId) continue;
+    if (hidden[id] !== void 0) continue;
+    const at = typeof summary.updatedAt === "number" ? summary.updatedAt : 0;
+    const running = summary.running === true;
+    const fresh = at >= since;
+    if (!fresh && !running) continue;
+    rows.push({ id, summary, at, fresh, running, label: summary.displayTitle ?? summary.title ?? id });
+  }
+  rows.sort((left, right) => right.at - left.at || (left.label < right.label ? -1 : left.label > right.label ? 1 : 0));
+  return { rows, hidden };
+}
+function todayDismissed(record, summary) {
+  if (record === null || typeof record !== "object") return false;
+  const at = typeof summary?.updatedAt === "number" ? summary.updatedAt : 0;
+  return at <= (typeof record.updatedAt === "number" ? record.updatedAt : 0);
+}
+function hiddenTodayOf(raw) {
+  const stored = raw !== null && typeof raw === "object" ? raw[HIDDEN_TODAY_FIELD] : void 0;
+  return stored !== null && typeof stored === "object" ? stored : {};
+}
+function pruneHiddenToday(records, state) {
+  const byId = state?.byId ?? {};
+  const kept = {};
+  for (const [id, record] of Object.entries(records !== null && typeof records === "object" ? records : {})) {
+    const summary = byId[id];
+    if (summary === void 0) continue;
+    if (!todayDismissed(record, summary)) continue;
+    kept[id] = record;
+  }
+  return kept;
+}
+var pad2 = (value) => String(value).padStart(2, "0");
+function formatStamp(ts, since) {
+  if (typeof ts !== "number" || ts <= 0) return "";
+  const date = new Date(ts);
+  const clock = `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+  return ts >= since ? clock : `${date.getMonth() + 1}/${date.getDate()}`;
+}
+function projectGroupOf(cwd, workspaces) {
+  if (typeof cwd !== "string" || cwd === "") return { key: "", label: "" };
+  const trimmed = cwd.replace(/[\\/]+$/, "");
+  const list = Array.isArray(workspaces) ? workspaces : [];
+  const pathOf = (workspace) => typeof workspace?.path === "string" ? workspace.path.replace(/[\\/]+$/, "") : void 0;
+  const exact = list.find((workspace) => pathOf(workspace) === trimmed);
+  const found = exact ?? list.find((workspace) => pathOf(workspace)?.toLowerCase() === trimmed.toLowerCase());
+  if (found !== void 0) return { key: `w:${workspaceId(found)}`, label: workspaceLabel(found) };
+  return { key: `p:${trimmed}`, label: trimmed.replace(/.*[\\/]/, "") };
+}
+function projectLabelOf(cwd, workspaces) {
+  return projectGroupOf(cwd, workspaces).label;
+}
+function groupTodayRows(rows, workspaces) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const { key, label } = projectGroupOf(row.summary?.cwd, workspaces);
+    let group = groups.get(key);
+    if (group === void 0) {
+      group = { key, label, at: row.at, rows: [] };
+      groups.set(key, group);
+    } else if (row.at > group.at) group.at = row.at;
+    group.rows.push(row);
+  }
+  return [...groups.values()].sort((left, right) => right.at - left.at || (left.label < right.label ? -1 : left.label > right.label ? 1 : 0));
 }
 
 // src/client/components/dialogs.tsx
@@ -357,6 +481,11 @@ var IconPlusOutline16 = () => (0, import_react6.createElement)("svg", { width: 1
 var IconPersonalizationOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { transform: "translate(1.292 1.3)", d: "M10.3232 9.18164C11.2868 9.18164 12.0985 9.82833 12.3506 10.7109L13.415 10.7109L13.415 11.8711L12.3496 11.8711C12.0971 12.7532 11.2864 13.3994 10.3232 13.3994C9.36031 13.3992 8.55012 12.7531 8.29785 11.8711L0 11.8711L0 10.7109L8.29688 10.7109C8.54876 9.82845 9.35988 9.18186 10.3232 9.18164ZM10.3232 10.3418C9.7999 10.3421 9.37534 10.7667 9.375 11.29C9.375 11.8137 9.79969 12.239 10.3232 12.2393C10.847 12.2393 11.2725 11.8138 11.2725 11.29C11.2721 10.7666 10.8468 10.3418 10.3232 10.3418ZM12.4326 11.291C12.4326 11.3549 12.4284 11.418 12.4229 11.4805C12.4287 11.4181 12.4326 11.355 12.4326 11.291ZM8.21484 11.2832C8.21484 11.2856 8.21484 11.2886 8.21484 11.291L8.21484 11.29C8.21484 11.2878 8.21484 11.2855 8.21484 11.2832ZM3.08301 4.59082C4.04605 4.59095 4.85696 5.23717 5.10938 6.11914L13.415 6.11914L13.415 7.2793L5.11035 7.2793C4.85833 8.16202 4.04648 8.80846 3.08301 8.80859C2.11972 8.80843 1.30963 8.16179 1.05762 7.2793L0 7.2793L0 6.11914L1.05762 6.11914C1.30994 5.23728 2.12006 4.59098 3.08301 4.59082ZM3.08301 5.75098C2.55962 5.75117 2.13512 6.17587 2.13477 6.69922C2.13477 7.22287 2.5594 7.64824 3.08301 7.64844C3.60665 7.64828 4.03223 7.2229 4.03223 6.69922C4.03187 6.17585 3.60643 5.75113 3.08301 5.75098ZM5.19238 6.69922C5.19238 6.763 5.18816 6.82633 5.18262 6.88867C5.18846 6.82629 5.19238 6.76313 5.19238 6.69922C5.19236 6.63495 5.18853 6.57152 5.18262 6.50879C5.18826 6.57154 5.19236 6.635 5.19238 6.69922ZM0.982422 6.52344C0.977382 6.58136 0.97463 6.63999 0.974609 6.69922C0.974609 6.75775 0.977496 6.81579 0.982422 6.87305C0.977758 6.81579 0.974609 6.75767 0.974609 6.69922C0.974628 6.64 0.977618 6.58142 0.982422 6.52344ZM10.3232 0C11.2869 0 12.0986 0.646596 12.3506 1.5293L13.415 1.5293L13.415 2.68945L12.3496 2.68945C12.363 2.64266 12.3754 2.59488 12.3857 2.54688C12.1838 3.50118 11.3376 4.21777 10.3232 4.21777C9.36037 4.21756 8.55018 3.57139 8.29785 2.68945L0 2.68945L0 1.5293L8.29688 1.5293C8.5487 0.646717 9.35981 0.00021854 10.3232 0ZM10.3232 1.16016C9.79984 1.16042 9.37524 1.58499 9.375 2.1084C9.375 2.63201 9.79969 3.05735 10.3232 3.05762C10.847 3.05762 11.2725 2.63217 11.2725 2.1084C11.2722 1.58483 10.8469 1.16016 10.3232 1.16016ZM12.4229 2.29883C12.4287 2.23641 12.4326 2.17331 12.4326 2.10938C12.4326 2.17327 12.4284 2.23638 12.4229 2.29883ZM8.21484 2.10938L8.21484 2.1084L8.21484 2.10938ZM8.22266 1.93359C8.21785 1.98897 8.21506 2.04499 8.21484 2.10156C8.21503 2.04501 8.2181 1.98902 8.22266 1.93359ZM8.22266 11.1162C8.2179 11.1713 8.21507 11.227 8.21484 11.2832C8.21504 11.227 8.21814 11.1713 8.22266 11.1162Z", fill: "currentColor" }));
 var IconProjectAddOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { transform: "translate(9.52 2.52)", d: "M3.55246 0L3.55246 2.44252L6 2.44252L6 3.55748L3.55246 3.55748L3.55246 6L2.43834 6L2.43834 3.55748L0 3.55748L0 2.44252L2.43834 2.44252L2.43834 0L3.55246 0Z", fill: "currentColor" }), (0, import_react6.createElement)("path", { transform: "translate(0.3496 2.35)", d: "M4.76367 0C5.36861 1.80598e-05 5.93113 0.310294 6.25488 0.821289L6.78027 1.64941C6.79685 1.67558 6.81791 1.69775 6.83887 1.71973C6.72186 2.15521 6.65702 2.61192 6.65137 3.08301C6.25601 2.96045 5.90909 2.70478 5.68164 2.3457L5.15723 1.5166C5.07183 1.38189 4.92318 1.3008 4.76367 1.30078L2.32422 1.30078C1.7589 1.30078 1.30078 1.7589 1.30078 2.32422L1.30078 10.1338C1.30078 10.6991 1.7589 11.1572 2.32422 11.1572L11.9766 11.1572C12.5419 11.1572 13 10.6991 13 10.1338L13 8.58398C13.4545 8.5135 13.8903 8.38748 14.3008 8.21289L14.3008 10.1338C14.3008 11.4171 13.2598 12.458 11.9766 12.458L2.32422 12.458C1.04093 12.458 0 11.4171 0 10.1338L0 2.32422C0 1.04093 1.04093 0 2.32422 0L4.76367 0Z", fill: "currentColor" }));
 var IconTagOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { fill: "currentColor", fillRule: "evenodd", d: "M2 6.5V3a1 1 0 0 1 1-1h3.5a1 1 0 0 1 .707.293l5.5 5.5a1 1 0 0 1 0 1.414l-3.5 3.5a1 1 0 0 1-1.414 0L2.293 7.207A1 1 0 0 1 2 6.5Zm3.2-2.6a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2Z" }));
+var IconClock16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("circle", { cx: 8, cy: 8, r: 6.1, stroke: "currentColor", strokeWidth: 1.3 }), (0, import_react6.createElement)("path", { d: "M8 4.6V8.35L10.7 9.9", stroke: "currentColor", strokeWidth: 1.3, strokeLinecap: "round", strokeLinejoin: "round" }));
+var IconEyeOffOutline16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { d: "M1.6 8C3.3 5.2 5.5 3.8 8 3.8s4.7 1.4 6.4 4.2c-1.7 2.8-3.9 4.2-6.4 4.2S3.3 10.8 1.6 8Z", stroke: "currentColor", strokeWidth: 1.2, strokeLinejoin: "round" }), (0, import_react6.createElement)("circle", { cx: 8, cy: 8, r: 1.9, stroke: "currentColor", strokeWidth: 1.2 }), (0, import_react6.createElement)("path", { d: "M3.1 13.2 12.9 2.8", stroke: "currentColor", strokeWidth: 1.4, strokeLinecap: "round" }));
+var IconLocate16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("circle", { cx: 8, cy: 8, r: 3.3, stroke: "currentColor", strokeWidth: 1.2 }), (0, import_react6.createElement)("path", { d: "M8 1.2v2.6M8 12.2v2.6M1.2 8h2.6M12.2 8h2.6", stroke: "currentColor", strokeWidth: 1.2, strokeLinecap: "round" }), (0, import_react6.createElement)("circle", { cx: 8, cy: 8, r: 0.9, fill: "currentColor" }));
+var IconFoldAll16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { d: "M3.4 8.4 8 3.8l4.6 4.6", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" }), (0, import_react6.createElement)("path", { d: "M3.4 12.9 8 8.3l4.6 4.6", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" }));
+var IconUnfoldAll16 = () => (0, import_react6.createElement)("svg", { width: 16, height: 16, viewBox: "0 0 16 16", fill: "none", "aria-hidden": true }, (0, import_react6.createElement)("path", { d: "M3.4 3.4 8 8l4.6-4.6", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" }), (0, import_react6.createElement)("path", { d: "M3.4 7.9 8 12.5l4.6-4.6", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" }));
 
 // src/client/components/StateDot.tsx
 var import_react7 = __toESM(require("react"), 1);
@@ -391,7 +520,7 @@ var sessionStatusOf = (summary, statuses) => {
   const completed = raw?.completionUnread ?? summary.completed === true;
   return pendingKind !== void 0 ? "warning" : running ? "running" : completed ? "done" : void 0;
 };
-function CategorySidebar({ api, wide, expandSidebar, t }) {
+function CategorySidebar({ api, wide, expandSidebar, t, now }) {
   const scope = api.configForms;
   const snapshot = useScope(scope);
   const workspaceState = useWorkspaceSnapshot(api.workspacesList);
@@ -422,6 +551,9 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const [dissolveError, setDissolveError] = import_react9.default.useState("");
   const dragRef = import_react9.default.useRef({ kind: null, id: null, el: null, over: null });
   const pendingOverrides = import_react9.default.useRef(/* @__PURE__ */ new Map());
+  const [, setClockTick] = import_react9.default.useState(0);
+  const [hideOverrides, setHideOverrides] = import_react9.default.useState({});
+  const [locateTarget, setLocateTarget] = import_react9.default.useState(null);
   const list = workspaceState.items ?? [];
   const byId = sessionState.byId ?? {};
   const currentId = currentSessionId(sessionState);
@@ -430,7 +562,8 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const openSession = (sessionId) => api.openSession(sessionId);
   const persistedCollapsed = closedCategories(config);
   const persistedWorkspaces = openWorkspaces(config);
-  const idsOfCategories = () => /* @__PURE__ */ new Set(["__uncategorized__", ...config.categories.map((category) => category.id)]);
+  const persistedGroups = closedTodayGroups(config);
+  const idsOfCategories = () => /* @__PURE__ */ new Set([TODAY_FOLDER_ID, "__uncategorized__", ...config.categories.map((category) => category.id)]);
   const idsOfWorkspaces = () => new Set(list.map((workspace) => workspaceId(workspace)));
   const isCollapsed = (id) => {
     const entry = collapseOverrides[id];
@@ -440,24 +573,79 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
     const entry = collapseOverrides[id];
     return entry === void 0 || entry.field !== EXPANDED_WORKSPACES_FIELD ? persistedWorkspaces.has(id) : entry.value;
   };
+  const nowMs = typeof now === "number" ? now : Date.now();
+  const dayStart = startOfLocalDay(nowMs);
+  const persistedHidden = hiddenTodayOf(config);
+  const mergedHidden = () => {
+    const merged = { ...persistedHidden };
+    Object.entries(hideOverrides).forEach(([id, override]) => {
+      if (override === null) delete merged[id];
+      else merged[id] = override;
+    });
+    return merged;
+  };
+  const today = recentSessions(sessionState, { since: dayStart, currentId, archivedSessionIds: workspaceState.archivedSessionIds, hiddenToday: mergedHidden() });
+  const todayRows = today.rows;
+  const todayHidden = Object.keys(today.hidden).length;
+  const todayGroups = groupTodayRows(todayRows, list);
+  const idsOfTodayGroups = () => new Set(todayGroups.map((group) => group.key));
+  const isGroupCollapsed = (key) => {
+    const entry = collapseOverrides[key];
+    return entry === void 0 || entry.field !== COLLAPSED_TODAY_GROUPS_FIELD ? persistedGroups.has(key) : entry.value;
+  };
+  const todayOpen = wide && !isCollapsed(TODAY_FOLDER_ID);
+  const workspaceBySession = /* @__PURE__ */ new Map();
+  list.forEach((workspace) => (workspace.sessionIds ?? []).forEach((sessionId) => workspaceBySession.set(sessionId, workspaceId(workspace))));
+  import_react9.default.useEffect(() => {
+    const ids = Object.keys(hideOverrides);
+    if (ids.length === 0) return;
+    const survivor = {};
+    for (const id of ids) {
+      const override = hideOverrides[id];
+      const stored = persistedHidden[id];
+      const settled = override === null ? stored === void 0 : stored !== void 0 && stored.at >= override.at;
+      if (!settled) survivor[id] = override;
+    }
+    if (Object.keys(survivor).length !== ids.length) setHideOverrides(survivor);
+  });
+  const sessionsReady = sessionState.phase === void 0 || sessionState.phase === "ready";
+  const persistedOf = (field) => field === COLLAPSED_CATEGORIES_FIELD ? persistedCollapsed : field === EXPANDED_WORKSPACES_FIELD ? persistedWorkspaces : persistedGroups;
+  const universeOf = (field) => field === COLLAPSED_CATEGORIES_FIELD ? idsOfCategories() : field === EXPANDED_WORKSPACES_FIELD ? idsOfWorkspaces() : idsOfTodayGroups();
+  import_react9.default.useEffect(() => {
+    if (typeof document === "undefined") return void 0;
+    let timer = 0;
+    const arm = () => {
+      timer = setTimeout(() => {
+        setClockTick((value) => value + 1);
+        arm();
+      }, msUntilNextLocalDay(Date.now()));
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") setClockTick((value) => value + 1);
+    };
+    arm();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
   import_react9.default.useEffect(() => {
     const ids = Object.keys(collapseOverrides);
     if (ids.length === 0) return;
-    const known = idsOfCategories();
-    const knownWorkspaces = idsOfWorkspaces();
     const survivor = {};
     for (const id of ids) {
       const entry = collapseOverrides[id];
-      const exists = entry.field === COLLAPSED_CATEGORIES_FIELD ? known.has(id) : knownWorkspaces.has(id);
+      const exists = universeOf(entry.field).has(id);
       const settled = !pendingOverrides.current.has(id);
-      const confirmed = entry.field === COLLAPSED_CATEGORIES_FIELD ? persistedCollapsed.has(id) === entry.value : persistedWorkspaces.has(id) === entry.value;
+      const confirmed = persistedOf(entry.field).has(id) === entry.value;
       if (exists && !(settled && confirmed)) survivor[id] = entry;
     }
     if (Object.keys(survivor).length !== ids.length) setCollapseOverrides(survivor);
   });
   const expansionReady = snapshot.value !== void 0;
   const nextOverrides = (field) => {
-    const known = field === COLLAPSED_CATEGORIES_FIELD ? new Set(persistedCollapsed) : new Set(persistedWorkspaces);
+    const known = new Set(persistedOf(field));
     pendingOverrides.current.forEach((entry) => {
       if (entry.field !== field) return;
       if (entry.value) known.add(entry.id);
@@ -483,26 +671,66 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const toggleProject = (id) => {
     toggle(id, EXPANDED_WORKSPACES_FIELD, !isWorkspaceOpen(id), idsOfWorkspaces);
   };
+  const toggleTodayGroup = (key) => {
+    toggle(key, COLLAPSED_TODAY_GROUPS_FIELD, !isGroupCollapsed(key), idsOfTodayGroups);
+  };
+  const locateSession = (sessionId) => {
+    const owner = workspaceBySession.get(sessionId);
+    if (owner === void 0) return;
+    const category = config.assignments[owner] ?? "__uncategorized__";
+    if (isCollapsed(category)) toggle(category, COLLAPSED_CATEGORIES_FIELD, false, idsOfCategories);
+    if (!isWorkspaceOpen(owner)) toggle(owner, EXPANDED_WORKSPACES_FIELD, true, idsOfWorkspaces);
+    setLocateTarget({ id: sessionId, at: Date.now() });
+  };
+  const revealLocated = (sessionId) => {
+    if (typeof document === "undefined") return;
+    const target = document.querySelector(`[data-wcm-tree-session="${sessionId}"]`);
+    if (target === null) return;
+    const scroller = target.closest(".wcm-folders");
+    if (scroller === null) {
+      if (typeof target.scrollIntoView === "function") target.scrollIntoView({ block: "nearest" });
+      return;
+    }
+    const row = target.getBoundingClientRect();
+    const box = scroller.getBoundingClientRect();
+    const margin = 8;
+    if (row.top < box.top + margin) scroller.scrollTop += row.top - (box.top + margin);
+    else if (row.bottom > box.bottom - margin) scroller.scrollTop += row.bottom - (box.bottom - margin);
+  };
+  import_react9.default.useEffect(() => {
+    if (locateTarget === null || typeof document === "undefined") return void 0;
+    const id = locateTarget.id;
+    const first = setTimeout(() => revealLocated(id), 30);
+    const settle = setTimeout(() => revealLocated(id), 260);
+    const expire = setTimeout(() => setLocateTarget(null), 2200);
+    return () => {
+      clearTimeout(first);
+      clearTimeout(settle);
+      clearTimeout(expire);
+    };
+  }, [locateTarget]);
+  const hideFromToday = (row) => {
+    const record = { at: Date.now(), updatedAt: row.at };
+    setHideOverrides((previous) => ({ ...previous, [row.id]: record }));
+    const merged = { ...mergedHidden(), [row.id]: record };
+    scope.set(HIDDEN_TODAY_FIELD, pruneHiddenToday(merged, sessionState)).catch((reason) => {
+      setFailure(errText(reason));
+    });
+  };
   const sessionsOf = (workspace) => {
     const archived = new Set(workspaceState.archivedSessionIds ?? []);
     return (workspace.sessionIds ?? []).map((id) => byId[id]).filter((summary) => summary !== void 0 && summary.origin !== "subagent" && !archived.has(summary.id) && (!summary.blank || summary.id === currentId));
   };
   const runningOf = (workspace) => (workspace.sessionIds ?? []).some((id) => byId[id]?.running === true);
-  const statusOfWorkspace = (workspace) => {
-    const rows = sessionsOf(workspace);
-    const statuses = rows.map((s) => sessionStatusOf(s, sessionStatuses)).filter((s) => s !== void 0);
-    if (statuses.includes("warning")) return "warning";
-    if (statuses.includes("running")) return "running";
-    if (statuses.includes("done")) return "done";
-    return void 0;
-  };
-  const statusOfCategory = (f) => {
-    const statuses = f.projects.map(statusOfWorkspace).filter((s) => s !== void 0);
-    if (statuses.length === 0) return void 0;
-    if (statuses.includes("warning")) return "warning";
-    if (statuses.includes("running")) return "running";
+  const aggregateStatus = (statuses) => {
+    const known = statuses.filter((status) => status !== void 0);
+    if (known.length === 0) return void 0;
+    if (known.includes("warning")) return "warning";
+    if (known.includes("running")) return "running";
     return "done";
   };
+  const statusOfWorkspace = (workspace) => aggregateStatus(sessionsOf(workspace).map((summary) => sessionStatusOf(summary, sessionStatuses)));
+  const statusOfCategory = (f) => aggregateStatus(f.projects.map(statusOfWorkspace));
   const statusDot = (status) => status !== void 0 ? (0, import_react10.createElement)("span", { className: `wcm-wsDot wcm-ws-${status}` }) : null;
   const sessionStatusDot = (status) => status === "running" ? (0, import_react10.createElement)(StateDot, { state: "ongoing" }) : statusDot(status);
   const statusIconSlot = (status, icon) => (0, import_react10.createElement)("span", { className: "wcm-rowIconSlot" }, (0, import_react10.createElement)("span", { className: "wcm-rowIcon" }, icon), (0, import_react10.createElement)("span", { className: "wcm-rowChevron" }, (0, import_react10.createElement)(IconTriangleRightFill14)), status !== void 0 ? (0, import_react10.createElement)("span", { className: `wcm-wsDot wcm-wsBadge wcm-ws-${status}` }) : null);
@@ -515,6 +743,33 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const projectsOf = (catId) => list.filter((workspace) => assignmentOf(workspaceId(workspace)) === catId);
   const orderProjects = (projects) => orderBy === "updated" ? [...projects].sort((a, b) => latestUpdatedAt(b) - latestUpdatedAt(a)) : projects;
   const folders = config.categories.map((category) => ({ id: category.id, name: category.name, color: category.color, projects: orderProjects(projectsOf(category.id)) })).concat({ id: "__uncategorized__", name: t("uncategorized"), color: "#94a3b8", projects: orderProjects(projectsOf(void 0)) });
+  const applyExpansion = (changes) => {
+    if (changes.length === 0) return;
+    const generations = /* @__PURE__ */ new Map();
+    const patched = {};
+    changes.forEach(({ id, field, value }) => {
+      const generation = nextOverrideGeneration();
+      generations.set(id, generation);
+      pendingOverrides.current.set(id, { id, field, value, generation });
+      patched[id] = { generation, field, value };
+    });
+    setCollapseOverrides((previous) => ({ ...previous, ...patched }));
+    for (const field of new Set(changes.map((change) => change.field))) {
+      persistExpansion(scope, field, retainIds(nextOverrides(field), universeOf(field))).then(() => {
+        generations.forEach((generation, id) => {
+          const entry = pendingOverrides.current.get(id);
+          if (entry !== void 0 && entry.generation === generation) pendingOverrides.current.delete(id);
+        });
+      });
+    }
+  };
+  const anyExpanded = folders.some((folder2) => !isCollapsed(folder2.id)) || list.some((workspace) => isWorkspaceOpen(workspaceId(workspace)));
+  const foldAll = () => {
+    const changes = [];
+    folders.forEach((folder2) => changes.push({ id: folder2.id, field: COLLAPSED_CATEGORIES_FIELD, value: anyExpanded }));
+    list.forEach((workspace) => changes.push({ id: workspaceId(workspace), field: EXPANDED_WORKSPACES_FIELD, value: !anyExpanded }));
+    applyExpansion(changes);
+  };
   const openAddWorkspace = () => {
     setAddDraft({ mode: "local", path: "", group: config.categories[0]?.id ?? "", url: "", branch: "", folder: "", parent: "" });
     setAddFormError("");
@@ -764,6 +1019,34 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   } }, (0, import_react10.createElement)("span", { className: "wcm-menuText" }, label));
   const popover = (...items) => [(0, import_react10.createElement)("div", { className: "wcm-menuMask", key: "mask", onClick: closeMenus }), (0, import_react10.createElement)("div", { className: "wcm-menu wcm-menuCompact", key: "menu" }, ...items)];
   const popoverAt = (x, y, ...items) => [(0, import_react10.createElement)("div", { className: "wcm-menuMask", key: "mask", onClick: closeMenus }), (0, import_react10.createElement)("div", { className: "wcm-menu wcm-menuCompact wcm-menuFixed", key: "menu", style: { left: x, top: y } }, ...items)];
+  const workspaceMenuItems = (id, label) => [menuItem(t("rename"), false, () => {
+    setRenameTarget({ kind: "workspace", id, title: label });
+    setRenameDraft(label);
+    setRenameError("");
+  }), menuItem(t("deleteWorkspace"), true, () => setDeleteTarget({ id, label }))];
+  const sessionRow = (summary, extras) => {
+    const opts = extras ?? {};
+    const status = sessionStatusOf(summary, sessionStatuses);
+    const showStatus = status !== void 0;
+    const title = summary.blank ? t("newSession") : summary.displayTitle ?? summary.title ?? summary.id;
+    const openIt = () => {
+      openSession(summary.id);
+    };
+    const sessMenuOpen = menuFor !== null && menuFor.kind === "session" && menuFor.id === summary.id;
+    return (0, import_react10.createElement)("div", { className: `wcm-session${summary.id === currentId ? " wcm-current" : ""}${opts.highlight === true ? " wcm-locateHit" : ""}`, key: summary.id, role: "button", tabIndex: 0, ...opts.anchor === true ? { "data-wcm-tree-session": summary.id } : {}, title: opts.tooltip ?? summary.cwd, onClick: (event) => {
+      event.stopPropagation();
+      openIt();
+    }, onKeyDown: (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openIt();
+      }
+    }, onContextMenu: (event) => openMenuAt("session", summary.id, event) }, (0, import_react10.createElement)("span", { className: "wcm-sessionStatus" }, showStatus ? sessionStatusDot(status) : null), ...opts.leading ?? [], (0, import_react10.createElement)("span", { className: "wcm-sessionTitle" }, title), ...opts.trailing ?? [], sessMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t("rename"), false, () => {
+      setRenameTarget({ kind: "session", id: summary.id, title });
+      setRenameDraft(title);
+      setRenameError("");
+    }), menuItem(t("fork"), false, () => forkSession(summary.id)), menuItem(t("archive"), false, () => archiveSession(summary.id))) : null);
+  };
   const project = (workspace) => {
     const id = workspaceId(workspace);
     const rows = sessionsOf(workspace);
@@ -783,32 +1066,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
     }, onDragStart: wide ? dragStart("project", id) : void 0, onDragOver: wide ? dragOverProject(id) : void 0, onDrop: wide ? dropOnProject(id) : void 0, onDragEnd: wide ? dragEnd : void 0, onContextMenu: wide ? (event) => openMenuAt("workspace", id, event) : void 0 }, (0, import_react10.createElement)("div", { className: "wcm-projectLine" }, statusIconSlot(wsStatus, expanded ? (0, import_react10.createElement)(IconFolderOpen16) : (0, import_react10.createElement)(IconFolderClose16)), (0, import_react10.createElement)("span", { className: "wcm-projectLabel" }, label), wide ? (0, import_react10.createElement)("button", { className: "wcm-projectAdd", title: t("newSession"), onClick: (event) => {
       event.stopPropagation();
       startSession(workspace);
-    } }, (0, import_react10.createElement)(IconPlusOutline16)) : null), wsMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t("rename"), false, () => {
-      setRenameTarget({ kind: "workspace", id, title: label });
-      setRenameDraft(label);
-      setRenameError("");
-    }), menuItem(t("deleteWorkspace"), true, () => setDeleteTarget({ id, label }))) : null, (0, import_react10.createElement)("div", { className: `wcm-sessions${expanded ? "" : " wcm-closed"}` }, (0, import_react10.createElement)("div", { className: "wcm-sessionsInner" }, rows.map((summary) => {
-      const status = sessionStatusOf(summary, sessionStatuses);
-      const showStatus = status !== void 0;
-      const title = summary.blank ? t("newSession") : summary.displayTitle ?? summary.title ?? summary.id;
-      const openIt = () => {
-        openSession(summary.id);
-      };
-      const sessMenuOpen = menuFor !== null && menuFor.kind === "session" && menuFor.id === summary.id;
-      return (0, import_react10.createElement)("div", { className: `wcm-session${summary.id === currentId ? " wcm-current" : ""}`, key: summary.id, role: "button", tabIndex: 0, title: summary.cwd, onClick: (event) => {
-        event.stopPropagation();
-        openIt();
-      }, onKeyDown: (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          openIt();
-        }
-      }, onContextMenu: (event) => openMenuAt("session", summary.id, event) }, (0, import_react10.createElement)("span", { className: "wcm-sessionStatus" }, showStatus ? sessionStatusDot(status) : null), (0, import_react10.createElement)("span", { className: "wcm-sessionTitle" }, title), sessMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t("rename"), false, () => {
-        setRenameTarget({ kind: "session", id: summary.id, title });
-        setRenameDraft(title);
-        setRenameError("");
-      }), menuItem(t("fork"), false, () => forkSession(summary.id)), menuItem(t("archive"), false, () => archiveSession(summary.id))) : null);
-    }))));
+    } }, (0, import_react10.createElement)(IconPlusOutline16)) : null), wsMenuOpen ? popoverAt(menuFor.x, menuFor.y, ...workspaceMenuItems(id, label)) : null, (0, import_react10.createElement)("div", { className: `wcm-sessions${expanded ? "" : " wcm-closed"}` }, (0, import_react10.createElement)("div", { className: "wcm-sessionsInner" }, rows.map((summary) => sessionRow(summary, { anchor: true, highlight: locateTarget !== null && locateTarget.id === summary.id })))));
   };
   const folder = (f) => {
     const isUncategorized = f.id === "__uncategorized__";
@@ -825,7 +1083,49 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
       }
     }, onDragStart: wide && !isUncategorized ? dragStart("folder", f.id) : void 0, onDragOver: wide ? dragOverFolder(f.id) : void 0, onDrop: wide ? dropOnFolder(f.id) : void 0, onDragEnd: wide ? dragEnd : void 0, onContextMenu: wide && !isUncategorized ? (event) => openMenuAt("folder", f.id, event) : void 0 }, statusIconSlot(status, (0, import_react10.createElement)("span", { className: "wcm-rowIcon wcm-rowIconCategory", style: { color: f.color } }, (0, import_react10.createElement)(IconTagOutline16))), (0, import_react10.createElement)("span", { className: "wcm-folderLabel" }, f.name), (0, import_react10.createElement)("span", { className: "wcm-folderCount" }, f.projects.length), menuFor !== null && menuFor.kind === "folder" && menuFor.id === f.id ? popoverAt(menuFor.x, menuFor.y, menuItem(t("dissolveCategory"), true, () => setDissolveTarget({ id: f.id, name: f.name }))) : null), (0, import_react10.createElement)("div", { className: `wcm-folderProjects${open ? "" : " wcm-closed"}` }, (0, import_react10.createElement)("div", { className: "wcm-folderProjectsInner" }, f.projects.map(project))));
   };
-  const folderTree = expansionReady ? (0, import_react10.createElement)("div", { className: "wcm-folders" }, folders.map(folder)) : null;
+  const todayNode = (0, import_react10.createElement)(
+    "div",
+    { className: "wcm-folderWrap", key: TODAY_FOLDER_ID },
+    (0, import_react10.createElement)(
+      "div",
+      { className: `wcm-folderRow wcm-todayRow${todayOpen ? " wcm-open" : ""}`, role: "button", tabIndex: 0, title: t("today"), onClick: () => {
+        if (wide) toggleFolder(TODAY_FOLDER_ID);
+        else if (expandSidebar !== void 0) expandSidebar();
+      }, onKeyDown: (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          if (wide) toggleFolder(TODAY_FOLDER_ID);
+          else if (expandSidebar !== void 0) expandSidebar();
+        }
+      } },
+      statusIconSlot(aggregateStatus(todayRows.map((row) => sessionStatusOf(row.summary, sessionStatuses))), (0, import_react10.createElement)(IconClock16)),
+      (0, import_react10.createElement)("span", { className: "wcm-folderLabel" }, t("today")),
+      (0, import_react10.createElement)("span", { className: "wcm-folderCount" }, todayRows.length)
+    ),
+    (0, import_react10.createElement)(
+      "div",
+      { className: `wcm-sessions${todayOpen ? "" : " wcm-closed"}` },
+      (0, import_react10.createElement)("div", { className: "wcm-sessionsInner" }, todayRows.length > 0 ? todayGroups.map((group) => {
+        const open = wide && !isGroupCollapsed(group.key);
+        const label = group.label === "" ? t("uncategorized") : group.label;
+        return (0, import_react10.createElement)("div", { className: "wcm-todayGroupWrap", key: group.key }, (0, import_react10.createElement)("button", { className: `wcm-todayGroup${open ? " wcm-open" : ""}`, type: "button", title: `${label} \xB7 ${group.rows.length}`, "aria-expanded": open, onClick: (event) => {
+          event.stopPropagation();
+          toggleTodayGroup(group.key);
+        } }, (0, import_react10.createElement)("span", { className: "wcm-todayGroupCaret" }, (0, import_react10.createElement)(IconTriangleRightFill14)), (0, import_react10.createElement)("span", { className: "wcm-todayGroupLabel" }, label), (0, import_react10.createElement)("span", { className: "wcm-todayGroupCount" }, group.rows.length)), (0, import_react10.createElement)("div", { className: `wcm-todayGroupRows${open ? "" : " wcm-closed"}` }, group.rows.map((row) => {
+          const rowLabel = projectLabelOf(row.summary.cwd, list);
+          const tooltip = rowLabel === "" ? row.summary.cwd : `${rowLabel} \xB7 ${row.summary.cwd ?? ""}${row.fresh ? "" : ` \xB7 ${t("todayOvernight")}`}`;
+          return sessionRow(row.summary, { tooltip, leading: [(0, import_react10.createElement)("span", { className: "wcm-todayTime", key: "time" }, formatStamp(row.at, dayStart))], trailing: [wide && workspaceBySession.has(row.id) ? (0, import_react10.createElement)("button", { className: "wcm-sessionLocate", key: "locate", type: "button", title: t("locateSession"), "aria-label": t("locateSession"), onClick: (event) => {
+            event.stopPropagation();
+            locateSession(row.id);
+          } }, (0, import_react10.createElement)(IconLocate16)) : null, wide ? (0, import_react10.createElement)("button", { className: "wcm-todayHide", key: "hide", type: "button", title: t("todayHide"), "aria-label": t("todayHide"), onClick: (event) => {
+            event.stopPropagation();
+            hideFromToday(row);
+          } }, (0, import_react10.createElement)(IconEyeOffOutline16)) : null] });
+        })));
+      }) : sessionsReady && todayHidden === 0 ? (0, import_react10.createElement)("p", { className: "wcm-todayEmpty", key: "today-empty" }, t("todayEmpty")) : null)
+    )
+  );
+  const folderTree = expansionReady ? (0, import_react10.createElement)("div", { className: "wcm-folders" }, todayNode, folders.map(folder)) : null;
   const sortItem = (mode, label) => (0, import_react10.createElement)("button", { className: `wcm-menuItem${orderBy === mode ? " wcm-menuItemOn" : ""}`, onClick: () => {
     setOrderBy(mode);
     setMenuOpen(false);
@@ -833,7 +1133,7 @@ function CategorySidebar({ api, wide, expandSidebar, t }) {
   const headerActions = (0, import_react10.createElement)("div", { className: "wcm-sidebarActions" }, (0, import_react10.createElement)("button", { className: "wcm-iconBtn", title: t("viewOptions"), "aria-label": t("viewOptions"), onClick: () => {
     setMenuFor(null);
     setMenuOpen((value) => !value);
-  } }, (0, import_react10.createElement)(IconPersonalizationOutline16)), (0, import_react10.createElement)("button", { className: "wcm-iconBtn", title: t("addCategory"), "aria-label": t("addCategory"), onClick: () => setAddCategoryOpen(true) }, (0, import_react10.createElement)(IconPlusOutline16)), api.canPickDirectory() ? (0, import_react10.createElement)("button", { className: "wcm-iconBtn", title: t("addWorkspace"), "aria-label": t("addWorkspace"), onClick: openAddWorkspace }, (0, import_react10.createElement)(IconProjectAddOutline16)) : null, menuOpen ? (0, import_react10.createElement)("div", { className: "wcm-menuWrap" }, (0, import_react10.createElement)("div", { className: "wcm-menuMask", onClick: () => setMenuOpen(false) }), (0, import_react10.createElement)("div", { className: "wcm-menu" }, (0, import_react10.createElement)("div", { className: "wcm-menuLabel" }, t("orderByLabel")), sortItem("manual", t("orderManual")), sortItem("updated", t("orderUpdated")))) : null);
+  } }, (0, import_react10.createElement)(IconPersonalizationOutline16)), (0, import_react10.createElement)("button", { className: "wcm-iconBtn", title: anyExpanded ? t("foldAll") : t("unfoldAll"), "aria-label": anyExpanded ? t("foldAll") : t("unfoldAll"), "aria-expanded": anyExpanded, onClick: foldAll }, (0, import_react10.createElement)(anyExpanded ? IconFoldAll16 : IconUnfoldAll16)), (0, import_react10.createElement)("button", { className: "wcm-iconBtn", title: t("addCategory"), "aria-label": t("addCategory"), onClick: () => setAddCategoryOpen(true) }, (0, import_react10.createElement)(IconPlusOutline16)), api.canPickDirectory() ? (0, import_react10.createElement)("button", { className: "wcm-iconBtn", title: t("addWorkspace"), "aria-label": t("addWorkspace"), onClick: openAddWorkspace }, (0, import_react10.createElement)(IconProjectAddOutline16)) : null, menuOpen ? (0, import_react10.createElement)("div", { className: "wcm-menuWrap" }, (0, import_react10.createElement)("div", { className: "wcm-menuMask", onClick: () => setMenuOpen(false) }), (0, import_react10.createElement)("div", { className: "wcm-menu" }, (0, import_react10.createElement)("div", { className: "wcm-menuLabel" }, t("orderByLabel")), sortItem("manual", t("orderManual")), sortItem("updated", t("orderUpdated")))) : null);
   const errorDialog = addError ? (0, import_react10.createElement)(Dialog, { title: t("addWorkspaceError"), close: () => setAddError(null) }, (0, import_react10.createElement)("p", { className: "wcm-muted" }, addError), (0, import_react10.createElement)("div", { className: "wcm-actions" }, (0, import_react10.createElement)("button", { onClick: () => setAddError(null) }, t("close")), (0, import_react10.createElement)("button", { className: "wcm-primary", onClick: () => {
     setAddError(null);
     openAddWorkspace();
@@ -910,8 +1210,8 @@ if (typeof document !== "undefined") {
     document.head.appendChild(tag);
   }
 }
-var zh = { title: "\u5DE5\u4F5C\u533A\u5206\u7C7B", intro: "\u521B\u5EFA\u5206\u7C7B\u5E76\u628A\u5DE6\u4FA7\u5DE5\u4F5C\u533A\u4E2D\u7684\u9879\u76EE\u5F52\u5165\u5206\u7C7B\u3002\u5206\u7C7B\u4F1A\u7ACB\u5373\u663E\u793A\u5728\u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\u3002", nonDestructive: "\u5206\u7C7B\u53EA\u4FDD\u5B58\u201C\u5DE5\u4F5C\u533A ID \u2192 \u5206\u7C7B\u201D\u5173\u7CFB\uFF1A\u4E0D\u4F1A\u79FB\u52A8\u3001\u91CD\u547D\u540D\u6216\u5220\u9664\u78C1\u76D8\u4E0A\u7684\u9879\u76EE\u76EE\u5F55\u3002", categoryTitle: "\u5206\u7C7B\u76EE\u5F55", workspaceTitle: "\u5DE5\u4F5C\u533A", addWorkspace: "\u6DFB\u52A0\u5DE5\u4F5C\u533A", chooseGroup: "\u9009\u62E9\u5206\u7EC4", chooseDirectory: "\u9879\u76EE\u76EE\u5F55", directoryPlaceholder: "\u70B9\u51FB\u201C\u6D4F\u89C8\u201D\u9009\u62E9\u76EE\u5F55", browse: "\u6D4F\u89C8", noCategoriesHint: "\u8FD8\u6CA1\u6709\u5206\u7C7B\uFF0C\u53EF\u76F4\u63A5\u4EE5\u201C\u672A\u5206\u7C7B\u201D\u521B\u5EFA\uFF0C\u7A0D\u540E\u5728\u8BBE\u7F6E\u4E2D\u5F52\u7EC4\u3002", addCategory: "\u65B0\u589E\u5206\u7C7B", editCategory: "\u7F16\u8F91\u5206\u7C7B", removeCategory: "\u5220\u9664\u5206\u7C7B", emptyCategories: "\u5C1A\u672A\u521B\u5EFA\u5206\u7C7B\u3002\u672A\u5206\u7C7B\u9879\u76EE\u4F1A\u76F4\u63A5\u663E\u793A\u5728\u4FA7\u680F\u4E2D\u3002", emptyWorkspaces: "\u6CA1\u6709\u5DF2\u6CE8\u518C\u7684\u5DE5\u4F5C\u533A\u3002\u8BF7\u4ECE\u5DE6\u4FA7\u5DE5\u4F5C\u533A\u533A\u57DF\u6DFB\u52A0\u9879\u76EE\u3002", uncategorized: "\u672A\u5206\u7C7B", all: "\u5168\u90E8", newSession: "\u65B0\u4F1A\u8BDD", emptyFiltered: "\u8BE5\u5206\u7C7B\u4E0B\u6682\u65E0\u9879\u76EE\u3002", viewOptions: "\u89C6\u56FE\u9009\u9879", orderByLabel: "\u6392\u5E8F\u65B9\u5F0F", orderManual: "\u624B\u52A8\u6392\u5E8F", orderUpdated: "\u6700\u8FD1\u66F4\u65B0", close: "\u5173\u95ED", retry: "\u91CD\u8BD5", addWorkspaceError: "\u6DFB\u52A0\u5DE5\u4F5C\u533A\u5931\u8D25", rename: "\u91CD\u547D\u540D", renameWorkspaceTitle: "\u91CD\u547D\u540D\u5DE5\u4F5C\u533A", renameSessionTitle: "\u91CD\u547D\u540D\u4F1A\u8BDD", fork: "\u5206\u53C9\u4F1A\u8BDD", archive: "\u5F52\u6863\u4F1A\u8BDD", deleteWorkspace: "\u5220\u9664\u5DE5\u4F5C\u533A", deleteWorkspaceText: "\u5C06\u628A\u201C{name}\u201D\u4ECE\u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\u79FB\u9664\u3002\u6587\u4EF6\u5939\u4E0E\u4F1A\u8BDD\u8BB0\u5F55\u4F1A\u4FDD\u7559\uFF0C\u5176\u4F1A\u8BDD\u5C06\u663E\u793A\u5728\u201C\u672A\u5206\u7C7B\u201D\u4E0B\u3002", workspaceMenu: "\u5DE5\u4F5C\u533A\u64CD\u4F5C", sessionMenu: "\u4F1A\u8BDD\u64CD\u4F5C", dissolveCategory: "\u89E3\u6563\u5206\u7C7B", dissolveCategoryText: "\u786E\u5B9A\u89E3\u6563\u5206\u7C7B\u201C{name}\u201D\u5417\uFF1F\u8BE5\u5206\u7C7B\u4E0B\u7684\u6240\u6709\u9879\u76EE\u5C06\u8FDB\u5165\u672A\u5206\u7C7B\u3002", categoryIdExists: "\u5206\u7C7B\u6807\u8BC6\u7B26\u5DF2\u5B58\u5728\u3002", cancel: "\u53D6\u6D88", save: "\u4FDD\u5B58", confirm: "\u786E\u8BA4", edit: "\u7F16\u8F91", remove: "\u5220\u9664", loading: "\u6B63\u5728\u8BFB\u53D6\u8BBE\u7F6E\u2026", unavailable: "\u5F53\u524D\u90E8\u7F72\u672A\u63D0\u4F9B\u53EF\u7F16\u8F91\u7684\u5206\u7C7B\u8BBE\u7F6E\u3002", assignedCount: "{count} \u4E2A\u9879\u76EE", removeConfirm: "\u786E\u5B9A\u5220\u9664\u201C{name}\u201D\u5417\uFF1F\u8BE5\u5206\u7C7B\u4E0B\u7684\u9879\u76EE\u5C06\u6062\u590D\u4E3A\u672A\u5206\u7C7B\u3002", addLocal: "\u672C\u5730\u76EE\u5F55", addFromGit: "\u4ECE Git \u5BFC\u5165", gitUrl: "Git \u5730\u5740", gitUrlPlaceholder: "https://github.com/org/repo.git \u6216 git@host:org/repo.git", gitBranch: "\u5206\u652F\uFF08\u53EF\u9009\uFF09", gitBranchPlaceholder: "\u7559\u7A7A\u4F7F\u7528\u9ED8\u8BA4\u5206\u652F", gitParent: "\u4E0B\u8F7D\u76EE\u5F55", gitParentPlaceholder: "\u70B9\u51FB\u201C\u6D4F\u89C8\u201D\u9009\u62E9\u514B\u9686\u5230\u7684\u7236\u76EE\u5F55", gitFolder: "\u76EE\u5F55\u540D\uFF08\u53EF\u9009\uFF09", gitFolderPlaceholder: "\u7559\u7A7A\u4F7F\u7528\u4ED3\u5E93\u540D", gitTargetHint: "\u5C06\u514B\u9686\u5230\uFF1A{path}", gitFolderHint: "\u65E0\u6CD5\u4ECE\u5730\u5740\u63A8\u5BFC\u76EE\u5F55\u540D\uFF0C\u8BF7\u624B\u52A8\u586B\u5199\u3002", gitUrlRequired: "\u8BF7\u586B\u5199 Git \u5730\u5740\u3002", gitParentRequired: "\u8BF7\u9009\u62E9\u4E0B\u8F7D\u76EE\u5F55\u3002", gitUnavailable: "\u5F53\u524D\u90E8\u7F72\u4E0D\u652F\u6301\u4ECE Git \u5BFC\u5165\uFF08Host \u9700\u7ED1\u5B9A 127.0.0.1 \u4E14\u5DF2\u5B89\u88C5 git\uFF09\u3002", gitCloning: "\u6B63\u5728\u514B\u9686\u4ED3\u5E93\uFF0C\u5B8C\u6210\u540E\u4F1A\u81EA\u52A8\u6DFB\u52A0\u9879\u76EE\u2026" };
-var en = { title: "Workspace categories", intro: "Create categories and assign the projects in the left workspace list. Categories are reflected in the sidebar immediately.", nonDestructive: "Categories store only a workspace-ID-to-category mapping. Project directories are never moved, renamed, or deleted.", categoryTitle: "Categories", workspaceTitle: "Workspaces", addWorkspace: "Add workspace", chooseGroup: "Choose a category", chooseDirectory: "Project directory", directoryPlaceholder: "Click \u201CBrowse\u201D to choose a directory", browse: "Browse", noCategoriesHint: "No categories yet \u2014 create it as Uncategorized and organize it later in Settings.", addCategory: "Add category", editCategory: "Edit category", removeCategory: "Remove category", emptyCategories: "No categories yet. Uncategorized projects appear directly in the sidebar.", emptyWorkspaces: "No registered workspaces. Add a project from the left workspace area.", uncategorized: "Uncategorized", all: "All", newSession: "New Session", emptyFiltered: "No projects in this category.", viewOptions: "View options", orderByLabel: "Sort by", orderManual: "Manual", orderUpdated: "Recently updated", close: "Close", retry: "Retry", addWorkspaceError: "Failed to add workspace", rename: "Rename", renameWorkspaceTitle: "Rename workspace", renameSessionTitle: "Rename session", fork: "Fork session", archive: "Archive session", deleteWorkspace: "Delete workspace", deleteWorkspaceText: "This removes \u201C{name}\u201D from the workspace list. The folder and session logs will be kept. Its sessions will appear under Uncategorized.", workspaceMenu: "Workspace actions", sessionMenu: "Session actions", dissolveCategory: "Dissolve category", dissolveCategoryText: "Dissolve category \u201C{name}\u201D? All its projects will move to Uncategorized.", categoryIdExists: "Category id already exists.", cancel: "Cancel", save: "Save", confirm: "Confirm", edit: "Edit", remove: "Remove", loading: "Loading settings\u2026", unavailable: "This deployment does not expose editable category settings.", assignedCount: "{count} project(s)", removeConfirm: "Remove \u201C{name}\u201D? Its projects will become uncategorized.", addLocal: "Local directory", addFromGit: "Import from Git", gitUrl: "Git URL", gitUrlPlaceholder: "https://github.com/org/repo.git or git@host:org/repo.git", gitBranch: "Branch (optional)", gitBranchPlaceholder: "Leave empty for the default branch", gitParent: "Download directory", gitParentPlaceholder: "Click \u201CBrowse\u201D to choose where to clone into", gitFolder: "Folder name (optional)", gitFolderPlaceholder: "Leave empty to use the repository name", gitTargetHint: "Will clone into: {path}", gitFolderHint: "Cannot derive a folder name from the URL; enter one.", gitUrlRequired: "Enter a Git URL.", gitParentRequired: "Choose a download directory.", gitUnavailable: "This deployment does not support importing from Git (the Host must bind 127.0.0.1 and have git installed).", gitCloning: "Cloning the repository; the project is added when it finishes\u2026" };
+var zh = { title: "\u5DE5\u4F5C\u533A\u5206\u7C7B", intro: "\u521B\u5EFA\u5206\u7C7B\u5E76\u628A\u5DE6\u4FA7\u5DE5\u4F5C\u533A\u4E2D\u7684\u9879\u76EE\u5F52\u5165\u5206\u7C7B\u3002\u5206\u7C7B\u4F1A\u7ACB\u5373\u663E\u793A\u5728\u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\u3002", nonDestructive: "\u5206\u7C7B\u53EA\u4FDD\u5B58\u201C\u5DE5\u4F5C\u533A ID \u2192 \u5206\u7C7B\u201D\u5173\u7CFB\uFF1A\u4E0D\u4F1A\u79FB\u52A8\u3001\u91CD\u547D\u540D\u6216\u5220\u9664\u78C1\u76D8\u4E0A\u7684\u9879\u76EE\u76EE\u5F55\u3002", categoryTitle: "\u5206\u7C7B\u76EE\u5F55", workspaceTitle: "\u5DE5\u4F5C\u533A", addWorkspace: "\u6DFB\u52A0\u5DE5\u4F5C\u533A", chooseGroup: "\u9009\u62E9\u5206\u7EC4", chooseDirectory: "\u9879\u76EE\u76EE\u5F55", directoryPlaceholder: "\u70B9\u51FB\u201C\u6D4F\u89C8\u201D\u9009\u62E9\u76EE\u5F55", browse: "\u6D4F\u89C8", noCategoriesHint: "\u8FD8\u6CA1\u6709\u5206\u7C7B\uFF0C\u53EF\u76F4\u63A5\u4EE5\u201C\u672A\u5206\u7C7B\u201D\u521B\u5EFA\uFF0C\u7A0D\u540E\u5728\u8BBE\u7F6E\u4E2D\u5F52\u7EC4\u3002", addCategory: "\u65B0\u589E\u5206\u7C7B", editCategory: "\u7F16\u8F91\u5206\u7C7B", removeCategory: "\u5220\u9664\u5206\u7C7B", emptyCategories: "\u5C1A\u672A\u521B\u5EFA\u5206\u7C7B\u3002\u672A\u5206\u7C7B\u9879\u76EE\u4F1A\u76F4\u63A5\u663E\u793A\u5728\u4FA7\u680F\u4E2D\u3002", emptyWorkspaces: "\u6CA1\u6709\u5DF2\u6CE8\u518C\u7684\u5DE5\u4F5C\u533A\u3002\u8BF7\u4ECE\u5DE6\u4FA7\u5DE5\u4F5C\u533A\u533A\u57DF\u6DFB\u52A0\u9879\u76EE\u3002", uncategorized: "\u672A\u5206\u7C7B", today: "\u5F53\u524D", todayEmpty: "\u5F53\u524D\u8FD8\u6CA1\u6709\u4F1A\u8BDD", todayOvernight: "\u8FD0\u884C\u4E2D\uFF08\u4ECA\u5929\u6CA1\u6709\u65B0\u6D88\u606F\uFF09", todayHide: "\u4ECE\u300C\u5F53\u524D\u300D\u9690\u85CF\uFF08\u91CD\u65B0\u5BF9\u8BDD\u5C31\u4F1A\u56DE\u6765\uFF09", foldAll: "\u5168\u90E8\u6536\u8D77", unfoldAll: "\u5168\u90E8\u5C55\u5F00", locateSession: "\u5B9A\u4F4D\u5230\u4F1A\u8BDD\uFF08\u5728\u5DE6\u4FA7\u5C55\u5F00\u5E76\u9AD8\u4EAE\uFF09", all: "\u5168\u90E8", newSession: "\u65B0\u4F1A\u8BDD", emptyFiltered: "\u8BE5\u5206\u7C7B\u4E0B\u6682\u65E0\u9879\u76EE\u3002", viewOptions: "\u89C6\u56FE\u9009\u9879", orderByLabel: "\u6392\u5E8F\u65B9\u5F0F", orderManual: "\u624B\u52A8\u6392\u5E8F", orderUpdated: "\u6700\u8FD1\u66F4\u65B0", close: "\u5173\u95ED", retry: "\u91CD\u8BD5", addWorkspaceError: "\u6DFB\u52A0\u5DE5\u4F5C\u533A\u5931\u8D25", rename: "\u91CD\u547D\u540D", renameWorkspaceTitle: "\u91CD\u547D\u540D\u5DE5\u4F5C\u533A", renameSessionTitle: "\u91CD\u547D\u540D\u4F1A\u8BDD", fork: "\u5206\u53C9\u4F1A\u8BDD", archive: "\u5F52\u6863\u4F1A\u8BDD", deleteWorkspace: "\u5220\u9664\u5DE5\u4F5C\u533A", deleteWorkspaceText: "\u5C06\u628A\u201C{name}\u201D\u4ECE\u5DE5\u4F5C\u533A\u5217\u8868\u4E2D\u79FB\u9664\u3002\u6587\u4EF6\u5939\u4E0E\u4F1A\u8BDD\u8BB0\u5F55\u4F1A\u4FDD\u7559\uFF0C\u5176\u4F1A\u8BDD\u5C06\u663E\u793A\u5728\u201C\u672A\u5206\u7C7B\u201D\u4E0B\u3002", workspaceMenu: "\u5DE5\u4F5C\u533A\u64CD\u4F5C", sessionMenu: "\u4F1A\u8BDD\u64CD\u4F5C", dissolveCategory: "\u89E3\u6563\u5206\u7C7B", dissolveCategoryText: "\u786E\u5B9A\u89E3\u6563\u5206\u7C7B\u201C{name}\u201D\u5417\uFF1F\u8BE5\u5206\u7C7B\u4E0B\u7684\u6240\u6709\u9879\u76EE\u5C06\u8FDB\u5165\u672A\u5206\u7C7B\u3002", categoryIdExists: "\u5206\u7C7B\u6807\u8BC6\u7B26\u5DF2\u5B58\u5728\u3002", cancel: "\u53D6\u6D88", save: "\u4FDD\u5B58", confirm: "\u786E\u8BA4", edit: "\u7F16\u8F91", remove: "\u5220\u9664", loading: "\u6B63\u5728\u8BFB\u53D6\u8BBE\u7F6E\u2026", unavailable: "\u5F53\u524D\u90E8\u7F72\u672A\u63D0\u4F9B\u53EF\u7F16\u8F91\u7684\u5206\u7C7B\u8BBE\u7F6E\u3002", assignedCount: "{count} \u4E2A\u9879\u76EE", removeConfirm: "\u786E\u5B9A\u5220\u9664\u201C{name}\u201D\u5417\uFF1F\u8BE5\u5206\u7C7B\u4E0B\u7684\u9879\u76EE\u5C06\u6062\u590D\u4E3A\u672A\u5206\u7C7B\u3002", addLocal: "\u672C\u5730\u76EE\u5F55", addFromGit: "\u4ECE Git \u5BFC\u5165", gitUrl: "Git \u5730\u5740", gitUrlPlaceholder: "https://github.com/org/repo.git \u6216 git@host:org/repo.git", gitBranch: "\u5206\u652F\uFF08\u53EF\u9009\uFF09", gitBranchPlaceholder: "\u7559\u7A7A\u4F7F\u7528\u9ED8\u8BA4\u5206\u652F", gitParent: "\u4E0B\u8F7D\u76EE\u5F55", gitParentPlaceholder: "\u70B9\u51FB\u201C\u6D4F\u89C8\u201D\u9009\u62E9\u514B\u9686\u5230\u7684\u7236\u76EE\u5F55", gitFolder: "\u76EE\u5F55\u540D\uFF08\u53EF\u9009\uFF09", gitFolderPlaceholder: "\u7559\u7A7A\u4F7F\u7528\u4ED3\u5E93\u540D", gitTargetHint: "\u5C06\u514B\u9686\u5230\uFF1A{path}", gitFolderHint: "\u65E0\u6CD5\u4ECE\u5730\u5740\u63A8\u5BFC\u76EE\u5F55\u540D\uFF0C\u8BF7\u624B\u52A8\u586B\u5199\u3002", gitUrlRequired: "\u8BF7\u586B\u5199 Git \u5730\u5740\u3002", gitParentRequired: "\u8BF7\u9009\u62E9\u4E0B\u8F7D\u76EE\u5F55\u3002", gitUnavailable: "\u5F53\u524D\u90E8\u7F72\u4E0D\u652F\u6301\u4ECE Git \u5BFC\u5165\uFF08Host \u9700\u7ED1\u5B9A 127.0.0.1 \u4E14\u5DF2\u5B89\u88C5 git\uFF09\u3002", gitCloning: "\u6B63\u5728\u514B\u9686\u4ED3\u5E93\uFF0C\u5B8C\u6210\u540E\u4F1A\u81EA\u52A8\u6DFB\u52A0\u9879\u76EE\u2026" };
+var en = { title: "Workspace categories", intro: "Create categories and assign the projects in the left workspace list. Categories are reflected in the sidebar immediately.", nonDestructive: "Categories store only a workspace-ID-to-category mapping. Project directories are never moved, renamed, or deleted.", categoryTitle: "Categories", workspaceTitle: "Workspaces", addWorkspace: "Add workspace", chooseGroup: "Choose a category", chooseDirectory: "Project directory", directoryPlaceholder: "Click \u201CBrowse\u201D to choose a directory", browse: "Browse", noCategoriesHint: "No categories yet \u2014 create it as Uncategorized and organize it later in Settings.", addCategory: "Add category", editCategory: "Edit category", removeCategory: "Remove category", emptyCategories: "No categories yet. Uncategorized projects appear directly in the sidebar.", emptyWorkspaces: "No registered workspaces. Add a project from the left workspace area.", uncategorized: "Uncategorized", today: "Current", todayEmpty: "No sessions yet today", todayOvernight: "Running (no message today)", todayHide: "Hide from Current (it returns when you talk to it again)", foldAll: "Collapse all", unfoldAll: "Expand all", locateSession: "Locate this session in the sidebar", all: "All", newSession: "New Session", emptyFiltered: "No projects in this category.", viewOptions: "View options", orderByLabel: "Sort by", orderManual: "Manual", orderUpdated: "Recently updated", close: "Close", retry: "Retry", addWorkspaceError: "Failed to add workspace", rename: "Rename", renameWorkspaceTitle: "Rename workspace", renameSessionTitle: "Rename session", fork: "Fork session", archive: "Archive session", deleteWorkspace: "Delete workspace", deleteWorkspaceText: "This removes \u201C{name}\u201D from the workspace list. The folder and session logs will be kept. Its sessions will appear under Uncategorized.", workspaceMenu: "Workspace actions", sessionMenu: "Session actions", dissolveCategory: "Dissolve category", dissolveCategoryText: "Dissolve category \u201C{name}\u201D? All its projects will move to Uncategorized.", categoryIdExists: "Category id already exists.", cancel: "Cancel", save: "Save", confirm: "Confirm", edit: "Edit", remove: "Remove", loading: "Loading settings\u2026", unavailable: "This deployment does not expose editable category settings.", assignedCount: "{count} project(s)", removeConfirm: "Remove \u201C{name}\u201D? Its projects will become uncategorized.", addLocal: "Local directory", addFromGit: "Import from Git", gitUrl: "Git URL", gitUrlPlaceholder: "https://github.com/org/repo.git or git@host:org/repo.git", gitBranch: "Branch (optional)", gitBranchPlaceholder: "Leave empty for the default branch", gitParent: "Download directory", gitParentPlaceholder: "Click \u201CBrowse\u201D to choose where to clone into", gitFolder: "Folder name (optional)", gitFolderPlaceholder: "Leave empty to use the repository name", gitTargetHint: "Will clone into: {path}", gitFolderHint: "Cannot derive a folder name from the URL; enter one.", gitUrlRequired: "Enter a Git URL.", gitParentRequired: "Choose a download directory.", gitUnavailable: "This deployment does not support importing from Git (the Host must bind 127.0.0.1 and have git installed).", gitCloning: "Cloning the repository; the project is added when it finishes\u2026" };
 var inject = ["slots", "locale", "configForms", "workspaces", "sessions"];
 function apply(ctx) {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), "workspace-category-manager: dictionaries");
