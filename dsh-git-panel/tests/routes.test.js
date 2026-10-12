@@ -201,12 +201,41 @@ try {
   const pruned = await post('worktreePrune', { root });
   eq('POST worktreePrune：200', pruned.status, 200);
 
-  const checkoutDirty = await post('checkout', { root, ref: 'main' });
-  eq('POST checkout：切到当前分支也要求干净 → 200', checkoutDirty.status, 200);
+  /* ── 切换分支：工作区脏不脏交给 git 判据，远程分支必须落成本地分支 ───── */
+
+  const checkoutCurrent = await post('checkout', { root, ref: 'main' });
+  eq('POST checkout：切到当前分支 → 200', [checkoutCurrent.status, checkoutCurrent.json.checkedOut], [200, 'main']);
+
+  // topic 与 main 内容相同 → 未提交改动可以跟着过去（这正是 git 自己的规则）。
+  git(root, ['branch', 'topic']);
   writeFileSync(join(root, 'a.txt'), 'one\nDIRTY\n');
-  const checkoutBlocked = await post('checkout', { root, ref: 'main', newBranch: 'feature/x' });
-  eq('POST checkout：工作区脏时拒绝', checkoutBlocked.status, 400);
-  git(root, ['checkout', '--', 'a.txt']);
+  const carried = await post('checkout', { root, ref: 'topic' });
+  eq('POST checkout：脏工作区也能切，改动跟着过去 → 200', [carried.status, carried.json.checkedOut, carried.json.repo.branch], [200, 'topic', 'topic']);
+  eq('POST checkout：改动确实还在工作区', git(root, ['status', '--porcelain', '--', 'a.txt']), 'M a.txt');
+
+  // topic 改了 a.txt → 再切过去会覆盖本地改动 → 拒绝，并给出文件清单。
+  git(root, ['add', '-A']);
+  git(root, ['commit', '-qm', 'topic changes a.txt']);
+  git(root, ['checkout', '-q', 'main']);
+  writeFileSync(join(root, 'a.txt'), 'one\nLOCAL\n');
+  const overwritten = await post('checkout', { root, ref: 'topic' });
+  eq('POST checkout：会被覆盖时拒绝 → 400', overwritten.status, 400);
+  check('POST checkout：提示里带文件清单与「先提交 / 放弃」', /a\.txt/.test(overwritten.json.error ?? '') && /放弃/.test(overwritten.json.error ?? ''), overwritten.json.error);
+  git(root, ['checkout', '-qf', 'main']);
+
+  // 远程跟踪分支：把全名交给 `git checkout` 只会 detached HEAD，必须落成本地同名分支。
+  git(root, ['update-ref', 'refs/remotes/origin/route-remote', git(root, ['rev-parse', 'main'])]);
+  const remoteSwitch = await post('checkout', { root, ref: 'refs/remotes/origin/route-remote' });
+  eq('POST checkout：远程分支 → 本地同名分支（不 detached）', [remoteSwitch.status, remoteSwitch.json.checkedOut, remoteSwitch.json.repo.detached, remoteSwitch.json.repo.branch], [200, 'route-remote', false, 'route-remote']);
+  eq('POST checkout：git 里真的在本地分支上', git(root, ['branch', '--show-current']), 'route-remote');
+  git(root, ['checkout', '-qf', 'main']);
+
+  // 全新仓库（unborn HEAD）：`-b x HEAD` 会失败，不带起点才对。
+  const unbornRoot = mkdtempSync(join(tmpdir(), 'dsh-git-panel-routes-unborn-'));
+  cleanups.push(unbornRoot);
+  git(unbornRoot, ['init', '-q', '-b', 'main']);
+  const firstBranch = await post('checkout', { root: unbornRoot, ref: 'HEAD', newBranch: 'feature/first' });
+  eq('POST checkout：全新仓库建第一条分支 → 200', [firstBranch.status, firstBranch.json.repo.branch], [200, 'feature/first']);
 
   eq('日志：接口错误都会被记录', warnings.length > 0, true);
 

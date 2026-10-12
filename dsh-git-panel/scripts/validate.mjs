@@ -88,6 +88,13 @@ check('样式不得用 `.dgp button:not(...)` 黑名单控制按钮外观', !/\.
 check('样式必须用低优先级的 :where(button) 重置按钮外观', /\.dgp :where\(button\)/.test(stylesCode));
 check('样式必须显式声明「有按钮外观」的白名单', /\.dgp-primary,\n\.dgp-more,/.test(stylesCode));
 
+// 分组正文必须比组标题缩进一级：没有这一级，「未跟踪 / 未暂存」与下面的行看起来同级，
+// 目录树读不出层级（真机上很容易看成「忘记缩进」）。只准作用在分组内，历史页的
+// 提交详情也用 .dgp-rows，那里没有分组、不该跟着缩进。
+const groupRowsPad = Number(/\.dgp-group > \.dgp-rows \{[^}]*padding-left:\s*(\d+)px/.exec(stylesCode)?.[1] ?? '0');
+check(`分组正文有缩进（当前 .dgp-group > .dgp-rows padding-left: ${groupRowsPad}px）`, groupRowsPad > 0);
+check('分组缩进只作用于 .dgp-group 内（不得直接给 .dgp-rows 加内边距）', !/^\.dgp-rows \{[^}]*padding/m.test(stylesCode));
+
 // 同一份 CSS 里同一个选择器只能出现一次：`.dgp-commit` 曾被「提交框」和「提交行」
 // 各写一套，叠加之后历史列表整行变成居中的卡片——只有真机截图才看得出来。
 // 只查「独占一行的单选择器规则」：共享的白名单规则（`.dgp-primary, .dgp-more, …`）

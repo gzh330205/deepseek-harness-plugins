@@ -88,7 +88,7 @@ export function WorktreeView(props: WorktreeViewProps) {
     void (async () => {
       try {
         const response = await api.branches(root);
-        setBranches({ local: response.local, remote: response.remote, tags: response.tags, truncated: response.truncated, total: response.total });
+        setBranches(response.branches);
       } catch {
         /* 分支列表拉不到不影响用 HEAD 建工作树。 */
       }

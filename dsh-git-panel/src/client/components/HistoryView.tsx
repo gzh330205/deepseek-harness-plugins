@@ -27,12 +27,16 @@ export interface HistoryViewProps {
   t: (key: string, params?: Record<string, unknown>) => string;
   pathFilter: string;
   onClearPathFilter: () => void;
+  /** 当前分支名：按钮上直接显示「main」比显示「HEAD」更像一个切换入口。 */
+  branch?: string;
   onOpenFile: (path: string) => void;
   onSnapshot: (snapshot: unknown) => void;
   onError: (message: string) => void;
   onNotice: (message: string) => void;
   setBusy: (label: string) => void;
   busy: string;
+  /** 面板头部的分支行每点一次就递增：>0 表示请求打开分支选择器。 */
+  pickerRequest?: number;
 }
 
 /**
@@ -195,7 +199,9 @@ export function HistoryView(props: HistoryViewProps) {
     setBranchesLoading(true);
     try {
       const response = await api.branches(root);
-      setBranches({ local: response.local, remote: response.remote, tags: response.tags, truncated: response.truncated, total: response.total });
+      // 宿主把载荷包在 `branches` 里（见 api.ts 的注释）：读成 `response.local` 会永远
+      // 拿到 undefined，选择器空列表还不报错。
+      setBranches(response.branches);
     } catch (cause) {
       callbacks.current.onError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -206,6 +212,13 @@ export function HistoryView(props: HistoryViewProps) {
   React.useEffect(() => {
     if (pickerOpen && branches === null) void loadBranches();
   }, [pickerOpen, branches, loadBranches]);
+
+  // 头部点了分支行 → 打开选择器（本页可能就是被这次点击挂载出来的，
+  // 所以首次 request > 0 也要生效，不能只当「变化」处理）。
+  const pickerRequest = props.pickerRequest ?? 0;
+  React.useEffect(() => {
+    if (pickerRequest > 0) setPickerOpen(true);
+  }, [pickerRequest]);
 
   const graph = React.useMemo(() => withGraph(commits), [commits]);
 
@@ -323,7 +336,7 @@ export function HistoryView(props: HistoryViewProps) {
       <div className="dgp-historybar">
         <button type="button" className="dgp-branchbtn" onClick={() => setPickerOpen((value) => !value)} title={t('switchBranch')}>
           <IconBranch size={13} />
-          <span className="dgp-ellipsis">{ref === '' ? t('headRef') : ref}</span>
+          <span className="dgp-ellipsis">{ref === '' ? (props.branch ?? t('headRef')) : ref}</span>
           {ref !== '' && (
             <span
               className="dgp-clearbtn"

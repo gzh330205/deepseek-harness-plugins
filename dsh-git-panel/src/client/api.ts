@@ -76,7 +76,13 @@ export interface HistoryRequest {
 
 export interface GitApi {
   snapshot(root: string): Promise<Snapshot>;
-  branches(root: string): Promise<{ ok: boolean } & BranchListResult>;
+  /**
+   * 只读接口的载荷都放在与动作同名的字段里（`{ ok, root, branches }`），
+   * 和 `history` / `commit` / `diff` 一致——**不要再按扁平形状读**：
+   * `response.local` 永远是 undefined，分支选择器会渲染成一个空列表，
+   * 而且不报错（`?? []` 把 undefined 吃掉了）。这条曾经真的漏到线上。
+   */
+  branches(root: string): Promise<{ ok: boolean; root: string; branches: BranchListResult }>;
   history(root: string, request?: HistoryRequest): Promise<{ ok: boolean } & { history: HistoryResult; repo: unknown }>;
   commit(root: string, hash: string, path?: string, orig?: string): Promise<{ ok: boolean } & CommitResult>;
   diff(root: string, request: DiffRequest): Promise<{ ok: boolean } & { diff: FileDiffResult }>;

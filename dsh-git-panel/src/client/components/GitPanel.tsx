@@ -16,7 +16,7 @@ import type { Snapshot } from '../types.js';
 import { ChangesView, type Selection } from './ChangesView.jsx';
 import { HistoryView } from './HistoryView.jsx';
 import { WorktreeView } from './WorktreeView.jsx';
-import { IconBranch, IconGit, IconRefresh, IconWarning } from './icons.jsx';
+import { IconBranch, IconChevron, IconGit, IconRefresh, IconWarning } from './icons.jsx';
 
 export interface GitPanelProps {
   api: GitApi;
@@ -59,6 +59,10 @@ export function GitPanel(props: GitPanelProps) {
   const [selection, setSelection] = React.useState<Selection | null>(null);
   const [historyPath, setHistoryPath] = React.useState('');
   const [refreshing, setRefreshing] = React.useState(false);
+  // 头部的分支行就是一个切换入口：递增这个 token 让历史页把选择器打开。
+  // 选择器本体只在历史页（分支列表懒加载 + 新建分支都在那里），所以这里只负责
+  // 「切到历史页 + 请求打开」，不复制一份 picker。
+  const [pickerRequest, setPickerRequest] = React.useState(0);
 
   // 工作区根跟随当前会话（第一次拿到后不再抖动，避免切换会话时把面板切走）。
   React.useEffect(() => {
@@ -204,6 +208,14 @@ export function GitPanel(props: GitPanelProps) {
     );
   }
 
+  // 分支行上的文案：detached 与 unborn 都有专门说法（在 repo !== null 之后取，
+  // 非仓库形态走上面的引导分支，不碰这里的字段）。
+  const branchLabel = repo.detached
+    ? t('detachedHead')
+    : repo.unborn
+      ? t('unbornBranch', { branch: repo.branch })
+      : repo.branch;
+
   return (
     <div className="dgp">
       <div className="dgp-head">
@@ -217,9 +229,20 @@ export function GitPanel(props: GitPanelProps) {
       </div>
 
       <div className="dgp-branchrow">
-        <span className="dgp-branch" title={repo.upstream === '' ? repo.branch : `${repo.branch} → ${repo.upstream}`}>
-          {repo.detached ? t('detachedHead') : repo.unborn ? t('unbornBranch', { branch: repo.branch }) : repo.branch}
-        </span>
+        <button
+          type="button"
+          className="dgp-branch"
+          title={`${branchLabel} · ${t('switchBranch')}`}
+          aria-label={t('switchBranch')}
+          onClick={() => {
+            setTab('history');
+            setSelection(null);
+            setPickerRequest((value) => value + 1);
+          }}
+        >
+          <span className="dgp-branchname">{branchLabel}</span>
+          <IconChevron size={11} className="dgp-branchcaret" />
+        </button>
         {repo.upstream !== '' && <span className="dgp-meta dgp-ellipsis">{repo.upstream}</span>}
         {repo.ahead > 0 && <span className="dgp-ahead">↑{repo.ahead}</span>}
         {repo.behind > 0 && <span className="dgp-behind">↓{repo.behind}</span>}
@@ -323,12 +346,14 @@ export function GitPanel(props: GitPanelProps) {
             t={t}
             pathFilter={historyPath}
             onClearPathFilter={() => setHistoryPath('')}
+            branch={branchLabel}
             onOpenFile={openFile}
             onSnapshot={applySnapshot}
             onError={setError}
             onNotice={setNotice}
             setBusy={setBusy}
             busy={busy}
+            pickerRequest={pickerRequest}
           />
         )}
         {tab === 'worktrees' && (

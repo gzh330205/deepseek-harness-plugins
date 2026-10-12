@@ -153,13 +153,37 @@
   padding: 0 6px 0 16px;
 }
 
+/* 头部的分支名同时是切换入口（点击 → 历史页的分支选择器）。
+   文字起点必须与上面的仓库名同列（README 记的 528 / 16px 内边距）：按钮文字不带前置
+   图标，边框 + 内边距（0.5 + 4）用等量负外边距抵消，文字位置不动，但整块看起来就是
+   个可点的控件——只靠 hover 才亮边框的话，没人找得到入口（这是实测过的用户反馈）。 */
 .dgp-branch {
+  align-items: center;
+  background: none;
+  border: 0.5px solid var(--dgp-line);
+  border-radius: 5px;
   color: var(--dgp-fg);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
   font-weight: 500;
+  gap: 3px;
+  margin-left: -4.5px;
   max-width: 45%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  padding: 0 4px;
+  text-align: left;
+}
+
+.dgp-branch:hover {
+  background: var(--dgp-hover);
+  border-color: var(--dgp-info);
+  color: var(--dgp-info);
+}
+
+.dgp-branchcaret {
+  flex: none;
+  opacity: 0.6;
 }
 
 .dgp-ahead {
@@ -531,6 +555,13 @@
 .dgp-rows {
   display: flex;
   flex-direction: column;
+}
+
+/* 分组正文比组标题缩进一级。没有这一级，「未跟踪 / 未暂存」和它下面的行看起来是同级
+   （目录行的折叠三角甚至比组标题的三角还靠左），树就读不出层级。
+   只作用于分组内的 `.dgp-rows`：历史页提交详情也用 .dgp-rows，但那里没有分组。 */
+.dgp-group > .dgp-rows {
+  padding-left: 12px;
 }
 
 .dgp-row {

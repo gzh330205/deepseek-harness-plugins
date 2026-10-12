@@ -6,8 +6,9 @@
  *    每一步都由用户在面板上显式点。推送/拉取这类联网操作本插件完全不提供。
  *  - **放弃改动必须显式**：`discardWorktree` 只动工作区（已暂存的内容不受影响），
  *    未跟踪文件走 `git clean`，前端必须二次确认。
- *  - **切换分支要求工作区干净**：否则 git 可能把改动带过去或在冲突中停下，
- *    对着正在跑 agent 回合的工作区尤其危险。
+ *  - **切换分支不预设「工作区必须干净」**：git 自己才是唯一正确的判据——不冲突的
+ *    未提交改动会跟着切过去，会被覆盖时 git 拒绝并列出文件。一刀切拒绝会让 agent
+ *    正在跑的工作区永远切不了分支（连「切回去」都不行）。
  */
 import { LIMITS, badRequest, normalizeRepoPath } from './contract.js';
 import { GitError } from './git.js';
@@ -121,7 +122,49 @@ export async function commit(git, repoRoot, body = {}) {
 }
 
 /**
- * 切换分支 / 新建分支并切换。要求工作区与仓库状态都干净。
+ * 把 `git checkout` 的目标解析成真正的 argv。
+ *
+ * 远程跟踪分支不能直接把 `refs/remotes/origin/x` 交给 `git checkout`：那只会
+ * detached HEAD（`origin/x` 缩写同样如此），用户以为切到了分支，实际失去了分支。
+ * 正确形态是「有同名本地分支就切过去，没有就建一个同名本地分支并跟踪它」——
+ * `git checkout -b <local> <refs/remotes/...>`，有远端配置时 git 会自己设 upstream。
+ *
+ * @returns `{ args, branch }`：`branch` 是切换完成后 HEAD 上的分支名。
+ */
+async function switchArgs(git, repoRoot, target) {
+  const resolved = await git.probe(['rev-parse', '--verify', '--quiet', '--symbolic-full-name', target], { cwd: repoRoot });
+  const refname = (resolved?.stdout ?? '').trim();
+  if (!refname.startsWith('refs/remotes/')) return { args: ['checkout', target], branch: target };
+
+  // `refname:lstrip=3` 剥掉 `refs/remotes/<remote>/`，剩下的就是本地分支名。
+  const short = await git.probe(['for-each-ref', '--format=%(refname:lstrip=3)', refname], { cwd: repoRoot });
+  const local = (short?.stdout ?? '').trim();
+  if (local === '') return { args: ['checkout', target], branch: target };
+
+  const exists = await git.probe(['rev-parse', '--verify', '--quiet', `refs/heads/${local}`], { cwd: repoRoot });
+  return exists === undefined
+    ? { args: ['checkout', '-b', local, refname], branch: local }
+    : { args: ['checkout', local], branch: local };
+}
+
+/** git 的「会被覆盖」原文 → 一句能直接照着做的中文（带上文件清单）。 */
+function overwriteMessage(text, target) {
+  const lines = String(text ?? '').split(/\r?\n/);
+  const at = lines.findIndex((line) => /would be overwritten by checkout/i.test(line));
+  // 文件清单是 git 缩进一级列出来的（已跟踪文件与未跟踪文件两种原文都是这个形态），
+  // 收尾的 Please … / Aborting 不缩进，正好被过滤掉。
+  const files = at === -1
+    ? []
+    : lines.slice(at + 1).filter((line) => /^[\t ]+\S/.test(line)).map((line) => line.trim());
+  const list = files.length === 0 ? '' : `：${files.join('、')}`;
+  return `切换到 ${target} 会覆盖这些文件的未提交改动${list}。请先提交、暂存或放弃改动，再切换。`;
+}
+
+/**
+ * 切换分支 / 新建分支并切换。
+ *
+ * 工作区不干净**不再直接拒绝**：只拦「进行中的 merge/rebase 等操作」（这时 git 的
+ * 原文很难懂），其余交给 git——不冲突的改动跟着过去，会被覆盖时翻译成可操作的中文。
  */
 export async function checkout(git, repoRoot, repo, body = {}) {
   const target = String(body.ref ?? '').trim();
@@ -130,14 +173,22 @@ export async function checkout(git, repoRoot, repo, body = {}) {
   if (repo?.state !== undefined && repo.state !== 'clean') {
     throw badRequest(`当前有进行中的 ${repo.state} 操作，请先完成或放弃它。`);
   }
-  const status = await git.probe(['status', '--porcelain', '-z', '--untracked-files=no'], { cwd: repoRoot });
-  if (status === undefined) throw badRequest('无法读取工作区状态，请稍后重试。');
-  const dirty = status.stdout.split('\0').filter((token) => token !== '').length;
-  if (dirty > 0) throw badRequest(`工作区还有 ${dirty} 处未提交的改动，切换分支前请先提交或放弃。`);
 
-  const args = newBranch === '' ? ['checkout', target] : ['checkout', '-b', newBranch, target];
-  const result = await runOrThrow(git, args, { cwd: repoRoot, timeoutMs: 60000 }, '切换分支失败');
-  return { checkedOut: target, newBranch, output: `${result.stdout}${result.stderr}`.trim() };
+  const plan = newBranch === ''
+    ? await switchArgs(git, repoRoot, target)
+    // unborn 分支上 `HEAD` 还不是一次提交，`-b x HEAD` 会失败；不带起点即可，
+    // 这正是「在全新仓库里建第一条分支」的正确形态。
+    : { args: ['checkout', '-b', newBranch, ...(repo?.unborn === true ? [] : [target])], branch: newBranch };
+
+  let result;
+  try {
+    result = await runOrThrow(git, plan.args, { cwd: repoRoot, timeoutMs: 60000 }, '切换分支失败');
+  } catch (error) {
+    const text = error instanceof GitError ? `${error.stderr}${error.stdout}` : '';
+    if (/would be overwritten by checkout/i.test(text)) throw badRequest(overwriteMessage(text, target));
+    throw error;
+  }
+  return { checkedOut: plan.branch, newBranch, output: `${result.stdout}${result.stderr}`.trim() };
 }
 
 /** 放弃进行中的合并（只在的确有 MERGE_HEAD 时可用）。 */

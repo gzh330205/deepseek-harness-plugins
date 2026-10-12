@@ -132,6 +132,96 @@ export function renderWorktrees(props: Record<string, unknown>): string {
   return render(React.createElement(WorktreeView, { root: '/repo', api, actions, t, onSnapshot: noop, onError: noop, onNotice: noop, busy: '', setBusy: noop, ...props } as never));
 }
 
+/**
+ * 面板头部的分支行：点一下应当切到历史页并**直接打开**分支选择器
+ * （这是「无法切换分支」那个坑的回归断言——入口不能只是装饰）。
+ */
+export async function clickHeaderBranch(options: { snapshot: unknown; branches: unknown }): Promise<{ before: string; after: string }> {
+  const ReactDomClient: typeof import('react-dom/client') = await import('react-dom/client');
+  const testUtils = (await import('react-dom/test-utils')) as unknown as { act: (task: () => void | Promise<void>) => Promise<void> };
+  const act = (React as unknown as { act?: (task: () => void | Promise<void>) => Promise<void> }).act ?? testUtils.act;
+  const dom = globalThis as unknown as { document: Document; window: Window & typeof globalThis };
+  const snapshot = options.snapshot as Record<string, unknown>;
+  const api = {
+    snapshot: async () => ({ ok: true, ...snapshot }),
+    diff: async () => ({ ok: true, diff: { files: [], truncated: false } }),
+    history: async () => ({ ok: true, history: { commits: [], hasMore: false, ref: 'HEAD', unborn: false, truncated: false } }),
+    // 真实宿主形状：{ ok, root, branches: { local, remote, tags, total } }（见 src/host/routes.js）
+    branches: async () => ({ ok: true, root: '/repo', branches: options.branches }),
+    commit: async () => ({ ok: true, detail: null, diff: null }),
+    worktrees: async () => ({ ok: true, worktrees: [], worktreeTotal: 0, worktreeTruncated: false, suggestedRoot: '', defaultBranchPrefix: '', configuredRoot: '', repo: null }),
+  };
+  const container = dom.document.createElement('div');
+  dom.document.body.appendChild(container);
+  const root = ReactDomClient.createRoot(container);
+  const flush = async () => {
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  };
+  await act(async () => {
+    root.render(
+      React.createElement(GitPanel, {
+        api,
+        actions,
+        t,
+        sessionId: 'session-1',
+        useSessions: () => '/repo',
+        useTabInfo: () => ({ tab: { visible: true } }),
+      } as never),
+    );
+  });
+  await flush();
+  const before = container.innerHTML;
+  const header = [...container.querySelectorAll('button.dgp-branch')][0];
+  await act(async () => {
+    header?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    await Promise.resolve();
+  });
+  await flush();
+  const after = container.innerHTML;
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+  return { before, after };
+}
+
+/**
+ * 非仓库形态（`repo === null`）：面板要出引导，而不是在 `repo.xxx` 上炸掉。
+ * 这一态只有真挂载（跑 effect 拿到快照）才走得到，服务端渲染覆盖不了。
+ */
+export async function mountNonRepo(reason: string): Promise<string> {
+  const ReactDomClient: typeof import('react-dom/client') = await import('react-dom/client');
+  const testUtils = (await import('react-dom/test-utils')) as unknown as { act: (task: () => void | Promise<void>) => Promise<void> };
+  const act = (React as unknown as { act?: (task: () => void | Promise<void>) => Promise<void> }).act ?? testUtils.act;
+  const dom = globalThis as unknown as { document: Document; window: Window & typeof globalThis };
+  const api = {
+    snapshot: async () => ({ ok: true, root: '/repo', repo: null, gitMissing: false, reason, changes: [], counts: { total: 0, staged: 0, unstaged: 0, untracked: 0, conflicted: 0 }, truncated: false, contextLines: 3 }),
+  };
+  const container = dom.document.createElement('div');
+  dom.document.body.appendChild(container);
+  const root = ReactDomClient.createRoot(container);
+  await act(async () => {
+    root.render(
+      React.createElement(GitPanel, { api, actions, t, sessionId: 'session-1', useSessions: () => '/repo' } as never),
+    );
+  });
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  const html = container.innerHTML;
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+  return html;
+}
+
 /** 历史页：挂载 → 可选点开某个提交 / 打开分支选择器。 */
 export async function mountHistory(options: {
   history: unknown;
@@ -148,7 +238,7 @@ export async function mountHistory(options: {
   const dom = globalThis as unknown as { document: Document; window: Window & typeof globalThis };
   const api = {
     history: async () => ({ ok: true, history: options.history }),
-    branches: async () => ({ ok: true, ...(options.branches ?? { local: [], remote: [], tags: [], truncated: false, total: { local: 0, remote: 0, tags: 0 } }) }),
+    branches: async () => ({ ok: true, root: '/repo', branches: options.branches ?? { local: [], remote: [], tags: [], truncated: false, total: { local: 0, remote: 0, tags: 0 } } }),
     commit: async (_root: string, hash: string) => {
       log.push(`commit:${hash}`);
       return { ok: true, detail: options.commitDetail, diff: options.commitDiff ?? null };
@@ -278,7 +368,7 @@ export async function interact(options: InteractOptions): Promise<{
     },
     history: async () => ({ ok: true, history: { commits: [], hasMore: false, ref: 'HEAD', unborn: false, truncated: false } }),
     commit: async () => ({ ok: true, detail: null, diff: null }),
-    branches: async () => ({ ok: true, local: [], remote: [], tags: [], truncated: false, total: { local: 0, remote: 0, tags: 0 } }),
+    branches: async () => ({ ok: true, root: '/repo', branches: { local: [], remote: [], tags: [], truncated: false, total: { local: 0, remote: 0, tags: 0 } } }),
     worktrees: async () => ({ ok: true, worktrees: [], worktreeTotal: 0, worktreeTruncated: false, suggestedRoot: '/repo/.dsh-worktrees/repo', defaultBranchPrefix: 'dsh/', configuredRoot: '', repo: null }),
   };
   const actions = {

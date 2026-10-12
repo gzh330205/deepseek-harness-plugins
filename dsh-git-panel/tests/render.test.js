@@ -15,6 +15,7 @@ import { buildSync } from 'esbuild';
 import { createGit } from '../src/host/git.js';
 import { fileDiff } from '../src/host/diff.js';
 import { inspectRepository } from '../src/host/repo.js';
+import { readBranches } from '../src/host/history.js';
 import { readStatus } from '../src/host/status.js';
 import { readWorktrees } from '../src/host/worktree.js';
 
@@ -63,6 +64,8 @@ try {
   writeFileSync(join(repoDir, 'old.txt'), 'x\n');
   git(repoDir, ['add', '-A']);
   git(repoDir, ['commit', '-qm', 'first commit']);
+  git(repoDir, ['branch', 'feature-x']);
+  git(repoDir, ['tag', 'v1.0']);
 
   writeFileSync(join(repoDir, 'a.txt'), 'one\nTWO\nthree\nfour\n');
   writeFileSync(join(repoDir, 'staged.txt'), 'staged content\n');
@@ -75,6 +78,9 @@ try {
   const repo = await inspectRepository(gitRunner, repoDir);
   const status = await readStatus(gitRunner, repo.repoRoot);
   const worktrees = await readWorktrees(gitRunner, repo, {});
+  // 分支选择器的夹具直接用宿主实现算出来，而不是手写一份——手写的扁平夹具曾经
+  // 和宿主真实的 { ok, root, branches } 包壳对不上，把「选择器永远是空的」养了过去。
+  const branchList = await readBranches(gitRunner, repo.repoRoot);
   const snapshot = {
     ok: true,
     root: repoDir,
@@ -259,10 +265,7 @@ try {
   ];
   const historyPage = await suite.mountHistory({
     history: { commits: commitFixtures, hasMore: true, ref: 'HEAD', unborn: false, truncated: false },
-    branches: {
-      local: [{ name: 'main', fullName: 'refs/heads/main', kind: 'local', commit: 'aaaaaaa', subject: 'feat', head: true }],
-      remote: [], tags: [], truncated: false, total: { local: 1, remote: 0, tags: 0 },
-    },
+    branches: branchList,
     commitDetail: {
       commit: commitFixtures[0],
       files: [
@@ -288,6 +291,12 @@ try {
   check('历史：详情显示文件数与文件行', historyPage.detailHtml.includes('2 个文件') && historyPage.detailHtml.includes('src/app.ts'), historyPage.detailHtml.slice(0, 300));
   check('历史：详情有增删行数', historyPage.detailHtml.includes('+2') && historyPage.detailHtml.includes('−1'), '');
   check('历史：分支选择器有本地分支', historyPage.pickerHtml.includes('main') && historyPage.pickerHtml.includes('本地分支'), historyPage.pickerHtml.slice(0, 200));
+  check('历史：分支选择器列出 tag 分组', historyPage.pickerHtml.includes('v1.0') && historyPage.pickerHtml.includes('标签'), historyPage.pickerHtml.slice(0, 300));
+  check(
+    '历史：宿主给了几个 ref 就画几个（包壳读错时这里会是 0）',
+    (historyPage.pickerHtml.match(/class="dgp-branchitem/g) ?? []).length === branchList.local.length + branchList.remote.length + branchList.tags.length,
+    `期望 ${branchList.local.length + branchList.remote.length + branchList.tags.length}，实得 ${(historyPage.pickerHtml.match(/class="dgp-branchitem/g) ?? []).length}`,
+  );
 
   const worktreePage = await suite.mountWorktrees({
     repo: null,
@@ -306,6 +315,30 @@ try {
   check('工作树：detached 有徽标', worktreePage.includes('detached'), '');
   check('工作树：显示建议根目录', worktreePage.includes('D:/ws/.dsh-worktrees/repo'), '');
   check('工作树：没有 undefined 泄漏', !worktreePage.includes('undefined'), '');
+
+  /* ── 面板头部的分支行：点一下必须真的打开分支选择器 ───────────────────
+        之前它是一个不可点的 <span>，而选择器只藏在历史页里——默认停在变更页
+        的人找不到任何切换入口，这就是「无法切换分支」的客户端半边。 */
+
+  const branchEntry = await suite.clickHeaderBranch({
+    snapshot,
+    branches: branchList,
+  });
+  check('头部：分支名是按钮（title 带「切换分支」）', /class="dgp-branch"[^>]*title="[^"]*切换分支/.test(branchEntry.before), branchEntry.before.slice(0, 400));
+  check('头部：按钮上写着当前分支', branchEntry.before.includes('dgp-branchname') && branchEntry.before.includes('main'), '');
+  check('头部：点之前的表单没有分支选择器', !branchEntry.before.includes('dgp-branchpop'), '');
+  check('头部：点一下切到历史页并打开选择器', branchEntry.after.includes('dgp-branchpop') && branchEntry.after.includes('feature-x'), branchEntry.after.slice(0, 600));
+  check(
+    '头部：选择器里的分支数与宿主一致',
+    (branchEntry.after.match(/class="dgp-branchitem/g) ?? []).length === branchList.local.length + branchList.remote.length + branchList.tags.length,
+    `期望 ${branchList.local.length + branchList.remote.length + branchList.tags.length}，实得 ${(branchEntry.after.match(/class="dgp-branchitem/g) ?? []).length}`,
+  );
+  check('头部：选择器打开后不再画变更页的文件列表', !branchEntry.after.includes('dgp-commitbox'), '');
+
+  // 非仓库形态：repo 是 null，头部的分支文案不能在空对象上取值（会直接白屏）。
+  const nonRepo = await suite.mountNonRepo('当前工作区不是 Git 仓库。');
+  check('非仓库：给出引导而不是崩掉', nonRepo.includes('不是 Git 仓库') && nonRepo.includes('dgp-head'), nonRepo.slice(0, 300));
+  check('非仓库：没有分支行', !nonRepo.includes('dgp-branchrow'), '');
 
   /* ── 数据形态自检：宿主给的 stats 一定被 UI 用到 ───────────────────── */
 
