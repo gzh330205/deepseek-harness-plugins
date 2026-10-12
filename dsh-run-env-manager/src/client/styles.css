@@ -61,8 +61,21 @@
 .renv-dot[data-state=starting],
 .renv-dot[data-state=stopping]{background:var(--dsw-alias-state-warn-primary)}
 .renv-dot[data-state=failed]{background:var(--dsw-alias-state-error-primary)}
-.renv-logWrap{display:flex;flex-direction:column;gap:6px;min-height:160px}
-.renv-log{flex:1;min-height:140px;max-height:40vh;margin:0;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+/* 卡片内的日志区：跟着自己的运行卡片走，可折叠。多个服务各自一块，互不干扰。 */
+.renv-logWrap{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--dsw-alias-border-l2);padding-top:8px;min-width:0}
+.renv-logHead{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dsw-alias-label-tertiary);min-width:0}
+.renv-logTitle{font-weight:600;color:var(--dsw-alias-label-secondary)}
+/* 实时指示灯：连上 SSE 是绿点，正在重连是灰点。 */
+.renv-live{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;padding:0 6px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-tertiary)}
+.renv-live::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.renv-live[data-state=on]{color:var(--dsw-alias-state-success-primary);border-color:var(--dsw-alias-state-success-primary)}
+/* 伪装成链接的按钮（卡片里的地址、日志标题栏的刷新）：特异性高于上面的 `.renv button`。 */
+.renv .renv-linkbtn{border:none;background:none;padding:0;color:var(--dsw-alias-state-business-primary);font-size:inherit;line-height:inherit;text-align:left;white-space:normal;overflow-wrap:anywhere}
+.renv .renv-linkbtn:hover:not(:disabled){background:none;text-decoration:underline}
+.renv-log{flex:1;min-height:90px;max-height:280px;margin:0;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+/* 日志里识别出的地址：点一下交给系统默认浏览器（见 src/host/open.js）。 */
+.renv-log .renv-link{color:var(--dsw-alias-state-business-primary);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;cursor:pointer}
+.renv-log .renv-link:hover{text-decoration-style:solid}
 
 /* ── 日志里的终端着色 ──────────────────────────────────────────────────
    调色板用 CSS 变量按主题切换（产品自己也是用 body[data-ds-dark-theme] 切），

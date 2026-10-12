@@ -36,7 +36,7 @@ __export(index_exports, {
 module.exports = __toCommonJS(index_exports);
 
 // src/client/styles.css
-var styles_default = "/* \u53EA\u7528 dsh \u7684\u4E3B\u9898\u53D8\u91CF\uFF0C\u7C7B\u524D\u7F00 renv-\uFF0C\u907F\u514D\u548C\u5BBF\u4E3B\u6216\u5176\u5B83\u63D2\u4EF6\u649E\u6837\u5F0F\u3002 */\n/* \u5916\u58F3\u5BF9\u9F50\u5BBF\u4E3B\u5185\u5EFA\u300C\u6587\u4EF6\u300D\u9875\uFF08dsh-client-ui-sidebar-files\uFF09\uFF1A\n   root \u4E0D\u5E26\u5185\u8FB9\u8DDD\uFF0C\u5934\u90E8 38px / \u5DE6 16px / border-l3\uFF0C\u6B63\u6587 8px \u5DE6\u5185\u8FB9\u8DDD\uFF0C\u9875\u7B7E\u540C\u6B3E\u4E0B\u5212\u7EBF\u6837\u5F0F\u3002 */\n.renv{display:flex;flex-direction:column;min-height:0;height:100%;box-sizing:border-box;color:var(--dsw-alias-label-primary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:1.5}\n.renv-head{flex:none;align-items:center;gap:4px;height:38px;padding:0 6px 0 16px;display:flex}\n.renv-headname{flex:auto;min-width:0;font-weight:600}\n.renv-body{flex:auto;min-height:0;overflow:auto;margin-right:2px;scrollbar-gutter:stable;padding:8px 8px 8px 16px;display:flex;flex-direction:column;gap:10px}\n.renv-row{display:flex;align-items:center;gap:6px;min-width:0}\n.renv-rowWrap{flex-wrap:wrap}\n.renv-between{justify-content:space-between}\n.renv-grow{flex:1;min-width:0}\n.renv-ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left}\n.renv-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dsw-alias-label-secondary);min-width:0}\n.renv-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}\n.renv-span2{grid-column:1/-1}\n.renv input,.renv select,.renv textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:6px 8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}\n.renv input::placeholder,.renv textarea::placeholder{color:var(--dsw-alias-label-tertiary)}\n.renv input:disabled{opacity:.6}\n.renv-textarea{resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.5}\n.renv-json{min-height:180px;white-space:pre}\n.renv button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent;white-space:nowrap}\n.renv button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}\n.renv button:disabled{cursor:default;opacity:.5}\n/* \u4E3B\u6309\u94AE\u4E0E\u9009\u4E2D\u6001\u90FD\u7528\u300Cbrand-primary \u586B\u5145 + label-primary-inverted \u524D\u666F\u300D\u8FD9\u4E00\u5BF9 token\uFF1A\n   brand-primary \u5728\u672C\u4EA7\u54C1\u91CC\u662F\u9AD8\u5BF9\u6BD4\u6CB9\u58A8\u8272\uFF08\u6D45\u8272\u8FD1\u9ED1 / \u6DF1\u8272\u8FD1\u767D\uFF09\uFF0C\u786C\u7F16\u7801 #fff \u4F1A\u5728\u6DF1\u8272\u4E3B\u9898\u4E0B\u53D8\u6210\u767D\u5E95\u767D\u5B57\u3002 */\n.renv .renv-iconbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:none;border-radius:6px;background:none;color:var(--dsw-alias-label-tertiary)}\n.renv .renv-iconbtn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}\n.renv-primary{color:var(--dsw-alias-label-primary-inverted)!important;background:var(--dsw-alias-brand-primary)!important;border-color:var(--dsw-alias-brand-primary)!important}\n.renv-primary:hover:not(:disabled){background:var(--dsw-alias-button-primary-hover)!important}\n.renv-danger{color:var(--dsw-alias-state-error-primary)!important}\n/* \u9875\u7B7E\u7528\u5BBF\u4E3B\u9762\u677F\u5185\u9875\u7B7E\u7684\u8BED\u8A00\uFF1A13px/500\uFF0C\u672A\u9009\u4E2D tertiary\uFF0C\u9009\u4E2D business-primary\uFF0C\n   \u4E0B\u5212\u7EBF 2px \u8D34\u5728\u5206\u9694\u7EBF\u4E0A\u3002\u9009\u62E9\u5668\u5199\u6210 `.renv .renv-tab`\uFF08\u7279\u5F02\u6027\u9AD8\u4E8E\u4E0B\u9762\u7684 `.renv button`\uFF09\uFF0C\n   \u6240\u4EE5\u4E0D\u518D\u9700\u8981\u4E00\u6392 !important \u6765\u62A2\u987A\u5E8F\u3002 */\n.renv-tabs{flex:none;display:flex;gap:24px;padding:0 6px 0 16px;border-bottom:.5px solid var(--dsw-alias-border-l3)}\n.renv .renv-tab{position:relative;background:none;border:none;border-radius:0;padding:10px 0 9px;color:var(--dsw-alias-label-tertiary);font-size:13px;font-weight:500;line-height:16px}\n.renv .renv-tab::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:none}\n.renv .renv-tab:hover:not(.renv-tabOn){background:none;color:var(--dsw-alias-label-secondary)}\n.renv .renv-tab.renv-tabOn{color:var(--dsw-alias-state-business-primary)}\n.renv .renv-tab.renv-tabOn::after{background:var(--dsw-alias-state-business-primary)}\n.renv-card{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:10px;background:var(--dsw-alias-bg-layer-3);display:flex;flex-direction:column;gap:8px}\n.renv-section{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--dsw-alias-border-l2);padding-top:10px}\n.renv-sectionHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}\n.renv-title{display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px}\n.renv-meta{font-size:11.5px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}\n.renv-hint{font-size:11.5px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}\n.renv-error{font-size:12px;line-height:1.5;color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere}\n.renv-list{display:flex;flex-direction:column;gap:6px}\n.renv-libRow{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px;background:var(--dsw-alias-bg-layer-3)}\n.renv-libGroup{display:flex;flex-direction:column;gap:4px}\n.renv-libKind{font-size:11.5px;font-weight:600;color:var(--dsw-alias-label-secondary);margin-top:6px}\n.renv-tag{margin-left:6px;font-size:10.5px;padding:1px 6px;border-radius:999px;color:var(--dsw-alias-brand-primary);border:1px solid var(--dsw-alias-brand-primary)}\n.renv-actions{justify-content:flex-end;flex-wrap:wrap}\n/* \u5706\u70B9\u8BED\u4E49\uFF1A\u7070=\u672A\u542F\u52A8/\u5DF2\u505C\u6B62\uFF0C\u84DD=\u8FD0\u884C\u4E2D\uFF0C\u7EFF=\u5C31\u7EEA\uFF08\u5C31\u7EEA\u68C0\u6D4B\u901A\u8FC7\uFF09\uFF0C\u9EC4=\u8FC7\u6E21\uFF08\u542F\u52A8\u4E2D/\u505C\u6B62\u4E2D\uFF09\uFF0C\u7EA2=\u5F02\u5E38\u3002\n   \u66FE\u7ECF stopped \u7528\u7684\u662F state-success\uFF08\u7EFF\u8272\uFF09\uFF0C\u4E8E\u662F\u300C\u4ECE\u6CA1\u542F\u52A8\u8FC7\u300D\u7684\u670D\u52A1\u4E5F\u662F\u7EFF\u70B9\u2014\u2014\u7EFF\u8272\u5728\u8FD9\u4E2A\n   \u9762\u677F\u91CC\u53EA\u8BE5\u8868\u793A\u300C\u771F\u7684\u8D77\u6765\u4E86\u300D\uFF0C\u4E0D\u80FD\u518D\u517C\u804C\u8868\u793A\u300C\u6CA1\u5728\u8DD1\u300D\u3002running \u4E0E ready \u7684\u533A\u522B\uFF1A\n   \u8FDB\u7A0B\u6D3B\u7740=\u84DD\uFF0C\u5C31\u7EEA\u68C0\u6D4B\u4E5F\u8FC7\u4E86=\u7EFF\u3002\u57FA\u7C7B\u5373\u7070\u8272\uFF0C\u515C\u5E95\u672A\u5339\u914D\u5230\u7684\u72B6\u6001\u3002 */\n.renv-dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--dsw-alias-label-tertiary)}\n.renv-dot[data-state=stopped]{background:var(--dsw-alias-label-tertiary)}\n.renv-dot[data-state=running]{background:var(--dsw-static-deepseek-450,#4f8cff)}\n.renv-dot[data-state=ready]{background:var(--dsw-alias-state-success-primary)}\n.renv-dot[data-state=starting],\n.renv-dot[data-state=stopping]{background:var(--dsw-alias-state-warn-primary)}\n.renv-dot[data-state=failed]{background:var(--dsw-alias-state-error-primary)}\n.renv-logWrap{display:flex;flex-direction:column;gap:6px;min-height:160px}\n.renv-log{flex:1;min-height:140px;max-height:40vh;margin:0;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all}\n\n/* \u2500\u2500 \u65E5\u5FD7\u91CC\u7684\u7EC8\u7AEF\u7740\u8272 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   \u8C03\u8272\u677F\u7528 CSS \u53D8\u91CF\u6309\u4E3B\u9898\u5207\u6362\uFF08\u4EA7\u54C1\u81EA\u5DF1\u4E5F\u662F\u7528 body[data-ds-dark-theme] \u5207\uFF09\uFF0C\n   \u6240\u4EE5\u89E3\u6790\u5668\u53EA\u8F93\u51FA\u7C7B\u540D\u3001\u4E0D\u5199\u6B7B\u989C\u8272\u30020\u201315 \u53F7\u8272\u8D70\u7C7B\uFF0C256 \u8272/\u771F\u5F69\u8272\u624D\u5185\u8054\u3002 */\n.renv-log{--renv-c0:#24292f;--renv-c1:#cf222e;--renv-c2:#1a7f37;--renv-c3:#9a6700;--renv-c4:#0969da;--renv-c5:#8250df;--renv-c6:#1b7c83;--renv-c7:#6e7781;--renv-c8:#57606a;--renv-c9:#a40e26;--renv-c10:#116329;--renv-c11:#7d4e00;--renv-c12:#0550ae;--renv-c13:#6639ba;--renv-c14:#10666b;--renv-c15:#8c959f}\nbody[data-ds-dark-theme] .renv-log{--renv-c0:#9aa0a6;--renv-c1:#ff7b72;--renv-c2:#7ee787;--renv-c3:#e3b341;--renv-c4:#79c0ff;--renv-c5:#d2a8ff;--renv-c6:#76e3ea;--renv-c7:#c9d1d9;--renv-c8:#8b949e;--renv-c9:#ffa198;--renv-c10:#aff5b4;--renv-c11:#f0d059;--renv-c12:#a5d6ff;--renv-c13:#e2c5ff;--renv-c14:#b3f0ff;--renv-c15:#f0f6fc}\n.renv-a-fg-30{color:var(--renv-c0)}.renv-a-fg-31{color:var(--renv-c1)}.renv-a-fg-32{color:var(--renv-c2)}.renv-a-fg-33{color:var(--renv-c3)}.renv-a-fg-34{color:var(--renv-c4)}.renv-a-fg-35{color:var(--renv-c5)}.renv-a-fg-36{color:var(--renv-c6)}.renv-a-fg-37{color:var(--renv-c7)}\n.renv-a-fg-90{color:var(--renv-c8)}.renv-a-fg-91{color:var(--renv-c9)}.renv-a-fg-92{color:var(--renv-c10)}.renv-a-fg-93{color:var(--renv-c11)}.renv-a-fg-94{color:var(--renv-c12)}.renv-a-fg-95{color:var(--renv-c13)}.renv-a-fg-96{color:var(--renv-c14)}.renv-a-fg-97{color:var(--renv-c15)}\n.renv-a-bg-40{background:var(--renv-c0)}.renv-a-bg-41{background:var(--renv-c1)}.renv-a-bg-42{background:var(--renv-c2)}.renv-a-bg-43{background:var(--renv-c3)}.renv-a-bg-44{background:var(--renv-c4)}.renv-a-bg-45{background:var(--renv-c5)}.renv-a-bg-46{background:var(--renv-c6)}.renv-a-bg-47{background:var(--renv-c7)}\n.renv-a-bg-100{background:var(--renv-c8)}.renv-a-bg-101{background:var(--renv-c9)}.renv-a-bg-102{background:var(--renv-c10)}.renv-a-bg-103{background:var(--renv-c11)}.renv-a-bg-104{background:var(--renv-c12)}.renv-a-bg-105{background:var(--renv-c13)}.renv-a-bg-106{background:var(--renv-c14)}.renv-a-bg-107{background:var(--renv-c15)}\n.renv-a-bold{font-weight:600}\n.renv-a-dim{opacity:.65}\n.renv-a-italic{font-style:italic}\n.renv-a-underline{text-decoration:underline}\n.renv-a-strike{text-decoration:line-through;opacity:.8}\n.renv-a-inverse{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1)}\n.renv-empty{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:10px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px}\n";
+var styles_default = "/* \u53EA\u7528 dsh \u7684\u4E3B\u9898\u53D8\u91CF\uFF0C\u7C7B\u524D\u7F00 renv-\uFF0C\u907F\u514D\u548C\u5BBF\u4E3B\u6216\u5176\u5B83\u63D2\u4EF6\u649E\u6837\u5F0F\u3002 */\n/* \u5916\u58F3\u5BF9\u9F50\u5BBF\u4E3B\u5185\u5EFA\u300C\u6587\u4EF6\u300D\u9875\uFF08dsh-client-ui-sidebar-files\uFF09\uFF1A\n   root \u4E0D\u5E26\u5185\u8FB9\u8DDD\uFF0C\u5934\u90E8 38px / \u5DE6 16px / border-l3\uFF0C\u6B63\u6587 8px \u5DE6\u5185\u8FB9\u8DDD\uFF0C\u9875\u7B7E\u540C\u6B3E\u4E0B\u5212\u7EBF\u6837\u5F0F\u3002 */\n.renv{display:flex;flex-direction:column;min-height:0;height:100%;box-sizing:border-box;color:var(--dsw-alias-label-primary);font-size:var(--dsh-content-font-size-secondary,13px);line-height:1.5}\n.renv-head{flex:none;align-items:center;gap:4px;height:38px;padding:0 6px 0 16px;display:flex}\n.renv-headname{flex:auto;min-width:0;font-weight:600}\n.renv-body{flex:auto;min-height:0;overflow:auto;margin-right:2px;scrollbar-gutter:stable;padding:8px 8px 8px 16px;display:flex;flex-direction:column;gap:10px}\n.renv-row{display:flex;align-items:center;gap:6px;min-width:0}\n.renv-rowWrap{flex-wrap:wrap}\n.renv-between{justify-content:space-between}\n.renv-grow{flex:1;min-width:0}\n.renv-ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left}\n.renv-field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dsw-alias-label-secondary);min-width:0}\n.renv-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}\n.renv-span2{grid-column:1/-1}\n.renv input,.renv select,.renv textarea{box-sizing:border-box;width:100%;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:6px 8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-primary);font:inherit;font-size:12px}\n.renv input::placeholder,.renv textarea::placeholder{color:var(--dsw-alias-label-tertiary)}\n.renv input:disabled{opacity:.6}\n.renv-textarea{resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.5}\n.renv-json{min-height:180px;white-space:pre}\n.renv button{font:inherit;font-size:12px;cursor:pointer;border:1px solid var(--dsw-alias-border-l2);border-radius:7px;padding:5px 10px;color:var(--dsw-alias-label-primary);background:transparent;white-space:nowrap}\n.renv button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}\n.renv button:disabled{cursor:default;opacity:.5}\n/* \u4E3B\u6309\u94AE\u4E0E\u9009\u4E2D\u6001\u90FD\u7528\u300Cbrand-primary \u586B\u5145 + label-primary-inverted \u524D\u666F\u300D\u8FD9\u4E00\u5BF9 token\uFF1A\n   brand-primary \u5728\u672C\u4EA7\u54C1\u91CC\u662F\u9AD8\u5BF9\u6BD4\u6CB9\u58A8\u8272\uFF08\u6D45\u8272\u8FD1\u9ED1 / \u6DF1\u8272\u8FD1\u767D\uFF09\uFF0C\u786C\u7F16\u7801 #fff \u4F1A\u5728\u6DF1\u8272\u4E3B\u9898\u4E0B\u53D8\u6210\u767D\u5E95\u767D\u5B57\u3002 */\n.renv .renv-iconbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border:none;border-radius:6px;background:none;color:var(--dsw-alias-label-tertiary)}\n.renv .renv-iconbtn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary)}\n.renv-primary{color:var(--dsw-alias-label-primary-inverted)!important;background:var(--dsw-alias-brand-primary)!important;border-color:var(--dsw-alias-brand-primary)!important}\n.renv-primary:hover:not(:disabled){background:var(--dsw-alias-button-primary-hover)!important}\n.renv-danger{color:var(--dsw-alias-state-error-primary)!important}\n/* \u9875\u7B7E\u7528\u5BBF\u4E3B\u9762\u677F\u5185\u9875\u7B7E\u7684\u8BED\u8A00\uFF1A13px/500\uFF0C\u672A\u9009\u4E2D tertiary\uFF0C\u9009\u4E2D business-primary\uFF0C\n   \u4E0B\u5212\u7EBF 2px \u8D34\u5728\u5206\u9694\u7EBF\u4E0A\u3002\u9009\u62E9\u5668\u5199\u6210 `.renv .renv-tab`\uFF08\u7279\u5F02\u6027\u9AD8\u4E8E\u4E0B\u9762\u7684 `.renv button`\uFF09\uFF0C\n   \u6240\u4EE5\u4E0D\u518D\u9700\u8981\u4E00\u6392 !important \u6765\u62A2\u987A\u5E8F\u3002 */\n.renv-tabs{flex:none;display:flex;gap:24px;padding:0 6px 0 16px;border-bottom:.5px solid var(--dsw-alias-border-l3)}\n.renv .renv-tab{position:relative;background:none;border:none;border-radius:0;padding:10px 0 9px;color:var(--dsw-alias-label-tertiary);font-size:13px;font-weight:500;line-height:16px}\n.renv .renv-tab::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:none}\n.renv .renv-tab:hover:not(.renv-tabOn){background:none;color:var(--dsw-alias-label-secondary)}\n.renv .renv-tab.renv-tabOn{color:var(--dsw-alias-state-business-primary)}\n.renv .renv-tab.renv-tabOn::after{background:var(--dsw-alias-state-business-primary)}\n.renv-card{border:1px solid var(--dsw-alias-border-l2);border-radius:10px;padding:10px;background:var(--dsw-alias-bg-layer-3);display:flex;flex-direction:column;gap:8px}\n.renv-section{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--dsw-alias-border-l2);padding-top:10px}\n.renv-sectionHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}\n.renv-title{display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px}\n.renv-meta{font-size:11.5px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}\n.renv-hint{font-size:11.5px;line-height:1.5;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}\n.renv-error{font-size:12px;line-height:1.5;color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere}\n.renv-list{display:flex;flex-direction:column;gap:6px}\n.renv-libRow{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px;background:var(--dsw-alias-bg-layer-3)}\n.renv-libGroup{display:flex;flex-direction:column;gap:4px}\n.renv-libKind{font-size:11.5px;font-weight:600;color:var(--dsw-alias-label-secondary);margin-top:6px}\n.renv-tag{margin-left:6px;font-size:10.5px;padding:1px 6px;border-radius:999px;color:var(--dsw-alias-brand-primary);border:1px solid var(--dsw-alias-brand-primary)}\n.renv-actions{justify-content:flex-end;flex-wrap:wrap}\n/* \u5706\u70B9\u8BED\u4E49\uFF1A\u7070=\u672A\u542F\u52A8/\u5DF2\u505C\u6B62\uFF0C\u84DD=\u8FD0\u884C\u4E2D\uFF0C\u7EFF=\u5C31\u7EEA\uFF08\u5C31\u7EEA\u68C0\u6D4B\u901A\u8FC7\uFF09\uFF0C\u9EC4=\u8FC7\u6E21\uFF08\u542F\u52A8\u4E2D/\u505C\u6B62\u4E2D\uFF09\uFF0C\u7EA2=\u5F02\u5E38\u3002\n   \u66FE\u7ECF stopped \u7528\u7684\u662F state-success\uFF08\u7EFF\u8272\uFF09\uFF0C\u4E8E\u662F\u300C\u4ECE\u6CA1\u542F\u52A8\u8FC7\u300D\u7684\u670D\u52A1\u4E5F\u662F\u7EFF\u70B9\u2014\u2014\u7EFF\u8272\u5728\u8FD9\u4E2A\n   \u9762\u677F\u91CC\u53EA\u8BE5\u8868\u793A\u300C\u771F\u7684\u8D77\u6765\u4E86\u300D\uFF0C\u4E0D\u80FD\u518D\u517C\u804C\u8868\u793A\u300C\u6CA1\u5728\u8DD1\u300D\u3002running \u4E0E ready \u7684\u533A\u522B\uFF1A\n   \u8FDB\u7A0B\u6D3B\u7740=\u84DD\uFF0C\u5C31\u7EEA\u68C0\u6D4B\u4E5F\u8FC7\u4E86=\u7EFF\u3002\u57FA\u7C7B\u5373\u7070\u8272\uFF0C\u515C\u5E95\u672A\u5339\u914D\u5230\u7684\u72B6\u6001\u3002 */\n.renv-dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--dsw-alias-label-tertiary)}\n.renv-dot[data-state=stopped]{background:var(--dsw-alias-label-tertiary)}\n.renv-dot[data-state=running]{background:var(--dsw-static-deepseek-450,#4f8cff)}\n.renv-dot[data-state=ready]{background:var(--dsw-alias-state-success-primary)}\n.renv-dot[data-state=starting],\n.renv-dot[data-state=stopping]{background:var(--dsw-alias-state-warn-primary)}\n.renv-dot[data-state=failed]{background:var(--dsw-alias-state-error-primary)}\n/* \u5361\u7247\u5185\u7684\u65E5\u5FD7\u533A\uFF1A\u8DDF\u7740\u81EA\u5DF1\u7684\u8FD0\u884C\u5361\u7247\u8D70\uFF0C\u53EF\u6298\u53E0\u3002\u591A\u4E2A\u670D\u52A1\u5404\u81EA\u4E00\u5757\uFF0C\u4E92\u4E0D\u5E72\u6270\u3002 */\n.renv-logWrap{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--dsw-alias-border-l2);padding-top:8px;min-width:0}\n.renv-logHead{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dsw-alias-label-tertiary);min-width:0}\n.renv-logTitle{font-weight:600;color:var(--dsw-alias-label-secondary)}\n/* \u5B9E\u65F6\u6307\u793A\u706F\uFF1A\u8FDE\u4E0A SSE \u662F\u7EFF\u70B9\uFF0C\u6B63\u5728\u91CD\u8FDE\u662F\u7070\u70B9\u3002 */\n.renv-live{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;padding:0 6px;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-tertiary)}\n.renv-live::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}\n.renv-live[data-state=on]{color:var(--dsw-alias-state-success-primary);border-color:var(--dsw-alias-state-success-primary)}\n/* \u4F2A\u88C5\u6210\u94FE\u63A5\u7684\u6309\u94AE\uFF08\u5361\u7247\u91CC\u7684\u5730\u5740\u3001\u65E5\u5FD7\u6807\u9898\u680F\u7684\u5237\u65B0\uFF09\uFF1A\u7279\u5F02\u6027\u9AD8\u4E8E\u4E0A\u9762\u7684 `.renv button`\u3002 */\n.renv .renv-linkbtn{border:none;background:none;padding:0;color:var(--dsw-alias-state-business-primary);font-size:inherit;line-height:inherit;text-align:left;white-space:normal;overflow-wrap:anywhere}\n.renv .renv-linkbtn:hover:not(:disabled){background:none;text-decoration:underline}\n.renv-log{flex:1;min-height:90px;max-height:280px;margin:0;overflow:auto;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;padding:8px;background:var(--dsw-alias-bg-layer-3);color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all}\n/* \u65E5\u5FD7\u91CC\u8BC6\u522B\u51FA\u7684\u5730\u5740\uFF1A\u70B9\u4E00\u4E0B\u4EA4\u7ED9\u7CFB\u7EDF\u9ED8\u8BA4\u6D4F\u89C8\u5668\uFF08\u89C1 src/host/open.js\uFF09\u3002 */\n.renv-log .renv-link{color:var(--dsw-alias-state-business-primary);text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;cursor:pointer}\n.renv-log .renv-link:hover{text-decoration-style:solid}\n\n/* \u2500\u2500 \u65E5\u5FD7\u91CC\u7684\u7EC8\u7AEF\u7740\u8272 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n   \u8C03\u8272\u677F\u7528 CSS \u53D8\u91CF\u6309\u4E3B\u9898\u5207\u6362\uFF08\u4EA7\u54C1\u81EA\u5DF1\u4E5F\u662F\u7528 body[data-ds-dark-theme] \u5207\uFF09\uFF0C\n   \u6240\u4EE5\u89E3\u6790\u5668\u53EA\u8F93\u51FA\u7C7B\u540D\u3001\u4E0D\u5199\u6B7B\u989C\u8272\u30020\u201315 \u53F7\u8272\u8D70\u7C7B\uFF0C256 \u8272/\u771F\u5F69\u8272\u624D\u5185\u8054\u3002 */\n.renv-log{--renv-c0:#24292f;--renv-c1:#cf222e;--renv-c2:#1a7f37;--renv-c3:#9a6700;--renv-c4:#0969da;--renv-c5:#8250df;--renv-c6:#1b7c83;--renv-c7:#6e7781;--renv-c8:#57606a;--renv-c9:#a40e26;--renv-c10:#116329;--renv-c11:#7d4e00;--renv-c12:#0550ae;--renv-c13:#6639ba;--renv-c14:#10666b;--renv-c15:#8c959f}\nbody[data-ds-dark-theme] .renv-log{--renv-c0:#9aa0a6;--renv-c1:#ff7b72;--renv-c2:#7ee787;--renv-c3:#e3b341;--renv-c4:#79c0ff;--renv-c5:#d2a8ff;--renv-c6:#76e3ea;--renv-c7:#c9d1d9;--renv-c8:#8b949e;--renv-c9:#ffa198;--renv-c10:#aff5b4;--renv-c11:#f0d059;--renv-c12:#a5d6ff;--renv-c13:#e2c5ff;--renv-c14:#b3f0ff;--renv-c15:#f0f6fc}\n.renv-a-fg-30{color:var(--renv-c0)}.renv-a-fg-31{color:var(--renv-c1)}.renv-a-fg-32{color:var(--renv-c2)}.renv-a-fg-33{color:var(--renv-c3)}.renv-a-fg-34{color:var(--renv-c4)}.renv-a-fg-35{color:var(--renv-c5)}.renv-a-fg-36{color:var(--renv-c6)}.renv-a-fg-37{color:var(--renv-c7)}\n.renv-a-fg-90{color:var(--renv-c8)}.renv-a-fg-91{color:var(--renv-c9)}.renv-a-fg-92{color:var(--renv-c10)}.renv-a-fg-93{color:var(--renv-c11)}.renv-a-fg-94{color:var(--renv-c12)}.renv-a-fg-95{color:var(--renv-c13)}.renv-a-fg-96{color:var(--renv-c14)}.renv-a-fg-97{color:var(--renv-c15)}\n.renv-a-bg-40{background:var(--renv-c0)}.renv-a-bg-41{background:var(--renv-c1)}.renv-a-bg-42{background:var(--renv-c2)}.renv-a-bg-43{background:var(--renv-c3)}.renv-a-bg-44{background:var(--renv-c4)}.renv-a-bg-45{background:var(--renv-c5)}.renv-a-bg-46{background:var(--renv-c6)}.renv-a-bg-47{background:var(--renv-c7)}\n.renv-a-bg-100{background:var(--renv-c8)}.renv-a-bg-101{background:var(--renv-c9)}.renv-a-bg-102{background:var(--renv-c10)}.renv-a-bg-103{background:var(--renv-c11)}.renv-a-bg-104{background:var(--renv-c12)}.renv-a-bg-105{background:var(--renv-c13)}.renv-a-bg-106{background:var(--renv-c14)}.renv-a-bg-107{background:var(--renv-c15)}\n.renv-a-bold{font-weight:600}\n.renv-a-dim{opacity:.65}\n.renv-a-italic{font-style:italic}\n.renv-a-underline{text-decoration:underline}\n.renv-a-strike{text-decoration:line-through;opacity:.8}\n.renv-a-inverse{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-layer-1)}\n.renv-empty{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:10px;border:1px dashed var(--dsw-alias-border-l2);border-radius:10px}\n";
 
 // src/client/constants.ts
 var NS = "run-env-manager";
@@ -71,7 +71,7 @@ async function request(action, body) {
 function createApi() {
   return {
     // 只读快照走 GET（同名动作用 query 参数），其余动作一律 POST + 同源门禁。
-    status: (root) => request(`status?root=${encodeURIComponent(root)}`),
+    status: (root, logs = true) => request(`status?root=${encodeURIComponent(root)}${logs ? "" : "&logs=0"}`),
     detect: () => request("detect", {}),
     saveEnvironment: (environment) => request("saveEnvironment", { environment }),
     removeEnvironment: (id) => request("removeEnvironment", { id }),
@@ -83,6 +83,8 @@ function createApi() {
     removeConfiguration: (root, id) => request("removeConfiguration", { root, id }),
     start: (root, id) => request("start", { root, id }),
     stop: (root, id) => request("stop", { root, id }),
+    log: (root, id) => request(`log?root=${encodeURIComponent(root)}&id=${encodeURIComponent(id)}`),
+    openUrl: (url) => request("openUrl", { url }),
     streamUrl: (root, id, from) => `${ROUTE}/stream?root=${encodeURIComponent(root)}&id=${encodeURIComponent(id)}&from=${from}`,
     snapshotOf: (root) => request(`status?root=${encodeURIComponent(root)}`)
   };
@@ -356,7 +358,7 @@ function createAgent(ctx) {
 }
 
 // src/client/components/RunPanel.tsx
-var import_react3 = __toESM(require("react"), 1);
+var import_react5 = __toESM(require("react"), 1);
 
 // src/client/components/ConfigurationSection.tsx
 var import_react2 = __toESM(require("react"), 1);
@@ -366,6 +368,7 @@ var import_react = __toESM(require("react"), 1);
 
 // src/client/types.ts
 var ENVIRONMENT_KINDS = ["java", "maven", "python", "node", "go", "tomcat", "ant"];
+var LIVE_STATUSES = ["starting", "running", "ready", "stopping"];
 function emptyBindings() {
   return Object.fromEntries(ENVIRONMENT_KINDS.map((kind) => [kind, ""]));
 }
@@ -840,32 +843,117 @@ function suggestConfigId(configurations) {
   return "run";
 }
 
-// src/client/components/icons.tsx
-var import_jsx_runtime3 = require("react/jsx-runtime");
-function IconRefresh({ size = 16, className }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true", className, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M13 8a5 5 0 1 1-1.6-3.67", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M13.2 2.6v3.1h-3.1", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round" })
-  ] });
+// src/client/components/RunCard.tsx
+var import_react4 = __toESM(require("react"), 1);
+
+// src/client/components/RunLog.tsx
+var import_react3 = __toESM(require("react"), 1);
+
+// src/client/urls.js
+var CANDIDATE = /(?:https?:\/\/|localhost:|\d{1,3}(?:\.\d{1,3}){3}:\d{1,5}|\[::1\]:)[^\s<>"'`]+/gi;
+var TRAILING = /[.,;:!?…*，。、；：！？]+$/;
+var BRACKETS = [[")", "("], ["]", "["], ["}", "{"]];
+function count(text, char) {
+  let total = 0;
+  for (const found of text) if (found === char) total += 1;
+  return total;
 }
-function IconRunOutline({ size = 16, className }) {
-  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true", className, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "1.75", y: "2.75", width: "12.5", height: "10.5", rx: "2.25", stroke: "currentColor", strokeWidth: "1.2" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M4.6 6.4 6.6 8l-2 1.6", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M8.6 9.9h3", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round" })
-  ] });
+function trimCandidate(raw) {
+  let text = raw;
+  for (; ; ) {
+    const before = text;
+    text = text.replace(TRAILING, "");
+    for (const [closer, opener] of BRACKETS) {
+      while (text.endsWith(closer) && count(text, closer) > count(text, opener)) text = text.slice(0, -1);
+    }
+    if (text === before) return text;
+  }
+}
+function asHref(candidate) {
+  const absolute = /^https?:\/\//i.test(candidate) ? candidate : `http://${candidate}`;
+  let parsed;
+  try {
+    parsed = new URL(absolute);
+  } catch {
+    return void 0;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return void 0;
+  const head = parsed.hostname[0] ?? "";
+  if (parsed.hostname === "" || !/[A-Za-z0-9[]/.test(head)) return void 0;
+  if (parsed.hostname === "0.0.0.0") parsed.hostname = "127.0.0.1";
+  return parsed.toString();
+}
+function linkify(text) {
+  if (text === "") return [];
+  const tokens = [];
+  let cursor = 0;
+  CANDIDATE.lastIndex = 0;
+  for (let match = CANDIDATE.exec(text); match !== null; match = CANDIDATE.exec(text)) {
+    const url = trimCandidate(match[0]);
+    const href = asHref(url);
+    if (href === void 0) continue;
+    const start = match.index;
+    if (start > cursor) tokens.push({ text: text.slice(cursor, start) });
+    tokens.push({ text: url, href });
+    cursor = start + url.length;
+  }
+  if (cursor < text.length) tokens.push({ text: text.slice(cursor) });
+  return tokens;
 }
 
-// src/client/components/RunPanel.tsx
-var import_jsx_runtime4 = require("react/jsx-runtime");
-var NO_SUBSCRIPTION = () => void 0;
-function basename(path) {
-  const normalized = path.replace(/[\\/]+$/, "");
-  const at = Math.max(normalized.lastIndexOf("/"), normalized.lastIndexOf("\\"));
-  return at >= 0 ? normalized.slice(at + 1) : normalized;
+// src/client/components/RunLog.tsx
+var import_jsx_runtime3 = require("react/jsx-runtime");
+var LOG_TAIL_CHARS = 2e5;
+var PIN_THRESHOLD_PX = 24;
+function RunLog({ text, onOpenUrl, t }) {
+  const segments = import_react3.default.useMemo(() => parseAnsi(text), [text]);
+  const preRef = import_react3.default.useRef(null);
+  const pinnedRef = import_react3.default.useRef(true);
+  import_react3.default.useLayoutEffect(() => {
+    const node = preRef.current;
+    if (node === null || !pinnedRef.current) return;
+    node.scrollTop = node.scrollHeight;
+  }, [text]);
+  const renderText = (value) => {
+    const tokens = linkify(value);
+    if (tokens.length === 1 && tokens[0].href === void 0) return tokens[0].text;
+    return tokens.map((token, index) => {
+      const href = token.href;
+      if (href === void 0) return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_react3.default.Fragment, { children: token.text }, index);
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+        "a",
+        {
+          className: "renv-link",
+          href,
+          title: t("openInBrowser"),
+          onClick: (event) => {
+            event.preventDefault();
+            onOpenUrl(href);
+          },
+          children: token.text
+        },
+        index
+      );
+    });
+  };
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+    "pre",
+    {
+      className: "renv-log",
+      ref: preRef,
+      onScroll: (event) => {
+        const node = event.currentTarget;
+        pinnedRef.current = node.scrollHeight - node.scrollTop - node.clientHeight <= PIN_THRESHOLD_PX;
+      },
+      children: segments.map(
+        (segment, index) => segment.className === void 0 && segment.style === void 0 ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_react3.default.Fragment, { children: renderText(segment.text) }, index) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: segment.className, style: segment.style, children: renderText(segment.text) }, index)
+      )
+    }
+  );
 }
-var POLL_INTERVAL_MS = 2e3;
-var LIVE_STATUSES = ["starting", "running", "ready", "stopping"];
+
+// src/client/components/RunCard.tsx
+var import_jsx_runtime4 = require("react/jsx-runtime");
 var STATUS_LABELS = {
   starting: "statusStarting",
   running: "statusRunning",
@@ -878,6 +966,163 @@ function statusLabel(status, t) {
   const key = STATUS_LABELS[status];
   return key === void 0 ? status : t(key);
 }
+var RECONNECT_BASE_MS = 800;
+var RECONNECT_MAX_ATTEMPTS = 5;
+function RunCard(props) {
+  const { configuration, run, root, api, t, open, onToggle, onSnapshot, onError, onEdit, onOpenUrl } = props;
+  const [busy, setBusy] = import_react4.default.useState("");
+  const [logText, setLogText] = import_react4.default.useState("");
+  const [streaming, setStreaming] = import_react4.default.useState(false);
+  const [reloadNonce, setReloadNonce] = import_react4.default.useState(0);
+  const offsetRef = import_react4.default.useRef(0);
+  const id = configuration.id;
+  const runId = run?.id;
+  const live = run !== void 0 && LIVE_STATUSES.includes(run.status);
+  import_react4.default.useEffect(() => {
+    if (!open || runId === void 0) return void 0;
+    let disposed = false;
+    let source;
+    let retry;
+    let attempts = 0;
+    const replace = (text, end) => {
+      if (disposed) return;
+      offsetRef.current = end;
+      setLogText(text.slice(-LOG_TAIL_CHARS));
+    };
+    const append = (text, end) => {
+      if (disposed) return;
+      offsetRef.current = end;
+      setLogText((current) => (current + text).slice(-LOG_TAIL_CHARS));
+    };
+    const connect = () => {
+      if (disposed) return;
+      const stream = new EventSource(api.streamUrl(root, runId, offsetRef.current));
+      source = stream;
+      stream.onopen = () => {
+        attempts = 0;
+        if (!disposed) setStreaming(true);
+      };
+      stream.onmessage = (event) => {
+        let frame;
+        try {
+          frame = JSON.parse(event.data);
+        } catch {
+          return;
+        }
+        if (typeof frame.text === "string" && frame.text !== "") append(frame.text, frame.offset);
+        else if (typeof frame.offset === "number") offsetRef.current = frame.offset;
+      };
+      stream.onerror = () => {
+        stream.close();
+        if (!disposed) setStreaming(false);
+        if (disposed || attempts >= RECONNECT_MAX_ATTEMPTS) return;
+        attempts += 1;
+        retry = setTimeout(connect, RECONNECT_BASE_MS * attempts);
+      };
+    };
+    const load = async () => {
+      let payload;
+      try {
+        payload = await api.log(root, runId);
+      } catch (cause) {
+        if (!disposed) onError(errText(cause));
+        return;
+      }
+      replace(payload.log, payload.offset);
+      if (!disposed && LIVE_STATUSES.includes(payload.status)) connect();
+    };
+    void load();
+    return () => {
+      disposed = true;
+      if (retry !== void 0) clearTimeout(retry);
+      source?.close();
+      setStreaming(false);
+    };
+  }, [api, root, runId, open, live, reloadNonce, onError]);
+  const previousStatus = import_react4.default.useRef(run?.status);
+  import_react4.default.useEffect(() => {
+    const status = run?.status;
+    if (status === "failed" && previousStatus.current !== "failed" && !open) onToggle(id, true);
+    previousStatus.current = status;
+  }, [id, onToggle, open, run?.status]);
+  const act = async (label, task) => {
+    setBusy(label);
+    onError("");
+    try {
+      onSnapshot(await task());
+      return true;
+    } catch (cause) {
+      onError(errText(cause));
+      return false;
+    } finally {
+      setBusy("");
+    }
+  };
+  const start = async () => {
+    if (await act("start", () => api.start(root, id))) onToggle(id, true);
+  };
+  const browserUrl = String(configuration.browserUrl ?? "").trim();
+  const address = browserUrl !== "" ? browserUrl : run?.url ?? "";
+  const command = configuration.type === "tomcat" ? `tomcat \xB7 ${configuration.tomcat.contextPath}` : configuration.command;
+  return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-card", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "renv-row renv-between", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-grow", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-title", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "renv-dot", "data-state": run?.status ?? "stopped" }),
+        configuration.name || configuration.id
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "renv-meta", children: command }),
+      run !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-meta", children: [
+        t("status"),
+        ": ",
+        statusLabel(run.status, t),
+        run.exitCode === null || run.exitCode === void 0 ? "" : ` \xB7 exit ${run.exitCode}`,
+        address === "" ? "" : " \xB7 ",
+        address !== "" && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", className: "renv-linkbtn", title: t("openInBrowser"), onClick: () => onOpenUrl(address), children: address })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-row renv-actions", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", className: "renv-primary", disabled: busy !== "" || live, onClick: () => void start(), children: t("start") }),
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", disabled: busy !== "" || !live, onClick: () => void act("stop", () => api.stop(root, id)), children: t("stop") }),
+      run !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", "aria-expanded": open, onClick: () => onToggle(id, !open), children: open ? t("collapseLogs") : t("logs") }),
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", onClick: () => onEdit(id), children: t("edit") })
+    ] }),
+    open && run !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-logWrap", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-logHead", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "renv-logTitle", children: t("logs") }),
+        live && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "renv-live", "data-state": streaming ? "on" : "off", children: streaming ? t("logLive") : t("logWaiting") }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "renv-grow" }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", className: "renv-linkbtn", onClick: () => setReloadNonce((value) => value + 1), children: t("refresh") })
+      ] }),
+      logText === "" ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "renv-hint", children: t("logsEmpty") }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(RunLog, { text: logText, onOpenUrl, t })
+    ] })
+  ] });
+}
+
+// src/client/components/icons.tsx
+var import_jsx_runtime5 = require("react/jsx-runtime");
+function IconRefresh({ size = 16, className }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true", className, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("path", { d: "M13 8a5 5 0 1 1-1.6-3.67", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round" }),
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("path", { d: "M13.2 2.6v3.1h-3.1", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round" })
+  ] });
+}
+function IconRunOutline({ size = 16, className }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("svg", { width: size, height: size, viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true", className, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("rect", { x: "1.75", y: "2.75", width: "12.5", height: "10.5", rx: "2.25", stroke: "currentColor", strokeWidth: "1.2" }),
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("path", { d: "M4.6 6.4 6.6 8l-2 1.6", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round", strokeLinejoin: "round" }),
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("path", { d: "M8.6 9.9h3", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round" })
+  ] });
+}
+
+// src/client/components/RunPanel.tsx
+var import_jsx_runtime6 = require("react/jsx-runtime");
+var NO_SUBSCRIPTION = () => void 0;
+function basename(path) {
+  const normalized = path.replace(/[\\/]+$/, "");
+  const at = Math.max(normalized.lastIndexOf("/"), normalized.lastIndexOf("\\"));
+  return at >= 0 ? normalized.slice(at + 1) : normalized;
+}
+var POLL_INTERVAL_MS = 2e3;
 function RunPanel(props) {
   const { api, sessionId, t } = props;
   const useSessions = props.useSessions ?? NO_SUBSCRIPTION;
@@ -885,73 +1130,49 @@ function RunPanel(props) {
     const byId = state?.byId;
     return sessionId === void 0 ? void 0 : byId?.[sessionId]?.cwd;
   });
-  const [snapshot, setSnapshot] = import_react3.default.useState(null);
-  const [root, setRoot] = import_react3.default.useState("");
-  const [tab, setTab] = import_react3.default.useState("run");
-  const [editing, setEditing] = import_react3.default.useState(null);
-  const [busy, setBusy] = import_react3.default.useState("");
-  const [error, setError] = import_react3.default.useState("");
-  const [activeId, setActiveId] = import_react3.default.useState(null);
-  const [logText, setLogText] = import_react3.default.useState("");
-  const [offset, setOffset] = import_react3.default.useState(0);
-  const [aiBusy, setAiBusy] = import_react3.default.useState("");
-  import_react3.default.useEffect(() => {
+  const [snapshot, setSnapshot] = import_react5.default.useState(null);
+  const [root, setRoot] = import_react5.default.useState("");
+  const [tab, setTab] = import_react5.default.useState("run");
+  const [editing, setEditing] = import_react5.default.useState(null);
+  const [error, setError] = import_react5.default.useState("");
+  const [aiBusy, setAiBusy] = import_react5.default.useState("");
+  const [openLogs, setOpenLogs] = import_react5.default.useState({});
+  const [focusedId, setFocusedId] = import_react5.default.useState(null);
+  import_react5.default.useEffect(() => {
     if (typeof sessionCwd === "string" && sessionCwd !== "") setRoot((current) => current === "" ? sessionCwd : current);
   }, [sessionCwd]);
-  const refresh = import_react3.default.useCallback(async () => {
+  const refresh = import_react5.default.useCallback(async () => {
     if (root === "") return;
     try {
-      setSnapshot(await api.status(root));
+      setSnapshot(await api.status(root, false));
       setError("");
     } catch (cause) {
       setError(errText(cause));
     }
   }, [api, root]);
-  import_react3.default.useEffect(() => {
+  import_react5.default.useEffect(() => {
     if (root === "") return void 0;
     void refresh();
     const timer = setInterval(() => void refresh(), POLL_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [refresh, root]);
-  const segments = import_react3.default.useMemo(() => parseAnsi(logText), [logText]);
+  const reportError = import_react5.default.useCallback((message) => setError(message), []);
+  const applySnapshot = import_react5.default.useCallback((next) => setSnapshot(next), []);
+  const toggleLog = import_react5.default.useCallback((id, open) => {
+    setOpenLogs((current) => current[id] === open ? current : { ...current, [id]: open });
+    if (open) setFocusedId(id);
+  }, []);
+  const openUrl = import_react5.default.useCallback(
+    (url) => {
+      void api.openUrl(url).catch((cause) => {
+        if (window.open(url, "_blank", "noopener") === null) setError(errText(cause));
+      });
+    },
+    [api]
+  );
   const runs = snapshot?.runs ?? [];
   const configurations = snapshot?.workspace?.configurations ?? [];
   const runOf = (id) => runs.find((run) => run.id === id);
-  const activeRun = activeId === null ? void 0 : runOf(activeId);
-  import_react3.default.useEffect(() => {
-    if (activeRun === void 0 || !LIVE_STATUSES.includes(activeRun.status)) return void 0;
-    const source = new EventSource(api.streamUrl(activeRun.root, activeRun.id, offset));
-    source.onmessage = (event) => {
-      let frame;
-      try {
-        frame = JSON.parse(event.data);
-      } catch {
-        return;
-      }
-      if (frame.text !== void 0 && frame.text !== "") setLogText((current) => (current + frame.text).slice(-2e5));
-      setOffset(frame.offset);
-    };
-    source.onerror = () => {
-    };
-    return () => source.close();
-  }, [api, activeRun?.root, activeRun?.id, activeRun?.status === void 0 ? "" : String(LIVE_STATUSES.includes(activeRun.status))]);
-  const openLog = (id) => {
-    const run = runOf(id);
-    setActiveId(id);
-    setLogText(run?.log ?? "");
-    setOffset(run?.offset ?? 0);
-  };
-  const act = async (label, task) => {
-    setBusy(label);
-    setError("");
-    try {
-      setSnapshot(await task());
-    } catch (cause) {
-      setError(errText(cause));
-    } finally {
-      setBusy("");
-    }
-  };
   const runAi = async (mode) => {
     if (snapshot === null) return;
     setAiBusy(mode);
@@ -962,7 +1183,7 @@ function RunPanel(props) {
       if (mode === "configure") {
         await props.agent.configure({ root, snapshot: latest });
       } else {
-        const selected = latest.workspace?.configurations?.find((item) => item.id === activeId) ?? latest.workspace?.configurations?.[0];
+        const selected = latest.workspace?.configurations?.find((item) => item.id === (focusedId ?? editing)) ?? latest.workspace?.configurations?.[0];
         await props.agent.troubleshoot({ root, snapshot: latest, configuration: selected, panelError: error });
       }
     } catch (cause) {
@@ -971,89 +1192,46 @@ function RunPanel(props) {
       setAiBusy("");
     }
   };
-  return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-head", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "renv-headname renv-ellipsis", title: root, children: root === "" ? t("tabRun") : basename(root) }),
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", className: "renv-iconbtn", title: t("refresh"), "aria-label": t("refresh"), disabled: busy !== "" || root === "", onClick: () => void refresh(), children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(IconRefresh, { size: 15 }) })
+  return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "renv", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "renv-head", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "renv-headname renv-ellipsis", title: root, children: root === "" ? t("tabRun") : basename(root) }),
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", className: "renv-iconbtn", title: t("refresh"), "aria-label": t("refresh"), disabled: root === "", onClick: () => void refresh(), children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(IconRefresh, { size: 15 }) })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-tabs", role: "tablist", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", role: "tab", className: `renv-tab${tab === "run" ? " renv-tabOn" : ""}`, onClick: () => setTab("run"), "aria-selected": tab === "run", children: t("tabRun") }),
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", role: "tab", className: `renv-tab${tab === "config" ? " renv-tabOn" : ""}`, onClick: () => setTab("config"), "aria-selected": tab === "config", children: t("tabConfig") })
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "renv-tabs", role: "tablist", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", role: "tab", className: `renv-tab${tab === "run" ? " renv-tabOn" : ""}`, onClick: () => setTab("run"), "aria-selected": tab === "run", children: t("tabRun") }),
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", role: "tab", className: `renv-tab${tab === "config" ? " renv-tabOn" : ""}`, onClick: () => setTab("config"), "aria-selected": tab === "config", children: t("tabConfig") })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-body", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-row renv-actions", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", disabled: aiBusy !== "" || root === "", onClick: () => void runAi("configure"), children: aiBusy === "configure" ? t("aiPreparing") : t("aiConfigure") }),
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", disabled: aiBusy !== "" || root === "", onClick: () => void runAi("troubleshoot"), children: aiBusy === "troubleshoot" ? t("aiPreparing") : t("aiTroubleshoot") })
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "renv-body", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "renv-row renv-actions", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", disabled: aiBusy !== "" || root === "", onClick: () => void runAi("configure"), children: aiBusy === "configure" ? t("aiPreparing") : t("aiConfigure") }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", disabled: aiBusy !== "" || root === "", onClick: () => void runAi("troubleshoot"), children: aiBusy === "troubleshoot" ? t("aiPreparing") : t("aiTroubleshoot") })
       ] }),
-      aiBusy !== "" && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "renv-hint", children: t("aiSessionHint") }),
-      error !== "" && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "renv-error", children: error }),
-      tab === "run" && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(import_jsx_runtime4.Fragment, { children: [
-        configurations.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-empty", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { children: t("emptyConfigurations") }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", onClick: () => setTab("config"), children: t("goToConfig") })
-        ] }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "renv-list", children: configurations.map((configuration) => {
-          const run = runOf(configuration.id);
-          const live = run !== void 0 && LIVE_STATUSES.includes(run.status);
-          return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-card", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "renv-row renv-between", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-grow", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-title", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "renv-dot", "data-state": run?.status ?? "stopped" }),
-                configuration.name || configuration.id
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "renv-meta", children: configuration.type === "tomcat" ? `tomcat \xB7 ${configuration.tomcat.contextPath}` : configuration.command }),
-              run !== void 0 && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-meta", children: [
-                t("status"),
-                ": ",
-                statusLabel(run.status, t),
-                run.exitCode === null || run.exitCode === void 0 ? "" : ` \xB7 exit ${run.exitCode}`,
-                run.url !== void 0 && run.url !== "" ? ` \xB7 ${run.url}` : ""
-              ] })
-            ] }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-row renv-actions", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
-                "button",
-                {
-                  type: "button",
-                  className: "renv-primary",
-                  disabled: busy !== "" || live,
-                  onClick: () => void act("start", () => api.start(root, configuration.id)).then(() => openLog(configuration.id)),
-                  children: t("start")
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", disabled: busy !== "" || !live, onClick: () => void act("stop", () => api.stop(root, configuration.id)), children: t("stop") }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", onClick: () => openLog(configuration.id), children: t("logs") }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
-                "button",
-                {
-                  type: "button",
-                  onClick: () => {
-                    setEditing(configuration.id);
-                    setTab("config");
-                  },
-                  children: t("edit")
-                }
-              )
-            ] })
-          ] }, configuration.id);
-        }) }),
-        activeId !== null && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-logWrap", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-row renv-between", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("span", { className: "renv-title", children: [
-              t("logs"),
-              ": ",
-              activeId
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "renv-row", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", onClick: () => void refresh(), children: t("refresh") }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { type: "button", onClick: () => setActiveId(null), children: t("close") })
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("pre", { className: "renv-log", children: segments.map(
-            (segment, index) => segment.className === void 0 && segment.style === void 0 ? segment.text : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: segment.className, style: segment.style, children: segment.text }, index)
-          ) })
-        ] })
-      ] }),
-      tab === "config" && snapshot !== null && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
+      aiBusy !== "" && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "renv-hint", children: t("aiSessionHint") }),
+      error !== "" && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "renv-error", children: error }),
+      tab === "run" && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(import_jsx_runtime6.Fragment, { children: configurations.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "renv-empty", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { children: t("emptyConfigurations") }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { type: "button", onClick: () => setTab("config"), children: t("goToConfig") })
+      ] }) : /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "renv-list", children: configurations.map((configuration) => /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+        RunCard,
+        {
+          configuration,
+          run: runOf(configuration.id),
+          root,
+          api,
+          t,
+          open: openLogs[configuration.id] === true,
+          onToggle: toggleLog,
+          onSnapshot: applySnapshot,
+          onError: reportError,
+          onEdit: (id) => {
+            setEditing(id);
+            setTab("config");
+          },
+          onOpenUrl: openUrl
+        },
+        configuration.id
+      )) }) }),
+      tab === "config" && snapshot !== null && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
         ConfigurationSection,
         {
           snapshot,
@@ -1071,12 +1249,12 @@ function RunPanel(props) {
 }
 
 // src/client/components/EnvironmentSection.tsx
-var import_react4 = __toESM(require("react"), 1);
-var import_jsx_runtime5 = require("react/jsx-runtime");
+var import_react6 = __toESM(require("react"), 1);
+var import_jsx_runtime7 = require("react/jsx-runtime");
 function EnvironmentSection({ api, pickDirectory, t }) {
-  const [snapshot, setSnapshot] = import_react4.default.useState(null);
-  const [error, setError] = import_react4.default.useState("");
-  import_react4.default.useEffect(() => {
+  const [snapshot, setSnapshot] = import_react6.default.useState(null);
+  const [error, setError] = import_react6.default.useState("");
+  import_react6.default.useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
@@ -1090,11 +1268,11 @@ function EnvironmentSection({ api, pickDirectory, t }) {
       cancelled = true;
     };
   }, [api]);
-  if (error !== "") return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "renv renv-error", children: error });
-  if (snapshot === null) return /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "renv renv-hint", children: t("loading") });
-  return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "renv", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "renv-hint", children: t("settingsIntro") }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(EnvironmentLibrary, { snapshot, api, onSnapshot: setSnapshot, pickDirectory, t })
+  if (error !== "") return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "renv renv-error", children: error });
+  if (snapshot === null) return /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "renv renv-hint", children: t("loading") });
+  return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "renv", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "renv-hint", children: t("settingsIntro") }),
+    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(EnvironmentLibrary, { snapshot, api, onSnapshot: setSnapshot, pickDirectory, t })
   ] });
 }
 
@@ -1148,6 +1326,11 @@ var zh = {
   start: "\u542F\u52A8",
   stop: "\u505C\u6B62",
   logs: "\u65E5\u5FD7",
+  collapseLogs: "\u6536\u8D77\u65E5\u5FD7",
+  logsEmpty: "\u6682\u65E0\u65E5\u5FD7\u8F93\u51FA\u3002",
+  logLive: "\u5B9E\u65F6",
+  logWaiting: "\u8FDE\u63A5\u4E2D\u2026",
+  openInBrowser: "\u5728\u9ED8\u8BA4\u6D4F\u89C8\u5668\u4E2D\u6253\u5F00",
   refresh: "\u5237\u65B0",
   close: "\u5173\u95ED",
   edit: "\u7F16\u8F91",
@@ -1235,6 +1418,11 @@ var en = {
   start: "Start",
   stop: "Stop",
   logs: "Logs",
+  collapseLogs: "Hide logs",
+  logsEmpty: "No output yet.",
+  logLive: "live",
+  logWaiting: "connecting\u2026",
+  openInBrowser: "Open in the default browser",
   refresh: "Refresh",
   close: "Close",
   edit: "Edit",

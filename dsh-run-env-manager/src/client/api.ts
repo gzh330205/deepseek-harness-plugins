@@ -1,5 +1,5 @@
 import { ROUTE } from './constants.js';
-import type { Bindings, DevelopmentEnvironment, EnvironmentKind, RunConfiguration, Snapshot } from './types.js';
+import type { Bindings, DevelopmentEnvironment, EnvironmentKind, RunConfiguration, RunLogPayload, Snapshot } from './types.js';
 
 async function request<T>(action: string, body?: unknown): Promise<T> {
   let response: Response;
@@ -26,7 +26,8 @@ async function request<T>(action: string, body?: unknown): Promise<T> {
 }
 
 export interface RunEnvApi {
-  status(root: string): Promise<Snapshot>;
+  /** `logs=false` 时不回日志（轮询用）：面板按需再取，见 `log()`。 */
+  status(root: string, logs?: boolean): Promise<Snapshot>;
   detect(): Promise<Snapshot>;
   saveEnvironment(environment: DevelopmentEnvironment): Promise<Snapshot>;
   removeEnvironment(id: string): Promise<Snapshot>;
@@ -38,6 +39,10 @@ export interface RunEnvApi {
   removeConfiguration(root: string, id: string): Promise<Snapshot>;
   start(root: string, id: string): Promise<Snapshot>;
   stop(root: string, id: string): Promise<Snapshot>;
+  /** 一次性读某个实例的日志尾部（展开日志的首屏）。 */
+  log(root: string, id: string): Promise<RunLogPayload>;
+  /** 用系统默认浏览器打开一条 http(s) 地址（日志里点出来的链接）。 */
+  openUrl(url: string): Promise<{ opened: string }>;
   streamUrl(root: string, id: string, from: number): string;
   /** 传给 `useSnapshot` 的读取函数：所有动作都回全量快照。 */
   snapshotOf: (root: string) => Promise<Snapshot>;
@@ -46,7 +51,7 @@ export interface RunEnvApi {
 export function createApi(): RunEnvApi {
   return {
     // 只读快照走 GET（同名动作用 query 参数），其余动作一律 POST + 同源门禁。
-    status: (root) => request<Snapshot>(`status?root=${encodeURIComponent(root)}`),
+    status: (root, logs = true) => request<Snapshot>(`status?root=${encodeURIComponent(root)}${logs ? '' : '&logs=0'}`),
     detect: () => request<Snapshot>('detect', {}),
     saveEnvironment: (environment) => request<Snapshot>('saveEnvironment', { environment }),
     removeEnvironment: (id) => request<Snapshot>('removeEnvironment', { id }),
@@ -58,6 +63,8 @@ export function createApi(): RunEnvApi {
     removeConfiguration: (root, id) => request<Snapshot>('removeConfiguration', { root, id }),
     start: (root, id) => request<Snapshot>('start', { root, id }),
     stop: (root, id) => request<Snapshot>('stop', { root, id }),
+    log: (root, id) => request<RunLogPayload>(`log?root=${encodeURIComponent(root)}&id=${encodeURIComponent(id)}`),
+    openUrl: (url) => request<{ opened: string }>('openUrl', { url }),
     streamUrl: (root, id, from) => `${ROUTE}/stream?root=${encodeURIComponent(root)}&id=${encodeURIComponent(id)}&from=${from}`,
     snapshotOf: (root) => request<Snapshot>(`status?root=${encodeURIComponent(root)}`),
   };

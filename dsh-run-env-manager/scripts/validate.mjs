@@ -71,10 +71,40 @@ check('不得再出现「只包一层 cmd」的老写法 shellArgv', !processes.
 check('spawn 必须补上被 DSH 剥掉的垫片变量', /env:\s*withNodeShim\(env\)/.test(processes));
 check('启动路径必须走 planCommand', /planCommand\(configuration\.command/.test(processes));
 
+// 日志：每条运行各自一块可折叠的日志区，按需取（轮询不带日志）；
+// 日志里的地址交给系统默认浏览器打开。
+const routes = read('src/host/routes.js');
+const open = read('src/host/open.js');
+check('routes 必须提供 openUrl 动作', /async openUrl\(body\)/.test(routes));
+check('openUrl 必须调用宿主侧的默认浏览器实现', routes.includes('openInDefaultBrowser'));
+check('openUrl 不得回全量快照（点了链接不该顺带传日志）', /NO_SNAPSHOT\s*=\s*new Set\(\[[^\]]*'openUrl'/.test(routes));
+check('status 必须支持只要元数据的 logs=0', /logs.*!==\s*'0'|'logs'\)\s*!==\s*'0'/.test(routes));
+check('必须提供一次性取日志尾部的 /log 路由', routes.includes('`${ROUTE}/log`'));
+check('open.js 必须只放行 http(s)', /OPENABLE_PROTOCOLS/.test(open) && /'http:'/.test(open) && !/'file:'/.test(open));
+check('open.js 必须按平台选命令', /win32/.test(open) && /darwin/.test(open) && /xdg-open/.test(open));
+check('Windows 不得走 cmd start（`&` 会被拆成第二条命令）', !/cmd\.exe/.test(open));
+check('浏览器进程必须与宿主脱钩（detached + unref）', /detached:\s*true/.test(open) && /\.unref\(\)/.test(open));
+
+const runPanel = read('src/client/components/RunPanel.tsx');
+const runCard = read('src/client/components/RunCard.tsx');
+const runLog = read('src/client/components/RunLog.tsx');
+const urls = read('src/client/urls.js');
+for (const file of ['src/client/components/RunCard.tsx', 'src/client/components/RunLog.tsx', 'src/client/urls.js']) {
+  check(`缺少文件 ${file}`, existsSync(join(root, file)));
+}
+check('面板必须把日志交给每张卡片（一个共享日志缓冲就没有「互相独立」了）', runPanel.includes('<RunCard') && !/\blogText\b/.test(runPanel));
+check('日志展开态必须按实例 id 记', /openLogs\[configuration\.id\]/.test(runPanel));
+check('卡片必须自己持有日志与订阅（展开才连，收起即断）', /new EventSource/.test(runCard) && /api\.log\(/.test(runCard));
+check('轮询不得再要日志（logs=false）', /api\.status\(root,\s*false\)/.test(runPanel));
+check('日志文本必须经 linkify 渲染成链接', runLog.includes('linkify') && runLog.includes('onOpenUrl'));
+check('linkify 必须导出（单测直接跑它）', /export function linkify/.test(urls));
+check('地址样式类必须存在', /\.renv-log \.renv-link/.test(styles));
+
 const bundle = read('lib/client.js');
 check('状态文案必须本地化（不能再把状态枚举直接贴到界面上）', /statusStopped/.test(bundle) && !/\{run\.status\}/.test(clientEntry), 'bundle/entry');
 check('客户端产物必须带 __ModuleLoader__ 注册头', bundle.includes('__ModuleLoader__.load'));
 check(`客户端产物注册 id 必须是包名 ${ID}`, bundle.includes(`"${ID}"`));
+check('lib/client.js 是旧产物：改 src/ 后必须 pnpm build', bundle.includes('collapseLogs') && bundle.includes('renv-link'));
 
 if (failures.length > 0) {
   console.error(`validate FAILED (${failures.length}):`);

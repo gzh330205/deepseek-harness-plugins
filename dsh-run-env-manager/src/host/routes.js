@@ -10,6 +10,7 @@
 import { statSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import { detectEnvironments, buildRunEnvironment, executableFor, validateEnvironment as probeEnvironment } from './environment.js';
+import { openInDefaultBrowser } from './open.js';
 import { checkPort, inspectTomcatHome, prepareTomcat, releaseInstance } from './tomcat.js';
 import {
   ENVIRONMENT_KINDS,
@@ -91,9 +92,10 @@ export function installRoutes(ctx, { store, registry, logTailChars }) {
     return;
   }
 
-  const snapshotFor = (root) => {
+  const snapshotFor = (root, options = {}) => {
     const data = store.list();
     const workspace = typeof root === 'string' && root !== '' ? store.findWorkspace(root) : undefined;
+    const runs = registry.list();
     return {
       ok: true,
       platform: process.platform,
@@ -103,7 +105,10 @@ export function installRoutes(ctx, { store, registry, logTailChars }) {
         workspace === undefined
           ? undefined
           : { root: workspace.root, bindings: workspace.bindings, configurations: workspace.configurations },
-      runs: registry.list(),
+      // 轮询只要元数据（状态/退出码/偏移量）：日志尾部动辄 20 万字符 × 实例数，
+      // 每 2 秒回一次全量会把「多个服务同时跑」变成带宽与解析负担。日志按需取
+      // （展开时走 /log 或 SSE），显式要全量时（AI 排查）再带上。
+      runs: options.logs === false ? runs.map(({ log: _log, ...meta }) => meta) : runs,
     };
   };
 
@@ -325,7 +330,15 @@ export function installRoutes(ctx, { store, registry, logTailChars }) {
       });
       return undefined;
     },
+    /** 日志里点出来的地址：交给系统默认浏览器。只放行 http(s)（见 open.js）。 */
+    async openUrl(body) {
+      const opened = await openInDefaultBrowser(asString(body.url, 'url'));
+      return { opened };
+    },
   };
+
+  /** 这些动作不回全量快照：它们的答案与工作区状态无关，回一份只会白传日志。 */
+  const NO_SNAPSHOT = new Set(['openUrl']);
 
   ctx.webServer.register({
     kind: 'prefix',
@@ -337,7 +350,16 @@ export function installRoutes(ctx, { store, registry, logTailChars }) {
 
         if (req.method === 'GET' && path === `${ROUTE}/status`) {
           assertSameOrigin(req, false);
-          return sendJson(res, 200, snapshotFor(url.searchParams.get('root') ?? ''));
+          return sendJson(res, 200, snapshotFor(url.searchParams.get('root') ?? '', { logs: url.searchParams.get('logs') !== '0' }));
+        }
+
+        // 一次性取某个实例的内存日志尾部：面板展开一条日志时用它做首屏，
+        // 之后若实例还活着再接 SSE 增量（见浏览器半的 RunCard）。
+        if (req.method === 'GET' && path === `${ROUTE}/log`) {
+          assertSameOrigin(req, false);
+          const run = registry.get(url.searchParams.get('root') ?? '', url.searchParams.get('id') ?? '');
+          if (run === undefined) return sendJson(res, 404, { ok: false, error: '运行实例不存在。' });
+          return sendJson(res, 200, { ok: true, ...publicRunMeta(run), log: run.log });
         }
 
         if (req.method === 'GET' && path === `${ROUTE}/stream`) {
@@ -354,7 +376,8 @@ export function installRoutes(ctx, { store, registry, logTailChars }) {
         if (handler === undefined) return sendJson(res, 404, { ok: false, error: '接口不存在。' });
         const body = await jsonBody(req);
         const extra = await handler(body);
-        return sendJson(res, 200, { ...snapshotFor(typeof body.root === 'string' ? body.root : ''), ...(extra ?? {}) });
+        const root = typeof body.root === 'string' ? body.root : '';
+        return sendJson(res, 200, NO_SNAPSHOT.has(action) ? { ok: true, ...(extra ?? {}) } : { ...snapshotFor(root), ...(extra ?? {}) });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         ctx.logger?.warn?.(`run-env-manager: ${message}`);
@@ -378,7 +401,7 @@ function openStream(req, res, run, from) {
     const start = Math.max(0, cursor - run.base);
     const text = run.log.slice(start);
     cursor = run.base + run.log.length;
-    const { log, ...rest } = publicRunForStream(run);
+    const { log, ...rest } = publicRunMeta(run);
     res.write(`data: ${JSON.stringify({ ...rest, text })}\n\n`);
   };
   send();
@@ -395,7 +418,7 @@ function openStream(req, res, run, from) {
 }
 
 /** 流里不带整份日志：正文由 `text` 增量给出，避免每帧都重传全量。 */
-function publicRunForStream(run) {
+function publicRunMeta(run) {
   return {
     id: run.id,
     name: run.name,

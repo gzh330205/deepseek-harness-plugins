@@ -44,6 +44,9 @@ export interface WorkspaceView {
 
 export type RunStatus = 'starting' | 'running' | 'ready' | 'stopping' | 'stopped' | 'failed';
 
+/** 还活着的状态（日志要有 SSE 增量、停止按钮要可用）。 */
+export const LIVE_STATUSES: RunStatus[] = ['starting', 'running', 'ready', 'stopping'];
+
 export interface RunSnapshot {
   id: string;
   name: string;
@@ -57,8 +60,20 @@ export interface RunSnapshot {
   /** 绝对字符偏移：续读日志的起点。 */
   offset: number;
   base: number;
+  /**
+   * 内存日志尾部。轮询快照（`status?logs=0`）不带它——日志动不动 20 万字符，
+   * 每 2 秒回一次全量太重；展开一条日志时走 `/log` 或 SSE 按需取。
+   */
+  log?: string;
+}
+
+/** `GET /log` 的应答：单个实例的日志尾部 + 绝对偏移（展开日志时的首屏）。 */
+export interface RunLogPayload extends Omit<RunSnapshot, 'log'> {
   log: string;
 }
+
+/** 面板/i18n 的取词函数。 */
+export type Translator = (key: string, params?: Record<string, unknown>) => string;
 
 export interface Snapshot {
   platform: string;

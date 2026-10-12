@@ -1,9 +1,9 @@
 import React from 'react';
 import { errText, type RunEnvApi } from '../api.js';
-import { parseAnsi } from '../ansi.js';
 import { ConfigurationSection } from './ConfigurationSection.jsx';
+import { RunCard } from './RunCard.jsx';
 import { IconRefresh } from './icons.jsx';
-import type { RunSnapshot, Snapshot, StreamFrame } from '../types.js';
+import type { Snapshot } from '../types.js';
 
 /** 稳定兜底：`useSessions` 缺失时不订阅，而不是条件调用 hook。 */
 const NO_SUBSCRIPTION = () => undefined;
@@ -15,7 +15,6 @@ function basename(path: string): string {
   return at >= 0 ? normalized.slice(at + 1) : normalized;
 }
 const POLL_INTERVAL_MS = 2000;
-const LIVE_STATUSES: RunSnapshot['status'][] = ['starting', 'running', 'ready', 'stopping'];
 
 export interface RunPanelProps {
   api: RunEnvApi;
@@ -34,24 +33,9 @@ export interface RunPanelProps {
 
 /**
  * 运行面板：上半是「运行」，下半是「配置」。
- * 数据全部来自宿主的全量快照（动作回快照 + 2 秒轮询 + 活动实例的 SSE 日志）。
+ * 数据全部来自宿主的全量快照（动作回快照 + 2 秒轮询）；日志按卡片展开时才取
+ * （`/log` 首屏 + SSE 增量，见 RunCard），所以轮询快照只要元数据。
  */
-/** 状态 → 文案 key。running 与 ready 的圆点都是蓝色（都是运行中），两者的区别只剩这里。 */
-const STATUS_LABELS: Record<string, string> = {
-  starting: 'statusStarting',
-  running: 'statusRunning',
-  ready: 'statusReady',
-  stopping: 'statusStopping',
-  stopped: 'statusStopped',
-  failed: 'statusFailed',
-};
-
-/** 未知状态原样显示枚举，方便以后宿主加了新状态时一眼看见。 */
-function statusLabel(status: string, t: RunPanelProps['t']): string {
-  const key = STATUS_LABELS[status];
-  return key === undefined ? status : t(key);
-}
-
 export function RunPanel(props: RunPanelProps) {
   const { api, sessionId, t } = props;
   const useSessions = props.useSessions ?? (NO_SUBSCRIPTION as RunPanelProps['useSessions']);
@@ -64,22 +48,23 @@ export function RunPanel(props: RunPanelProps) {
   const [root, setRoot] = React.useState('');
   const [tab, setTab] = React.useState<'run' | 'config'>('run');
   const [editing, setEditing] = React.useState<string | null>(null);
-  const [busy, setBusy] = React.useState('');
   const [error, setError] = React.useState('');
-  const [activeId, setActiveId] = React.useState<string | null>(null);
-  const [logText, setLogText] = React.useState('');
-  const [offset, setOffset] = React.useState(0);
   const [aiBusy, setAiBusy] = React.useState('');
+  /** 日志展开了哪些卡片：按实例 id 记，多个服务各开各的。 */
+  const [openLogs, setOpenLogs] = React.useState<Record<string, boolean>>({});
+  /** 最近看过日志的配置：AI 故障排查默认排查它。 */
+  const [focusedId, setFocusedId] = React.useState<string | null>(null);
 
   // 工作区根默认跟随当前会话，之后不随会话切换抖动（用户可能正在编辑配置）。
   React.useEffect(() => {
     if (typeof sessionCwd === 'string' && sessionCwd !== '') setRoot((current) => (current === '' ? sessionCwd : current));
   }, [sessionCwd]);
 
+  // 轮询只要元数据：日志按需取，别让「多个服务同时跑」变成每 2 秒回传几份 20 万字符。
   const refresh = React.useCallback(async () => {
     if (root === '') return;
     try {
-      setSnapshot(await api.status(root));
+      setSnapshot(await api.status(root, false));
       setError('');
     } catch (cause) {
       setError(errText(cause));
@@ -93,65 +78,42 @@ export function RunPanel(props: RunPanelProps) {
     return () => clearInterval(timer);
   }, [refresh, root]);
 
-  // 日志可能到 20 万字符，解析只在文本变化时做一次（useMemo），不在每帧渲染里重跑。
-  const segments = React.useMemo(() => parseAnsi(logText), [logText]);
+  /** 卡片回调都要求稳定：稳定不了会让日志订阅每次渲染都重连。 */
+  const reportError = React.useCallback((message: string) => setError(message), []);
+  const applySnapshot = React.useCallback((next: Snapshot) => setSnapshot(next), []);
+  const toggleLog = React.useCallback((id: string, open: boolean) => {
+    setOpenLogs((current) => (current[id] === open ? current : { ...current, [id]: open }));
+    if (open) setFocusedId(id);
+  }, []);
+  const openUrl = React.useCallback(
+    (url: string) => {
+      void api.openUrl(url).catch((cause) => {
+        // 宿主打不开（例如在非桌面环境里跑 Web 端）就退回浏览器自己的能力，
+        // 两种都失败才报错——总比点了没反应好。
+        if (window.open(url, '_blank', 'noopener') === null) setError(errText(cause));
+      });
+    },
+    [api],
+  );
 
   const runs = snapshot?.runs ?? [];
   const configurations = snapshot?.workspace?.configurations ?? [];
   const runOf = (id: string) => runs.find((run) => run.id === id);
-  const activeRun = activeId === null ? undefined : runOf(activeId);
-
-  // 只在「活动实例还活着」时订阅日志；结束后服务端不再推送，连接自然收掉。
-  React.useEffect(() => {
-    if (activeRun === undefined || !LIVE_STATUSES.includes(activeRun.status)) return undefined;
-    const source = new EventSource(api.streamUrl(activeRun.root, activeRun.id, offset));
-    source.onmessage = (event) => {
-      let frame: StreamFrame;
-      try {
-        frame = JSON.parse(event.data) as StreamFrame;
-      } catch {
-        return;
-      }
-      if (frame.text !== undefined && frame.text !== '') setLogText((current) => (current + frame.text).slice(-200000));
-      setOffset(frame.offset);
-    };
-    // EventSource 自带重连；连不上时不刷错误，由显式操作报错。
-    source.onerror = () => {};
-    return () => source.close();
-    // 只依赖订阅目标与它的活动态，避免每帧日志都重连。
-  }, [api, activeRun?.root, activeRun?.id, activeRun?.status === undefined ? '' : String(LIVE_STATUSES.includes(activeRun.status))]);
-
-  const openLog = (id: string) => {
-    const run = runOf(id);
-    setActiveId(id);
-    setLogText(run?.log ?? '');
-    setOffset(run?.offset ?? 0);
-  };
-
-  const act = async (label: string, task: () => Promise<Snapshot>) => {
-    setBusy(label);
-    setError('');
-    try {
-      setSnapshot(await task());
-    } catch (cause) {
-      setError(errText(cause));
-    } finally {
-      setBusy('');
-    }
-  };
 
   const runAi = async (mode: 'configure' | 'troubleshoot') => {
     if (snapshot === null) return;
     setAiBusy(mode);
     setError('');
     try {
-      // 换会话前先拉一次最新快照：AI 拿到的是当前真实状态。
+      // 换会话前先拉一次最新快照：AI 拿到的是当前真实状态（含各实例日志尾部）。
       const latest = await api.status(root);
       setSnapshot(latest);
       if (mode === 'configure') {
         await props.agent.configure({ root, snapshot: latest });
       } else {
-        const selected = latest.workspace?.configurations?.find((item) => item.id === activeId) ?? latest.workspace?.configurations?.[0];
+        const selected =
+          latest.workspace?.configurations?.find((item) => item.id === (focusedId ?? editing)) ??
+          latest.workspace?.configurations?.[0];
         await props.agent.troubleshoot({ root, snapshot: latest, configuration: selected, panelError: error });
       }
     } catch (cause) {
@@ -169,7 +131,7 @@ export function RunPanel(props: RunPanelProps) {
         <span className="renv-headname renv-ellipsis" title={root}>
           {root === '' ? t('tabRun') : basename(root)}
         </span>
-        <button type="button" className="renv-iconbtn" title={t('refresh')} aria-label={t('refresh')} disabled={busy !== '' || root === ''} onClick={() => void refresh()}>
+        <button type="button" className="renv-iconbtn" title={t('refresh')} aria-label={t('refresh')} disabled={root === ''} onClick={() => void refresh()}>
           <IconRefresh size={15} />
         </button>
       </div>
@@ -200,82 +162,25 @@ export function RunPanel(props: RunPanelProps) {
             </div>
           ) : (
             <div className="renv-list">
-              {configurations.map((configuration) => {
-                const run = runOf(configuration.id);
-                const live = run !== undefined && LIVE_STATUSES.includes(run.status);
-                return (
-                  <div key={configuration.id} className="renv-card">
-                    <div className="renv-row renv-between">
-                      <div className="renv-grow">
-                        <div className="renv-title">
-                          <span className="renv-dot" data-state={run?.status ?? 'stopped'} />
-                          {configuration.name || configuration.id}
-                        </div>
-                        <div className="renv-meta">
-                          {configuration.type === 'tomcat'
-                            ? `tomcat · ${configuration.tomcat.contextPath}`
-                            : configuration.command}
-                        </div>
-                        {run !== undefined && (
-                          <div className="renv-meta">
-                            {t('status')}: {statusLabel(run.status, t)}
-                            {run.exitCode === null || run.exitCode === undefined ? '' : ` · exit ${run.exitCode}`}
-                            {run.url !== undefined && run.url !== '' ? ` · ${run.url}` : ''}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="renv-row renv-actions">
-                      <button
-                        type="button"
-                        className="renv-primary"
-                        disabled={busy !== '' || live}
-                        onClick={() => void act('start', () => api.start(root, configuration.id)).then(() => openLog(configuration.id))}
-                      >
-                        {t('start')}
-                      </button>
-                      <button type="button" disabled={busy !== '' || !live} onClick={() => void act('stop', () => api.stop(root, configuration.id))}>
-                        {t('stop')}
-                      </button>
-                      <button type="button" onClick={() => openLog(configuration.id)}>{t('logs')}</button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditing(configuration.id);
-                          setTab('config');
-                        }}
-                      >
-                        {t('edit')}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {activeId !== null && (
-            <div className="renv-logWrap">
-              <div className="renv-row renv-between">
-                <span className="renv-title">{t('logs')}: {activeId}</span>
-                <div className="renv-row">
-                  <button type="button" onClick={() => void refresh()}>{t('refresh')}</button>
-                  <button type="button" onClick={() => setActiveId(null)}>{t('close')}</button>
-                </div>
-              </div>
-              {/* 日志保留原始 ANSI，这里重建成带类名/内联色的片段来还原终端着色。
-                  整段解析（而不是追加式）才能正确处理被 chunk 切断的转义序列。 */}
-              <pre className="renv-log">
-                {segments.map((segment, index) =>
-                  segment.className === undefined && segment.style === undefined ? (
-                    segment.text
-                  ) : (
-                    <span key={index} className={segment.className} style={segment.style as React.CSSProperties | undefined}>
-                      {segment.text}
-                    </span>
-                  ),
-                )}
-              </pre>
+              {configurations.map((configuration) => (
+                <RunCard
+                  key={configuration.id}
+                  configuration={configuration}
+                  run={runOf(configuration.id)}
+                  root={root}
+                  api={api}
+                  t={t}
+                  open={openLogs[configuration.id] === true}
+                  onToggle={toggleLog}
+                  onSnapshot={applySnapshot}
+                  onError={reportError}
+                  onEdit={(id) => {
+                    setEditing(id);
+                    setTab('config');
+                  }}
+                  onOpenUrl={openUrl}
+                />
+              ))}
             </div>
           )}
         </>

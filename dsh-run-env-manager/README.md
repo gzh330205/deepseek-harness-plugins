@@ -6,7 +6,16 @@ DSH Web 的「运行环境管理」侧边插件：在右侧栏维护项目的运
 ## 它做什么
 
 - **右侧栏 tab**：右栏「开始」页出现「运行配置」入口卡片，点击打开「运行」tab（可关闭、可与终端/文件并排）。
-- **运行分页**：每个运行配置一张卡片（状态点、启停、日志）；顶部有 **AI 配置** 与 **AI 故障排查**。
+- **运行分页**：每个运行配置一张卡片（状态点、启停、**卡片内可折叠的日志**）；顶部有 **AI 配置** 与 **AI 故障排查**。
+  - 日志挂在**自己的运行卡片**下，默认收起，点「日志」就地展开；多个服务可以同时各开各的日志，
+    互不影响（各自一条 SSE 订阅，收起即断开）。
+  - 日志里的地址渲染成**可点链接**，**只有点击才打开**（不会自动打开任何东西）：点击 → 宿主
+    `POST /openUrl` → 系统默认浏览器。识别 `http(s)://…` 与「主机:端口」（`localhost:5173`、`127.0.0.1:3000`、
+    任意 `IPv4:端口`、`[::1]:端口`）；裸域名与不带端口的裸 IP 不认（`src/client/urls.js` 有单测）。
+    `0.0.0.0:端口` 只把链接目标换成 `127.0.0.1`，日志文字保持原样。
+  - 卡片上配置了「浏览器地址」或实例已就绪时，状态行也给出同一个入口。
+  - 日志按需取：轮询快照只回元数据（`status?logs=0`），展开时先 `GET /log` 取尾部、再从该偏移接 SSE 增量
+    —— 多个服务同时跑时，不会每 2 秒把几份 20 万字符的日志都背回浏览器。
 - **配置分页**：项目开发环境（Java/Maven/Python/Node.js/Go/Tomcat/Ant 七个下拉，未选即跟随全局默认）、
   运行配置增删改、**编辑 JSON**（整份工作区配置全量替换）、全局开发环境管理（从 PATH 检测 / 手工添加 / 验证并保存 / 设默认 / 删除）。
 - **设置页**：「全局开发环境」区渲染同一套环境库。
@@ -23,12 +32,13 @@ pnpm → cmd.exe → node` 五层链路在宿主被强杀后全部消失。
 
 插件自身在卸载（有序销毁）时也会 `terminate()` 所有实例并回收 Tomcat 的 `CATALINA_BASE`，两条路径互补。
 
-## 五个已踩实的宿主约束（改代码前先读）
+## 已踩实的宿主约束（改代码前先读）
 
 1. `ctx.subprocess` 的 handle **没有 pid**，只能 `handle.terminate()`。因此本插件只能管理**自己启动**的
    进程，**不会去纳管别处已跑着的服务**。
 2. Windows 上 `npm`/`pnpm` 是 `.cmd` 垫片，Job runner 只解析 `.com`/`.exe`，直接 spawn 会 `ENOENT`
-   —— 一律包一层 `cmd.exe /d /s /c`（POSIX 走 `bash -c`）。
+   —— 这类目标必须包一层 `cmd.exe /d /s /c`（POSIX 走 `bash -c`）；能直接 spawn 的一律直接 spawn
+   （见下面「Windows 上命令是怎么跑的」）。
 3. 父环境里名字含 `KEY`/`PASSWORD`/`SECRET`/`TOKEN` 的变量与所有 `DSH_*` 会被宿主 scrub 掉；
    要下发必须在 `spec.env` 里显式给。
 4. **输出必须用 `stdio: 'pipe'` 自己解码，不能用 collect 模式。** collect 的 `readFrom()` 内部是
@@ -43,6 +53,15 @@ pnpm → cmd.exe → node` 五层链路在宿主被强杀后全部消失。
    （`src/client/ansi.js`）：只认 SGR（颜色/粗体/下划线），清行 `[2K`、光标归位 `[1G` 这类
    **终端行为**无法在日志视图里复现，丢弃 —— 否则又是一串 `[2K` 噪音。给 AI 的排查输入
    用 `plainText()` 转纯文本。
+7. **日志偏移是续读的唯一凭据**：`EventSource` 自带的重连会沿用**建连时**的 `from`，断线期间服务端
+   新增的内容会被再推一遍（日志重复）。所以客户端在 `onerror` 里主动 `close()`，用**当前偏移**自己重连
+   （服务端从该偏移补发，不重不漏，见 `RunCard`）。
+8. **打开浏览器不能走 `ctx.subprocess`**：那条路把子进程收进宿主管理的 Job 容器，宿主退出时容器关闭会
+   连带杀掉刚打开的浏览器。`src/host/open.js` 用 Node 原生 `spawn(..., { detached: true }) + unref()`
+   让浏览器脱离宿主生命周期。Windows 上**不用 `cmd /c start`**：`&`、`%` 在 cmd 里是语法，而开发服务
+   打印的地址常带查询串（`?a=1&b=2`），`start` 会把 `&` 后面拆成第二条命令；改用
+   `rundll32 url.dll,FileProtocolHandler <url>`（单个 argv，无 shell 二次解释）。只放行 http(s)：
+   这个接口的入参来自浏览器，放开 `file:` / 自定义协议等于把「执行任意 shell 关联」的能力交出去。
 
 另有两条 DSH 客户端的坑：工具必须注册在**插件自己的上下文**里（用 `ctx.get('tools')`，不能靠
 `ctx.inject` 的子上下文，否则 agent 看不到）；客户端 `apply` 抛错会让整页 boot 失败，所以全程 try/catch 降级。
@@ -77,7 +96,7 @@ dsh plugin --profile web add ./dsh-run-env-manager
 ```bash
 pnpm install              # 安装依赖（会自动构建一次）
 pnpm build                # src/client/* → lib/client.js（esbuild，产物需提交）
-pnpm test                 # 宿主纯逻辑测试（环境解析 + Tomcat）
+pnpm test                 # 纯逻辑单测（环境解析 / Tomcat / 解码 / ANSI / 地址识别 / 浏览器打开命令）
 pnpm validate             # 脚手架约定校验
 node ./scripts/read-session.mjs <会话id片段> [关键字]   # 读 DSH 会话日志（多帧 zstd，调试 AI 通路用）
 ```
@@ -107,10 +126,18 @@ node ./scripts/read-session.mjs <会话id片段> [关键字]   # 读 DSH 会话�
 | 终端行为序列（`[2K` 清行、`[1G` 光标归位）、截断序列不显示 | ✅ |
 | 浅色/深色两套调色板各用一套配色，与日志底色同源（都跟 `body[data-ds-dark-theme]`） | ✅ |
 | 删除开发环境时级联清理引用它的默认绑定与项目绑定 | ✅ |
+| **日志按运行独立**：两个实例同时跑，各自的尾部与增量互不串台（`/log` + SSE 偏移续读） | ✅ |
+| **轮询不带日志**：`status?logs=0` 只有元数据，全量快照（AI 排查用）仍带日志 | ✅ |
+| **日志里的地址**识别（`http(s)://`、`localhost:port`，句末标点/括号不误吞）→ 宿主用系统默认浏览器打开 | ✅ |
+| `openUrl` 只放行 http(s)（`file:` 等一律 400），且不回全量快照 | ✅ |
+| 默认浏览器真的被调起（本机默认 http 处理器进程在调用后启动） | ✅ |
+| 新组件首屏渲染（卡片结构 / 折叠态 / 链接 HTML / 失败态退出码） | ✅（`react-dom/server` 渲染检查） |
 
 **未验证**：真实 Tomcat 上的完整启动与优雅关闭（本机没装 Tomcat）。托管启动的 `server.xml` 生成、
 argv 组装、`CATALINA_BASE` 隔离、token 握手都有单测覆盖（`tests/tomcat.test.js`，含用本地 TCP 服务器
 接住 token 的优雅关闭断言），但没有跑过真的 Tomcat 进程。
+另：本次改动后没有在**桌面端 GUI（正在跑旧宿主半）**里点过界面，新宿主半需要重启该 profile 的 DSH Host
+才生效（见「安装」）。
 
 ## Windows 上命令是怎么跑的（踩过的坑）
 
@@ -154,15 +181,21 @@ if defined DSH_DESKTOP_NODE_EXECUTABLE ( "%DSH_DESKTOP_NODE_EXECUTABLE%" %* ) el
 ## 架构
 
 ```
-index.js                 插件入口：Config schema（volatile）+ 装配
-src/host/contract.js     数据形状 / 三层绑定解析 / 校验
-src/host/environment.js  开发环境发现·版本探测·环境注入
-src/host/tomcat.js       Tomcat 托管启动（独立 CATALINA_BASE、server.xml、优雅关闭）
-src/host/store.js        volatile Config 读写
-src/host/processes.js    运行实例注册表（按工作区串行锁 / 就绪探测 / 日志 / 构建阶段）
-src/host/routes.js       单一前缀 + action 判别，每个动作回全量快照
-src/host/tools.js        给 AI 的 run_env_get / run_env_save
-src/client/             浏览器半（TS + esbuild）
+index.js                        插件入口：Config schema（volatile）+ 装配
+src/host/contract.js            数据形状 / 三层绑定解析 / 校验
+src/host/environment.js         开发环境发现·版本探测·环境注入
+src/host/tomcat.js              Tomcat 托管启动（独立 CATALINA_BASE、server.xml、优雅关闭）
+src/host/store.js               volatile Config 读写
+src/host/processes.js           运行实例注册表（按工作区串行锁 / 就绪探测 / 日志 / 构建阶段）
+src/host/open.js                用系统默认浏览器打开地址（按平台选命令，与宿主脱钩）
+src/host/routes.js              单一前缀 + action 判别；status（可 logs=0）/ log / stream / openUrl
+src/host/tools.js               给 AI 的 run_env_get / run_env_save
+src/client/urls.js              日志文本 → 可点链接（纯函数，单测见 tests/urls.test.js）
+src/client/ansi.js              日志 ANSI → 着色片段
+src/client/components/RunPanel.tsx  面板外壳：轮询元数据、AI 入口、配置分页
+src/client/components/RunCard.tsx   一张运行卡片：启停 + 它自己的可折叠日志与 SSE 订阅
+src/client/components/RunLog.tsx    单条日志视图：着色 + 链接 + 贴底跟随
+src/client/                     其余浏览器半（TS + esbuild）
 ```
 
 ## 版本兼容
