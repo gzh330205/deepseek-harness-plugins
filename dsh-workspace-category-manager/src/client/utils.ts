@@ -1,6 +1,6 @@
 import React from 'react';
 import { createElement as h } from 'react';
-import { COLLAPSED_CATEGORIES_FIELD, COLLAPSED_TODAY_GROUPS_FIELD, EXPANDED_WORKSPACES_FIELD, HIDDEN_TODAY_FIELD } from './constants.js';
+import { COLLAPSED_CATEGORIES_FIELD, COLLAPSED_TODAY_GROUPS_FIELD, EXPANDED_WORKSPACES_FIELD, CURRENT_SESSIONS_FIELD } from './constants.js';
 
 function useScope(scope) { return React.useSyncExternalStore((listener) => scope.subscribe(listener), () => scope.getSnapshot(), () => scope.getSnapshot()); }
     function useWorkspaceSnapshot(list) { return React.useSyncExternalStore((listener) => list.subscribe(listener), () => list.getSnapshot(), () => list.getSnapshot()); }
@@ -67,97 +67,107 @@ function useScope(scope) { return React.useSyncExternalStore((listener) => scope
     function joinDisplayPath(parent, name) { const base = String(parent ?? '').replace(/[/\\]+$/, ''); const separator = /\\/.test(base) && !/\//.test(base) ? '\\' : '/'; return `${base}${separator}${name}`; }
     function workspaceId(workspace) { return workspace.workspaceId; }
     function workspaceLabel(workspace) { return workspace.title || workspace.path?.replace(/.*[\\/]/, '') || workspace.workspaceId; }
-    /* -------------------------「今天」窗口 -------------------------
-     * The cross-project Today list is a pure projection of the Session list
-     * snapshot, so all of it lives here and stays testable without React.
-     *
-     * The day window is built from a local Date, never from `ts % 86400000`:
-     * the latter breaks on non-UTC offsets and on DST days. Callers pass `now`
-     * so a test can pin the window instead of racing the clock.
+    /* -------------------------「当前」注册表 -------------------------
+     * 「当前」不是时间窗口，而是一份**显式注册表**（Config `currentSessions`）：会话跑起来、
+     * 有新的提示词、或者你把它打开时，它才被登记进来；点「隐藏」= 从表里删掉这一条。
+     * 于是：历史会话不会自己出现（从没登记过），删掉的也不会自己回来（除非它再次运行），
+     * 而分类树、归档这些原有行为完全不受影响。全部逻辑都是纯函数，不依赖 React。
      * ------------------------------------------------------------- */
+    /** 本地零点：只用来决定行上的时间戳显示成 HH:mm（今天）还是 M/D（更早）。 */
     function startOfLocalDay(now) { const date = new Date(typeof now === 'number' ? now : Date.now()); date.setHours(0, 0, 0, 0); return date.getTime(); }
-    function msUntilNextLocalDay(now) { const at = typeof now === 'number' ? now : Date.now(); const next = new Date(at); next.setHours(24, 0, 0, 0); return Math.max(1000, next.getTime() - at); }
+    /** 读注册表：容忍残缺记录（缺字段按 0 处理），永远返回一份干净的拷贝。 */
+    function currentListOf(raw) {
+      const stored = raw !== null && typeof raw === 'object' ? raw[CURRENT_SESSIONS_FIELD] : undefined;
+      const out = {};
+      for (const [id, record] of Object.entries(stored !== null && typeof stored === 'object' ? stored : {})) {
+        const entry = record !== null && typeof record === 'object' ? record : {};
+        out[id] = { at: typeof entry.at === 'number' ? entry.at : 0, viewedAt: typeof entry.viewedAt === 'number' ? entry.viewedAt : 0 };
+      }
+      return out;
+    }
+    /** 剪掉快照里已经不存在的会话（会话被删/被清），写入时顺带跑，配置不会无限长胖。 */
+    function pruneCurrentList(records, state) {
+      const byId = state?.byId ?? {};
+      const kept = {};
+      for (const [id, record] of Object.entries(records !== null && typeof records === 'object' ? records : {})) {
+        if (byId[id] === undefined) continue;
+        kept[id] = { at: typeof record?.at === 'number' ? record.at : 0, viewedAt: typeof record?.viewedAt === 'number' ? record.viewedAt : 0 };
+      }
+      return kept;
+    }
     /**
-     * Sessions that count as「今天运行过」, newest first, minus the ones the
-     * operator temporarily removed.
+     * 「当前」要渲染的行 = 注册表 ∩ 快照，按最近活动倒序。
      *
-     * `updatedAt` is `max(createdAt, lastPromptAt)` — the Host only advances it
-     * on a durable `user/message`, so it answers "did I talk to this session
-     * today?" rather than "is work happening in it?". A session left running
-     * across midnight therefore carries yesterday's timestamp, which is why a
-     * still-running row is admitted regardless of the window (and rendered with
-     * a date instead of a clock).
-     *
-     * Excluded, in the same language as the project rows: subagent children
-     * (their titles are the spawning prompt), archived sessions, blank New
-     * Session rows other than the one currently selected, and rows whose
-     * dismissal record still applies (see {@link todayDismissed}).
+     * 排除口径与项目行一致：子代理子会话（标题就是派发它的提示词）、已归档会话、
+     * 从未发过话的空白「新会话」（正在用的那一个除外）。`unseen` = 跑完了但还没被看过
+     * （活动戳晚于最后一次把它当作当前会话看到的时间），行上据此做一个轻提示。
      * @param state - `sessions.list` snapshot.
-     * @param options - window start, current Session id, archive set, dismissals.
-     * @returns visible rows plus the dismissals that are still in force.
+     * @param options - registry, current Session id, archive set.
+     * @returns visible rows, newest first.
      */
-    function recentSessions(state, options) {
+    function currentRows(state, options) {
       const opts = options ?? {};
-      const since = typeof opts.since === 'number' ? opts.since : 0;
+      const list = opts.list !== null && typeof opts.list === 'object' ? opts.list : {};
       const byId = state?.byId ?? {};
       const ids = Array.isArray(state?.ids) && state.ids.length > 0 ? state.ids : Object.keys(byId);
       const archived = new Set(Array.isArray(opts.archivedSessionIds) ? opts.archivedSessionIds : []);
-      const hidden = pruneHiddenToday(opts.hiddenToday, state);
       const rows = [];
+      for (const id of ids) {
+        const summary = byId[id];
+        if (summary === undefined) continue;
+        if (list[id] === undefined) continue;
+        if (summary.origin === 'subagent') continue;
+        if (archived.has(id)) continue;
+        if (summary.blank === true && id !== opts.currentId) continue;
+        const at = typeof summary.updatedAt === 'number' ? summary.updatedAt : 0;
+        const running = summary.running === true;
+        const viewedAt = typeof list[id].viewedAt === 'number' ? list[id].viewedAt : 0;
+        rows.push({ id, summary, at, running, unseen: !running && at > viewedAt, label: summary.displayTitle ?? summary.title ?? id });
+      }
+      rows.sort((left, right) => right.at - left.at || (left.label < right.label ? -1 : left.label > right.label ? 1 : 0));
+      return rows;
+    }
+    /**
+     * 哪些会话需要（重新）登记进「当前」注册表 —— **只看运行**，两种事件：
+     *  1. 它刚刚开始运行（上一次观测里它还不在跑）—— 覆盖自动续跑这类没有新提示词的运行；
+     *  2. 它的活动戳前进了（你发了新提示词，也就是一次新运行）—— 也包括「隐藏之后又跟它说话」。
+     * **打开一个会话不登记**：翻一下就多出一堆条目不是这里想要的（用户明确要求）。打开只对
+     * 已经登记过的条目刷新 `viewedAt`，也就是把「跑完了还没看」的加粗标记清掉。
+     * `previous === undefined` 是「首次观测」（刚启动/刚挂载）：那时**什么都不登记** —— 没有
+     * 可比较的跃迁，历史与「一直在跑」的会话都不会被导进来，隐藏过的也不会在重启后自己回来。
+     * @returns 需要 upsert 的记录（含 viewedAt 刷新），没有变化时是空数组。
+     */
+    function registryUpdates(state, options) {
+      const opts = options ?? {};
+      const list = opts.list !== null && typeof opts.list === 'object' ? opts.list : {};
+      const first = opts.previous === undefined || opts.previous === null;
+      /* 上一次观测：{ currentId, sessions: { id: { at, running } } }。 */
+      const previous = first ? {} : opts.previous;
+      const sessions = first ? {} : previous.sessions ?? {};
+      const byId = state?.byId ?? {};
+      const ids = Array.isArray(state?.ids) && state.ids.length > 0 ? state.ids : Object.keys(byId);
+      const archived = new Set(Array.isArray(opts.archivedSessionIds) ? opts.archivedSessionIds : []);
+      const stamp = typeof opts.now === 'number' ? opts.now : Date.now();
+      const changes = [];
       for (const id of ids) {
         const summary = byId[id];
         if (summary === undefined) continue;
         if (summary.origin === 'subagent') continue;
         if (archived.has(id)) continue;
-        if (summary.blank === true && id !== opts.currentId) continue;
-        if (hidden[id] !== undefined) continue;
         const at = typeof summary.updatedAt === 'number' ? summary.updatedAt : 0;
-        const running = summary.running === true;
-        const fresh = at >= since;
-        if (!fresh && !running) continue;
-        rows.push({ id, summary, at, fresh, running, label: summary.displayTitle ?? summary.title ?? id });
+        const known = list[id];
+        const before = sessions[id];
+        const startedRunning = !first && summary.running === true && before?.running !== true;
+        const advanced = before !== undefined && at > (typeof before.at === 'number' ? before.at : 0);
+        /* 「刚打开」是一次状态跃迁：重启后 previous 为空时它也算，所以首个观测只登记当前会话。 */
+        const justOpened = id === opts.currentId && (first || previous.currentId !== id);
+        /* 登记只看运行事件；`justOpened` 只用于给已登记条目刷 viewedAt。 */
+        const fresh = startedRunning || advanced;
+        const viewedAt = justOpened ? stamp : known === undefined ? 0 : known.viewedAt;
+        if (fresh) changes.push({ id, at: at > 0 ? at : stamp, viewedAt });
+        else if (known !== undefined && justOpened) changes.push({ id, at: known.at, viewedAt: stamp });
       }
-      rows.sort((left, right) => right.at - left.at || (left.label < right.label ? -1 : left.label > right.label ? 1 : 0));
-      return { rows, hidden };
-    }
-    /**
-     * A「临时移除」record still applies until the operator talks to the Session
-     * again — one durable activity stamp that moved on. That single signal is
-     * deliberate: "只有重新跟它对话才回来" is predictable, and it means hiding a
-     * Session that is running keeps it hidden instead of popping back on the
-     * next turn.
-     * @param record - facts captured when the row was removed.
-     * @param summary - current Session list row.
-     * @returns whether the record still hides the Session.
-     */
-    function todayDismissed(record, summary) {
-      if (record === null || typeof record !== 'object') return false;
-      const at = typeof summary?.updatedAt === 'number' ? summary.updatedAt : 0;
-      return at <= (typeof record.updatedAt === 'number' ? record.updatedAt : 0);
-    }
-    /** Read the「临时移除」map off the plugin Config snapshot value. */
-    function hiddenTodayOf(raw) {
-      const stored = raw !== null && typeof raw === 'object' ? raw[HIDDEN_TODAY_FIELD] : undefined;
-      return stored !== null && typeof stored === 'object' ? stored : {};
-    }
-    /**
-     * Keep only the records that still hide something, on a Session the list
-     * still knows. Runs on every write (like the expansion suppression lists) so
-     * a long-lived profile cannot accumulate dead entries.
-     * @param records - merged dismissal map about to be persisted.
-     * @param state - `sessions.list` snapshot.
-     * @returns the pruned map.
-     */
-    function pruneHiddenToday(records, state) {
-      const byId = state?.byId ?? {};
-      const kept = {};
-      for (const [id, record] of Object.entries(records !== null && typeof records === 'object' ? records : {})) {
-        const summary = byId[id];
-        if (summary === undefined) continue;
-        if (!todayDismissed(record, summary)) continue;
-        kept[id] = record;
-      }
-      return kept;
+      return changes;
     }
     const pad2 = (value) => String(value).padStart(2, '0');
     /** Row-stamp: clock while it is still today, calendar day for an overnight runner. */
@@ -195,7 +205,7 @@ function useScope(scope) { return React.useSyncExternalStore((listener) => scope
      * keep each group's rows in the recency order the selector already produced.
      * Sessions without a project fall into one label-less group the renderer
      * shows as Uncategorized.
-     * @param rows - `recentSessions` rows.
+      * @param rows - `currentRows` rows.
      * @param workspaces - Workspace list snapshot.
      * @returns groups carrying key, label, newest stamp, and member rows.
      */
@@ -211,4 +221,4 @@ function useScope(scope) { return React.useSyncExternalStore((listener) => scope
       return [...groups.values()].sort((left, right) => right.at - left.at || (left.label < right.label ? -1 : left.label > right.label ? 1 : 0));
     }
 
-export { useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, repoNameFromUrl, joinDisplayPath, workspaceId, workspaceLabel, errText, closedCategories, closedTodayGroups, openWorkspaces, retainIds, persistExpansion, nextOverrideGeneration, startOfLocalDay, msUntilNextLocalDay, recentSessions, formatStamp, projectLabelOf, projectGroupOf, groupTodayRows, todayDismissed, hiddenTodayOf, pruneHiddenToday };
+export { currentListOf, pruneCurrentList, currentRows, registryUpdates, useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, repoNameFromUrl, joinDisplayPath, workspaceId, workspaceLabel, errText, closedCategories, closedTodayGroups, openWorkspaces, retainIds, persistExpansion, nextOverrideGeneration, startOfLocalDay, formatStamp, projectLabelOf, projectGroupOf, groupTodayRows };

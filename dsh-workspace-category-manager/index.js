@@ -37,17 +37,12 @@ export const Config = z.object({
    * the persisted value small and the "expanded" default implicit. */
   collapsedCategories: z.array(z.string()).default([]).volatile(),
   expandedWorkspaces: z.array(z.string()).default([]).volatile(),
-  /* 「今天」列表里被临时移除的会话：id → 移除那一刻观察到的事实（`at` 是移除的墙钟
-   * 时间，用于识别同一次点击的落盘；`updatedAt` 是当时的会话活动戳）。只有「重新跟
-   * 这个会话对话」让 `updatedAt` 前进时，这条记录才失效、行才回来——所以它是「临时
-   * 移除」而不是排除名单，也不会随使用无限增长（下次写入顺带剪掉失效项）。 */
-  hiddenToday: z.dict(z.object({
-    /* 两个事实都给默认值而不是 required：客户端写的记录一定是完整的，但手改过
-     * patch 的残缺记录不该让整份配置校验失败（默认值下这条记录不隐藏任何东西，
-     * 下次写入就会被剪掉）。 */
-    at: z.number().default(0),
-    updatedAt: z.number().default(0),
-  })).default({}).volatile(),
+  /* 「当前」是一份**显式注册表**，不是时间窗口：会话跑起来（或你打开它）时才登记进来，
+   * 点「隐藏」就是把这一条删掉。历史会话不会自己冒出来 —— 没登记过的就是不显示；删掉的
+   * 也不会自己回来，除非它再次运行（那时重新登记）。at = 登记时的活动戳，viewedAt = 最后
+   * 一次把它当作当前会话看到的时间（用来标「跑完了还没看」）。两个字段都给默认值而不是
+   * required：客户端写的记录一定完整，但手改过的残缺记录不该让整份配置校验失败。 */
+  currentSessions: z.dict(z.object({ at: z.number().default(0), viewedAt: z.number().default(0) })).default({}).volatile(),
   /* 「今天」里按项目分组后，被收起的项目分组（同样是 SUPPRESSION 列表：只存收起
    * 的那一侧，所以默认是「今天有哪些项目就都展开」）。分组键由工作区身份或目录路径
    * 派生，不是显示名，所以重命名项目不会丢折叠状态。 */

@@ -1,7 +1,7 @@
 import React from 'react';
 import { createElement as h } from 'react';
-import { useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, repoNameFromUrl, joinDisplayPath, workspaceId, workspaceLabel, errText, closedCategories, closedTodayGroups, openWorkspaces, retainIds, persistExpansion, nextOverrideGeneration, startOfLocalDay, msUntilNextLocalDay, recentSessions, formatStamp, projectLabelOf, groupTodayRows, hiddenTodayOf, pruneHiddenToday } from '../utils.js';
-import { COLLAPSED_CATEGORIES_FIELD, COLLAPSED_TODAY_GROUPS_FIELD, EXPANDED_WORKSPACES_FIELD, TODAY_FOLDER_ID, HIDDEN_TODAY_FIELD } from '../constants.js';
+import { useScope, useWorkspaceSnapshot, useSessionsSnapshot, configOf, currentSessionId, repoNameFromUrl, joinDisplayPath, workspaceId, workspaceLabel, errText, closedCategories, closedTodayGroups, openWorkspaces, retainIds, persistExpansion, nextOverrideGeneration, startOfLocalDay, formatStamp, projectLabelOf, groupTodayRows, pruneCurrentList, currentListOf, currentRows, registryUpdates } from '../utils.js';
+import { COLLAPSED_CATEGORIES_FIELD, COLLAPSED_TODAY_GROUPS_FIELD, EXPANDED_WORKSPACES_FIELD, TODAY_FOLDER_ID, CURRENT_SESSIONS_FIELD } from '../constants.js';
 import { Dialog, CategoryForm } from './dialogs.jsx';
 import { IconFolderClose16, IconFolderOpen16, IconTriangleRightFill14, IconPlusOutline16, IconPersonalizationOutline16, IconProjectAddOutline16, IconEllipsisOutline16, IconTrashOutline16, IconTagOutline16, IconClock16, IconEyeOffOutline16, IconLocate16, IconFoldAll16, IconUnfoldAll16 } from './icons.jsx';
 import { StateDot } from './StateDot.jsx';
@@ -19,7 +19,7 @@ const visiblePendingKind = (kind) => kind === 'approval' || kind === 'plan-revie
 const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summary.id); const pendingKind = visiblePendingKind(raw?.kind ?? raw?.pendingInteraction?.kind); const running = raw?.running ?? summary.running === true; const completed = raw?.completionUnread ?? summary.completed === true; return pendingKind !== undefined ? 'warning' : running ? 'running' : completed ? 'done' : undefined; };
 
     function CategorySidebar({ api, wide, expandSidebar, t, now }) {
-            const scope = api.configForms; const snapshot = useScope(scope); const workspaceState = useWorkspaceSnapshot(api.workspacesList); const sessionState = useSessionsSnapshot(api.sessionsList); const config = configOf(scope); const [failure, setFailure] = React.useState(''); const [collapseOverrides, setCollapseOverrides] = React.useState({}); const [orderBy, setOrderBy] = React.useState('manual'); const [menuOpen, setMenuOpen] = React.useState(false); const [addError, setAddError] = React.useState(null); const [menuFor, setMenuFor] = React.useState(null); const [renameTarget, setRenameTarget] = React.useState(null); const [renameDraft, setRenameDraft] = React.useState(''); const [renameBusy, setRenameBusy] = React.useState(false); const [renameError, setRenameError] = React.useState(''); const [deleteTarget, setDeleteTarget] = React.useState(null); const [deleteBusy, setDeleteBusy] = React.useState(false); const [deleteError, setDeleteError] = React.useState(''); const [addCategoryOpen, setAddCategoryOpen] = React.useState(false); const [addOpen, setAddOpen] = React.useState(false); const [addDraft, setAddDraft] = React.useState({ mode: 'local', path: '', group: '', url: '', branch: '', folder: '', parent: '' }); const [addBusy, setAddBusy] = React.useState(false); const [addFormError, setAddFormError] = React.useState(''); const [addCloning, setAddCloning] = React.useState(false); const [gitAvailable, setGitAvailable] = React.useState(false); const [dissolveTarget, setDissolveTarget] = React.useState(null); const [dissolveBusy, setDissolveBusy] = React.useState(false); const [dissolveError, setDissolveError] = React.useState(''); const dragRef = React.useRef({ kind: null, id: null, el: null, over: null }); const pendingOverrides = React.useRef(new Map()); /* Bumped by the midnight/visibility effect so the Today window is recomputed while the app stays open. */ const [, setClockTick] = React.useState(0); /*「今天」的临时移除：id → 记录（隐藏）或 null（强制显示），Host 确认后自动退休。 */ const [hideOverrides, setHideOverrides] = React.useState({}); const [locateTarget, setLocateTarget] = React.useState(null);
+            const scope = api.configForms; const snapshot = useScope(scope); const workspaceState = useWorkspaceSnapshot(api.workspacesList); const sessionState = useSessionsSnapshot(api.sessionsList); const config = configOf(scope); const [failure, setFailure] = React.useState(''); const [collapseOverrides, setCollapseOverrides] = React.useState({}); const [orderBy, setOrderBy] = React.useState('manual'); const [menuOpen, setMenuOpen] = React.useState(false); const [addError, setAddError] = React.useState(null); const [menuFor, setMenuFor] = React.useState(null); const [renameTarget, setRenameTarget] = React.useState(null); const [renameDraft, setRenameDraft] = React.useState(''); const [renameBusy, setRenameBusy] = React.useState(false); const [renameError, setRenameError] = React.useState(''); const [deleteTarget, setDeleteTarget] = React.useState(null); const [deleteBusy, setDeleteBusy] = React.useState(false); const [deleteError, setDeleteError] = React.useState(''); const [addCategoryOpen, setAddCategoryOpen] = React.useState(false); const [addOpen, setAddOpen] = React.useState(false); const [addDraft, setAddDraft] = React.useState({ mode: 'local', path: '', group: '', url: '', branch: '', folder: '', parent: '' }); const [addBusy, setAddBusy] = React.useState(false); const [addFormError, setAddFormError] = React.useState(''); const [addCloning, setAddCloning] = React.useState(false); const [gitAvailable, setGitAvailable] = React.useState(false); const [dissolveTarget, setDissolveTarget] = React.useState(null); const [dissolveBusy, setDissolveBusy] = React.useState(false); const [dissolveError, setDissolveError] = React.useState(''); const dragRef = React.useRef({ kind: null, id: null, el: null, over: null }); const pendingOverrides = React.useRef(new Map()); /* Bumped by the midnight/visibility effect so the Today window is recomputed while the app stays open. */ const [, setClockTick] = React.useState(0); /*「今天」的临时移除：id → 记录（隐藏）或 null（强制显示），Host 确认后自动退休。 */ const [registryOverride, setRegistryOverride] = React.useState(null); /* 上一次观测到的会话状态（ref 而不是状态：它不参与渲染）。 */ const observation = React.useRef(undefined); const [locateTarget, setLocateTarget] = React.useState(null);
       const list = workspaceState.items ?? []; const byId = sessionState.byId ?? {}; const currentId = currentSessionId(sessionState);
       const sessionStatuses = useSessionStatuses(api);
       const startSession = (workspace) => api.startSession(workspaceId(workspace));
@@ -41,24 +41,31 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
       const idsOfWorkspaces = () => new Set(list.map((workspace) => workspaceId(workspace)));
       const isCollapsed = (id) => { const entry = collapseOverrides[id]; return entry === undefined || entry.field !== COLLAPSED_CATEGORIES_FIELD ? persistedCollapsed.has(id) : entry.value; };
       const isWorkspaceOpen = (id) => { const entry = collapseOverrides[id]; return entry === undefined || entry.field !== EXPANDED_WORKSPACES_FIELD ? persistedWorkspaces.has(id) : entry.value; };
-      /* ---------------- 今天（跨项目）----------------
-       * `now` is the test seam: production passes nothing and reads the wall
-       * clock on every render, tests pin the window instead of racing midnight.
-       * The window is a local-day boundary, so it must come from a Date — a
-       * `ts % 86400000` shortcut breaks on non-UTC offsets and on DST days. */
+      /* ---------------- 当前（跨项目，显式注册表）----------------
+       * 「当前」不是时间窗口，而是一份注册表（Config `currentSessions`）：会话跑起来、有新的
+       * 提示词、或你把它打开时登记进来；点「隐藏」= 从表里删掉。所以历史会话不会自己出现，
+       * 删掉的也不会自己回来（除非再次运行）。`dayStart` 只用于时间戳显示成 HH:mm 还是 M/D。 */
       const nowMs = typeof now === 'number' ? now : Date.now();
       const dayStart = startOfLocalDay(nowMs);
-      const persistedHidden = hiddenTodayOf(config);
-      /* 点「从今天隐藏」要立刻消失，不能等设置回写（几百 ms 到一秒），所以乐观值
-       * 先行：id → 记录 = 现在隐藏，id → null = 现在强制显示（「恢复」用）。 */
-      const mergedHidden = () => {
-        const merged = { ...persistedHidden };
-        Object.entries(hideOverrides).forEach(([id, override]) => { if (override === null) delete merged[id]; else merged[id] = override; });
-        return merged;
-      };
-      const today = recentSessions(sessionState, { since: dayStart, currentId, archivedSessionIds: workspaceState.archivedSessionIds, hiddenToday: mergedHidden() });
-      const todayRows = today.rows;
-      const todayHidden = Object.keys(today.hidden).length;
+      const persistedList = currentListOf(config);
+      /* 登记/隐藏都先改本地副本（点下去立刻见效果），Host 快照确认后乐观值退休。 */
+      const currentList = registryOverride === null ? persistedList : registryOverride;
+      const todayRows = currentRows(sessionState, { list: currentList, currentId, archivedSessionIds: workspaceState.archivedSessionIds });
+      /* 观测登记：`observation` 存的是「上一次看到的会话状态」，不是配置，所以重启后为空 ——
+       * 首次观测只登记当前打开的会话，不会把历史或「一直在跑」的会话导进来（隐藏过的因此
+       * 不会在重启后自己回来）。 */
+      React.useEffect(() => {
+        const seen = observation.current;
+        const changes = registryUpdates(sessionState, { list: currentList, previous: seen, currentId, archivedSessionIds: workspaceState.archivedSessionIds, now: nowMs });
+        const next = { currentId, sessions: {} };
+        (Array.isArray(sessionState?.ids) ? sessionState.ids : []).forEach((id) => { const summary = sessionState.byId[id]; if (summary !== undefined) next.sessions[id] = { at: summary.updatedAt ?? 0, running: summary.running === true }; });
+        observation.current = next;
+        if (changes.length === 0) return;
+        const merged = { ...currentList };
+        changes.forEach((change) => { merged[change.id] = { at: change.at, viewedAt: change.viewedAt }; });
+        setRegistryOverride(merged);
+        scope.set(CURRENT_SESSIONS_FIELD, pruneCurrentList(merged, sessionState)).catch((reason) => { setFailure(errText(reason)); });
+      });
       /* 项目名不再逐行重复，而是单独成组：分组标题可折叠，分组内仍按时间倒序；
        * 分组的 id 全集只在「今天」里出现过的项目，所以持久化的折叠列表不会残留。 */
       const todayGroups = groupTodayRows(todayRows, list);
@@ -68,19 +75,9 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
       /* 「定位」用的反查索引：会话 → 归属工作区。一次遍历建好，避免每行各扫一遍列表。 */
       const workspaceBySession = new Map();
       list.forEach((workspace) => (workspace.sessionIds ?? []).forEach((sessionId) => workspaceBySession.set(sessionId, workspaceId(workspace))));
-      /* 乐观值一旦被 Host 快照确认就退休：隐藏值以「Host 的记录不旧于本地记录」为准，
-       * 强制显示以「Host 已经没有这条记录」为准。失效的记录不会一直留着。 */
+      /* 乐观值一旦被 Host 快照确认就退休（登记和隐藏走同一份比较）。 */
       React.useEffect(() => {
-        const ids = Object.keys(hideOverrides);
-        if (ids.length === 0) return;
-        const survivor = {};
-        for (const id of ids) {
-          const override = hideOverrides[id];
-          const stored = persistedHidden[id];
-          const settled = override === null ? stored === undefined : stored !== undefined && stored.at >= override.at;
-          if (!settled) survivor[id] = override;
-        }
-        if (Object.keys(survivor).length !== ids.length) setHideOverrides(survivor);
+        if (registryOverride !== null && JSON.stringify(persistedList) === JSON.stringify(registryOverride)) setRegistryOverride(null);
       });
       /* `phase: 'pending'` means no list pull has landed yet, so an empty member
        * set there is "nothing arrived", not "nothing today" — the hint waits for
@@ -96,12 +93,9 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
        * has its timer throttled and would otherwise keep showing yesterday. */
       React.useEffect(() => {
         if (typeof document === 'undefined') return undefined;
-        let timer = 0;
-        const arm = () => { timer = setTimeout(() => { setClockTick((value) => value + 1); arm(); }, msUntilNextLocalDay(Date.now())); };
         const onVisible = () => { if (document.visibilityState === 'visible') setClockTick((value) => value + 1); };
-        arm();
         document.addEventListener('visibilitychange', onVisible);
-        return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', onVisible); };
+        return () => { document.removeEventListener('visibilitychange', onVisible); };
       }, []);
       /* An override is dropped once it is both settled (its write answered) and
        * confirmed by the snapshot, or once the id no longer exists — so the Host
@@ -178,14 +172,14 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
         const expire = setTimeout(() => setLocateTarget(null), 2200);
         return () => { clearTimeout(first); clearTimeout(settle); clearTimeout(expire); };
       }, [locateTarget]);
-      /* 「从今天隐藏」是临时移除，不是排除名单：记录里带着移除那一刻的活动戳，
-       * 只有**重新跟这个会话对话**（updatedAt 前进）才会让它失效、行自己回来 ——
-       * 没有恢复按钮，也没有定时器；写入前先剪枝，字段只保留还有效的条目。 */
+      /* 「隐藏」= 把这一条从注册表里删掉（用户的原话就是「从配置里删除」）。本地副本先改，
+       * 点下去立刻消失；Host 确认后乐观值退休。删掉的不会自己回来，除非它再次运行 ——
+       * 那时登记逻辑会重新登记它。分类树与归档完全不受影响。 */
       const hideFromToday = (row) => {
-        const record = { at: Date.now(), updatedAt: row.at };
-        setHideOverrides((previous) => ({ ...previous, [row.id]: record }));
-        const merged = { ...mergedHidden(), [row.id]: record };
-        scope.set(HIDDEN_TODAY_FIELD, pruneHiddenToday(merged, sessionState)).catch((reason) => { setFailure(errText(reason)); });
+        const without = { ...currentList };
+        delete without[row.id];
+        setRegistryOverride(without);
+        scope.set(CURRENT_SESSIONS_FIELD, pruneCurrentList(without, sessionState)).catch((reason) => { setFailure(errText(reason)); });
       };
       const sessionsOf = (workspace) => { const archived = new Set(workspaceState.archivedSessionIds ?? []); return (workspace.sessionIds ?? []).map((id) => byId[id]).filter((summary) => summary !== undefined && summary.origin !== 'subagent' && !archived.has(summary.id) && (!summary.blank || summary.id === currentId)); };
       const runningOf = (workspace) => (workspace.sessionIds ?? []).some((id) => byId[id]?.running === true);
@@ -260,7 +254,7 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
       /* One definition of the project menu: right-clicking the project row and the
        *「当前」group header's locate button must offer exactly the same actions. */
       const workspaceMenuItems = (id, label) => [menuItem(t('rename'), false, () => { setRenameTarget({ kind: 'workspace', id, title: label }); setRenameDraft(label); setRenameError(''); }), menuItem(t('deleteWorkspace'), true, () => setDeleteTarget({ id, label }))];
-      const sessionRow = (summary, extras) => { const opts = extras ?? {}; const status = sessionStatusOf(summary, sessionStatuses); const showStatus = status !== undefined; const title = summary.blank ? t('newSession') : summary.displayTitle ?? summary.title ?? summary.id; const openIt = () => { openSession(summary.id); }; const sessMenuOpen = menuFor !== null && menuFor.kind === 'session' && menuFor.id === summary.id; return h('div', { className: `wcm-session${summary.id === currentId ? ' wcm-current' : ''}${opts.highlight === true ? ' wcm-locateHit' : ''}`, key: summary.id, role: 'button', tabIndex: 0, ...(opts.anchor === true ? { 'data-wcm-tree-session': summary.id } : {}), title: opts.tooltip ?? summary.cwd, onClick: (event) => { event.stopPropagation(); openIt(); }, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openIt(); } }, onContextMenu: (event) => openMenuAt('session', summary.id, event) }, h('span', { className: 'wcm-sessionStatus' }, showStatus ? sessionStatusDot(status) : null), ...(opts.leading ?? []), h('span', { className: 'wcm-sessionTitle' }, title), ...(opts.trailing ?? []), sessMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t('rename'), false, () => { setRenameTarget({ kind: 'session', id: summary.id, title }); setRenameDraft(title); setRenameError(''); }), menuItem(t('fork'), false, () => forkSession(summary.id)), menuItem(t('archive'), false, () => archiveSession(summary.id))) : null); };
+      const sessionRow = (summary, extras) => { const opts = extras ?? {}; const status = sessionStatusOf(summary, sessionStatuses); const showStatus = status !== undefined; const title = summary.blank ? t('newSession') : summary.displayTitle ?? summary.title ?? summary.id; const openIt = () => { openSession(summary.id); }; const sessMenuOpen = menuFor !== null && menuFor.kind === 'session' && menuFor.id === summary.id; return h('div', { className: `wcm-session${summary.id === currentId ? ' wcm-current' : ''}${opts.highlight === true ? ' wcm-locateHit' : ''}`, key: summary.id, role: 'button', tabIndex: 0, ...(opts.anchor === true ? { 'data-wcm-tree-session': summary.id } : {}), title: opts.tooltip ?? summary.cwd, onClick: (event) => { event.stopPropagation(); openIt(); }, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openIt(); } }, onContextMenu: (event) => openMenuAt('session', summary.id, event) }, h('span', { className: 'wcm-sessionStatus' }, showStatus ? sessionStatusDot(status) : null), ...(opts.leading ?? []), h('span', { className: `wcm-sessionTitle${opts.unseen === true ? ' wcm-unseen' : ''}` }, title), ...(opts.trailing ?? []), sessMenuOpen ? popoverAt(menuFor.x, menuFor.y, menuItem(t('rename'), false, () => { setRenameTarget({ kind: 'session', id: summary.id, title }); setRenameDraft(title); setRenameError(''); }), menuItem(t('fork'), false, () => forkSession(summary.id)), menuItem(t('archive'), false, () => archiveSession(summary.id))) : null); };
             const project = (workspace) => { const id = workspaceId(workspace); const rows = sessionsOf(workspace); const expanded = wide && isWorkspaceOpen(id); const wsStatus = statusOfWorkspace(workspace); const label = workspaceLabel(workspace); const act = () => { if (wide) toggleProject(id); else startSession(workspace); }; const wsMenuOpen = menuFor !== null && menuFor.kind === 'workspace' && menuFor.id === id; return h('div', { className: `wcm-projectRow${expanded ? ' wcm-open' : ''}`, key: id, draggable: wide, title: workspace.path, role: 'button', tabIndex: 0, onClick: act, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); act(); } }, onDragStart: wide ? dragStart('project', id) : undefined, onDragOver: wide ? dragOverProject(id) : undefined, onDrop: wide ? dropOnProject(id) : undefined, onDragEnd: wide ? dragEnd : undefined, onContextMenu: wide ? (event) => openMenuAt('workspace', id, event) : undefined }, h('div', { className: 'wcm-projectLine' }, statusIconSlot(wsStatus, expanded ? h(IconFolderOpen16) : h(IconFolderClose16)), h('span', { className: 'wcm-projectLabel' }, label), wide ? h('button', { className: 'wcm-projectAdd', title: t('newSession'), onClick: (event) => { event.stopPropagation(); startSession(workspace); } }, h(IconPlusOutline16)) : null), wsMenuOpen ? popoverAt(menuFor.x, menuFor.y, ...workspaceMenuItems(id, label)) : null, h('div', { className: `wcm-sessions${expanded ? '' : ' wcm-closed'}` }, h('div', { className: 'wcm-sessionsInner' }, rows.map((summary) => sessionRow(summary, { anchor: true, highlight: locateTarget !== null && locateTarget.id === summary.id }))))); };
       const folder = (f) => { const isUncategorized = f.id === '__uncategorized__'; const open = wide && !isCollapsed(f.id); const status = statusOfCategory(f); const onToggle = () => { if (wide) toggleFolder(f.id); else if (expandSidebar !== undefined) expandSidebar(); }; return h('div', { className: 'wcm-folderWrap', key: f.id }, h('div', { className: `wcm-folderRow${open ? ' wcm-open' : ''}`, draggable: wide && !isUncategorized, role: 'button', tabIndex: 0, title: f.name, onClick: onToggle, onKeyDown: (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onToggle(); } }, onDragStart: wide && !isUncategorized ? dragStart('folder', f.id) : undefined, onDragOver: wide ? dragOverFolder(f.id) : undefined, onDrop: wide ? dropOnFolder(f.id) : undefined, onDragEnd: wide ? dragEnd : undefined, onContextMenu: wide && !isUncategorized ? (event) => openMenuAt('folder', f.id, event) : undefined }, statusIconSlot(status, h('span', { className: 'wcm-rowIcon wcm-rowIconCategory', style: { color: f.color } }, h(IconTagOutline16))), h('span', { className: 'wcm-folderLabel' }, f.name), h('span', { className: 'wcm-folderCount' }, f.projects.length), menuFor !== null && menuFor.kind === 'folder' && menuFor.id === f.id ? popoverAt(menuFor.x, menuFor.y, menuItem(t('dissolveCategory'), true, () => setDissolveTarget({ id: f.id, name: f.name }))) : null), h('div', { className: `wcm-folderProjects${open ? '' : ' wcm-closed'}` }, h('div', { className: 'wcm-folderProjectsInner' }, f.projects.map(project)))); };
       /* 「今天」is a view over the same Sessions, not a category: it renders
@@ -273,8 +267,8 @@ const sessionStatusOf = (summary, statuses) => { const raw = statuses.get(summar
           h('span', { className: 'wcm-folderCount' }, todayRows.length)),
         h('div', { className: `wcm-sessions${todayOpen ? '' : ' wcm-closed'}` },
           h('div', { className: 'wcm-sessionsInner' }, todayRows.length > 0
-            ? todayGroups.map((group) => { const open = wide && !isGroupCollapsed(group.key); const label = group.label === '' ? t('uncategorized') : group.label; return h('div', { className: 'wcm-todayGroupWrap', key: group.key }, h('button', { className: `wcm-todayGroup${open ? ' wcm-open' : ''}`, type: 'button', title: `${label} · ${group.rows.length}`, 'aria-expanded': open, onClick: (event) => { event.stopPropagation(); toggleTodayGroup(group.key); } }, h('span', { className: 'wcm-todayGroupCaret' }, h(IconTriangleRightFill14)), h('span', { className: 'wcm-todayGroupLabel' }, label), h('span', { className: 'wcm-todayGroupCount' }, group.rows.length)), h('div', { className: `wcm-todayGroupRows${open ? '' : ' wcm-closed'}` }, group.rows.map((row) => { const rowLabel = projectLabelOf(row.summary.cwd, list); const tooltip = rowLabel === '' ? row.summary.cwd : `${rowLabel} · ${row.summary.cwd ?? ''}${row.fresh ? '' : ` · ${t('todayOvernight')}`}`; return sessionRow(row.summary, { tooltip, leading: [h('span', { className: 'wcm-todayTime', key: 'time' }, formatStamp(row.at, dayStart))], trailing: [wide && workspaceBySession.has(row.id) ? h('button', { className: 'wcm-sessionLocate', key: 'locate', type: 'button', title: t('locateSession'), 'aria-label': t('locateSession'), onClick: (event) => { event.stopPropagation(); locateSession(row.id); } }, h(IconLocate16)) : null, wide ? h('button', { className: 'wcm-todayHide', key: 'hide', type: 'button', title: t('todayHide'), 'aria-label': t('todayHide'), onClick: (event) => { event.stopPropagation(); hideFromToday(row); } }, h(IconEyeOffOutline16)) : null] }); }))); })
-            : sessionsReady && todayHidden === 0 ? h('p', { className: 'wcm-todayEmpty', key: 'today-empty' }, t('todayEmpty')) : null)));
+            ? todayGroups.map((group) => { const open = wide && !isGroupCollapsed(group.key); const label = group.label === '' ? t('uncategorized') : group.label; return h('div', { className: 'wcm-todayGroupWrap', key: group.key }, h('button', { className: `wcm-todayGroup${open ? ' wcm-open' : ''}`, type: 'button', title: `${label} · ${group.rows.length}`, 'aria-expanded': open, onClick: (event) => { event.stopPropagation(); toggleTodayGroup(group.key); } }, h('span', { className: 'wcm-todayGroupCaret' }, h(IconTriangleRightFill14)), h('span', { className: 'wcm-todayGroupLabel' }, label), h('span', { className: 'wcm-todayGroupCount' }, group.rows.length)), h('div', { className: `wcm-todayGroupRows${open ? '' : ' wcm-closed'}` }, group.rows.map((row) => { const rowLabel = projectLabelOf(row.summary.cwd, list); const tooltip = rowLabel === '' ? row.summary.cwd : `${rowLabel} · ${row.summary.cwd ?? ''}${row.unseen === true ? ` · ${t('unseenHint')}` : ''}`; return sessionRow(row.summary, { tooltip, unseen: row.unseen === true, leading: [h('span', { className: 'wcm-todayTime', key: 'time' }, formatStamp(row.at, dayStart))], trailing: [wide && workspaceBySession.has(row.id) ? h('button', { className: 'wcm-sessionLocate', key: 'locate', type: 'button', title: t('locateSession'), 'aria-label': t('locateSession'), onClick: (event) => { event.stopPropagation(); locateSession(row.id); } }, h(IconLocate16)) : null, wide ? h('button', { className: 'wcm-todayHide', key: 'hide', type: 'button', title: t('todayHide'), 'aria-label': t('todayHide'), onClick: (event) => { event.stopPropagation(); hideFromToday(row); } }, h(IconEyeOffOutline16)) : null] }); }))); })
+            : sessionsReady ? h('p', { className: 'wcm-todayEmpty', key: 'today-empty' }, t('todayEmpty')) : null)));
       const folderTree = expansionReady ? h('div', { className: 'wcm-folders' }, todayNode, folders.map(folder)) : null;
       const sortItem = (mode, label) => h('button', { className: `wcm-menuItem${orderBy === mode ? ' wcm-menuItemOn' : ''}`, onClick: () => { setOrderBy(mode); setMenuOpen(false); } }, h('span', { className: 'wcm-menuText' }, label), orderBy === mode ? h('span', { className: 'wcm-menuCheck' }, '✓') : null);
       const headerActions = h('div', { className: 'wcm-sidebarActions' }, h('button', { className: 'wcm-iconBtn', title: t('viewOptions'), 'aria-label': t('viewOptions'), onClick: () => { setMenuFor(null); setMenuOpen((value) => !value); } }, h(IconPersonalizationOutline16)), h('button', { className: 'wcm-iconBtn', title: anyExpanded ? t('foldAll') : t('unfoldAll'), 'aria-label': anyExpanded ? t('foldAll') : t('unfoldAll'), 'aria-expanded': anyExpanded, onClick: foldAll }, h(anyExpanded ? IconFoldAll16 : IconUnfoldAll16)), h('button', { className: 'wcm-iconBtn', title: t('addCategory'), 'aria-label': t('addCategory'), onClick: () => setAddCategoryOpen(true) }, h(IconPlusOutline16)), api.canPickDirectory() ? h('button', { className: 'wcm-iconBtn', title: t('addWorkspace'), 'aria-label': t('addWorkspace'), onClick: openAddWorkspace }, h(IconProjectAddOutline16)) : null, menuOpen ? h('div', { className: 'wcm-menuWrap' }, h('div', { className: 'wcm-menuMask', onClick: () => setMenuOpen(false) }), h('div', { className: 'wcm-menu' }, h('div', { className: 'wcm-menuLabel' }, t('orderByLabel')), sortItem('manual', t('orderManual')), sortItem('updated', t('orderUpdated')))) : null);
