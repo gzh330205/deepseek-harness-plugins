@@ -7,17 +7,13 @@
  *
  * 门禁：只在本机绑定下注册；写操作要求同源浏览器请求（与 dsh-workspace-category-manager 一致）。
  */
-import { statSync } from 'node:fs';
-import { isAbsolute, resolve } from 'node:path';
-import { detectEnvironments, buildRunEnvironment, executableFor, validateEnvironment as probeEnvironment } from './environment.js';
+import { detectEnvironments, validateEnvironment as probeEnvironment } from './environment.js';
 import { openInDefaultBrowser } from './open.js';
-import { checkPort, inspectTomcatHome, prepareTomcat, releaseInstance } from './tomcat.js';
+import { startRun, stopRun } from './operations.js';
 import {
   ENVIRONMENT_KINDS,
   emptyBindings,
-  expandCwd,
   mergeDetectedEnvironments,
-  resolveBindings,
   validateLibrary,
   validateWorkspaceEntry,
 } from './contract.js';
@@ -125,77 +121,7 @@ export function installRoutes(ctx, { store, registry, logTailChars }) {
     await store.saveWorkspace(root, workspace);
   };
 
-  /** 启动前的环境组装：三层绑定 → 子进程 env + （Tomcat 时）托管启动计划。 */
-  const prepareRun = async (root, configuration) => {
-    const data = store.list();
-    const workspace = store.findWorkspace(root);
-    const bindings = resolveBindings({
-      defaults: data.defaults,
-      project: workspace?.bindings,
-      configuration: configuration.environment,
-    });
-    const built = buildRunEnvironment({
-      library: { environments: data.environments },
-      bindings,
-      configuration,
-      baseEnv: process.env,
-    });
-    const cwd = expandCwd(configuration.cwd, root);
-    if (!isAbsolute(cwd)) throw new Error(`工作目录必须是绝对路径：${cwd}`);
-    let exists = false;
-    try {
-      exists = statSync(resolve(cwd)).isDirectory();
-    } catch {
-      exists = false;
-    }
-    if (!exists) throw new Error(`工作目录不存在或不是目录：${cwd}`);
 
-    if (configuration.type !== 'tomcat') {
-      return { env: built.env, cwd, warnings: built.warnings };
-    }
-
-    // ── Tomcat：独立 CATALINA_BASE + 端口检查 + 构建命令 ───────────────
-    const byId = new Map(data.environments.map((environment) => [environment.id, environment]));
-    const tomcatEnvironment = byId.get(bindings.tomcat ?? '');
-    const javaEnvironment = byId.get(bindings.java ?? '');
-    if (tomcatEnvironment === undefined) throw new Error('请先为项目或本配置选择 Tomcat 环境。');
-    if (javaEnvironment === undefined) throw new Error('请先为项目或本配置选择 Java / JDK 环境。');
-    // Tomcat 的 path 本身就是 home（启动用 java + bootstrap.jar，不经过 catalina 脚本），
-    // 所以这里直接拿路径做结构校验，不走 executableFor。
-    const javaExecutable = executableFor(javaEnvironment);
-    if (javaExecutable === undefined) throw new Error(`Java 环境「${javaEnvironment.name || javaEnvironment.id}」找不到可执行文件。`);
-    const inspected = inspectTomcatHome(String(tomcatEnvironment.path ?? ''));
-    if (inspected.ok !== true) throw new Error(inspected.error);
-    const tomcatHome = inspected.home;
-
-    const port = Number(configuration.tomcat?.port) || 8080;
-    const shutdownPort = Number(configuration.tomcat?.shutdownPort) || 8005;
-    for (const candidate of [port, shutdownPort]) {
-      if (await checkPort(candidate)) {
-        // 只报不动手：本插件不会去关掉别人的服务。
-        throw new Error(`端口 ${candidate} 已被占用，请修改运行配置。`);
-      }
-    }
-
-    const prepared = prepareTomcat({
-      root,
-      id: configuration.id,
-      configuration,
-      tomcatHome,
-      javaExecutable,
-    });
-    return {
-      env: { ...built.env, ...prepared.env },
-      cwd,
-      warnings: built.warnings,
-      plan: {
-        argv: prepared.argv,
-        buildCommand: String(configuration.tomcat?.buildCommand ?? '').trim(),
-        gracefulStop: prepared.gracefulStop,
-        release: () => releaseInstance(root, configuration.id),
-      },
-    };
-  };
 
   const actions = {
     async saveEnvironment(body) {
@@ -298,36 +224,17 @@ export function installRoutes(ctx, { store, registry, logTailChars }) {
       });
       return undefined;
     },
+    /** 启停与 agent 工具共用 src/host/operations.js（一个操作、两个调用方）。 */
     async start(body) {
       const root = asString(body.root, 'root');
       const id = asString(body.id, 'id');
-      const workspace = store.findWorkspace(root);
-      const configuration = workspace?.configurations.find((item) => item.id === id);
-      if (configuration === undefined) throw new Error(`工作区里没有运行配置「${id}」。`);
-      const prepared = await prepareRun(root, configuration);
-      return registry.control(root, async () => {
-        for (const warning of prepared.warnings) ctx.logger?.warn?.(`run-env-manager: ${warning}`);
-        const run = await registry.start({
-          root,
-          configuration,
-          env: prepared.env,
-          cwd: prepared.cwd,
-          plan: prepared.plan,
-          logTailChars: logTailChars(),
-        });
-        for (const warning of prepared.warnings) {
-          registry.appendLog(run, `\n[run-env-manager] ${warning}\n`, logTailChars());
-        }
-        return undefined;
-      });
+      await startRun({ ctx, store, registry, root, id, logTailChars });
+      return undefined;
     },
     async stop(body) {
       const root = asString(body.root, 'root');
       const id = asString(body.id, 'id');
-      await registry.control(root, async () => {
-        const run = await registry.stop(root, id);
-        if (run === undefined) throw new Error(`工作区里没有运行实例「${id}」。`);
-      });
+      await stopRun({ registry, root, id });
       return undefined;
     },
     /** 日志里点出来的地址：交给系统默认浏览器。只放行 http(s)（见 open.js）。 */

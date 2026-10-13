@@ -93,7 +93,7 @@ function errText(error) {
   return error instanceof Error ? error.message : String(error);
 }
 
-// src/client/ansi.js
+// src/shared/ansi.js
 var ESC = "\x1B";
 var SGR_PATTERN = /^\u001B\[([0-9;]*)m/;
 var CSI_PATTERN = /^\u001B\[[0-9;?]*[ -/]*[@-~]/;

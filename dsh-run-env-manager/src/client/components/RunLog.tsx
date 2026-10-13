@@ -1,5 +1,5 @@
 import React from 'react';
-import { parseAnsi } from '../ansi.js';
+import { parseAnsi } from '../../shared/ansi.js';
 import { linkify } from '../urls.js';
 import type { Translator } from '../types.js';
 

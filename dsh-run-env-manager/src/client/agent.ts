@@ -6,7 +6,7 @@
  * 配置存在 profile 下（不在项目目录里），所以 agent 无法用文件工具写配置：
  * 它必须调用宿主注册的 `run_env_get` / `run_env_save` 工具（见 src/host/tools.js）。
  */
-import { plainText } from './ansi.js';
+import { plainText } from '../shared/ansi.js';
 import type { Bindings, DevelopmentEnvironment, Snapshot } from './types.js';
 
 /** 服务必须惰性取：客户端模块启动顺序无保证，插件热重载还会移除重加。 */

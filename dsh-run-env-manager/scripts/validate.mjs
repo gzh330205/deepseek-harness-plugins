@@ -100,6 +100,33 @@ check('日志文本必须经 linkify 渲染成链接', runLog.includes('linkify'
 check('linkify 必须导出（单测直接跑它）', /export function linkify/.test(urls));
 check('地址样式类必须存在', /\.renv-log \.renv-link/.test(styles));
 
+// agent 面：实例启停/日志给模型用，且**与面板同一份实现**（DSH 的「一个操作、两个调用方」）。
+const operations = read('src/host/operations.js');
+const tools = read('src/host/tools.js');
+const agentContext = read('src/host/agent-context.js');
+const sharedAnsi = read('src/shared/ansi.js');
+check('缺少文件 src/host/operations.js', existsSync(join(root, 'src/host/operations.js')));
+check('缺少文件 src/host/agent-context.js', existsSync(join(root, 'src/host/agent-context.js')));
+check('缺少文件 src/shared/ansi.js（宿主也要剥色，不能只给面板用）', existsSync(join(root, 'src/shared/ansi.js')));
+check('启停只有一份实现：routes 不得直接调 registry.start/stop', !/registry\.(start|stop)\(/.test(routes));
+check('启停只有一份实现：routes 必须调 operations 导出的 startRun/stopRun', /import \{ startRun, stopRun \}/.test(routes) && /await startRun\(/.test(routes) && /await stopRun\(/.test(routes));
+check('operations 必须承载启动前组装（prepareRun）', /export async function prepareRun/.test(operations));
+check('工具必须注册 run_env_get / run_env_instance / run_env_log', ['run_env_get', 'run_env_instance', 'run_env_log'].every((name) => new RegExp(`name: '${name}'`).test(tools)));
+check('工具必须与面板共用 operations（不得自己 spawn/组装）', /from '\.\/operations\.js'/.test(tools) && !/from '\.\/processes\.js'/.test(tools));
+check('工具必须让模型知道「别再自己起后台服务」', tools.includes('不要再用 bash 起后台服务'));
+check('run_env_get 必须带实时实例状态（模型据此复用已有实例）', /runs,\r?\n/.test(tools) && tools.includes('runsOf(registry, root)'));
+check('run_env_log 必须剥掉颜色码（模型不需要 ESC 序列）', /logTail\(/.test(operations) && /plainText/.test(operations));
+check('run_env_log 必须支持等就绪/等文字，而不是让模型硬等', /waitForRun\(/.test(tools) && /waitForText/.test(tools) && /waitForReady/.test(tools));
+check('每轮上下文必须走 systemPrompt.context（动态、可空）', /systemPrompt\.context\(\{/.test(agentContext));
+check('上下文的 order 必须是有限数（systemPrompt 会校验）', /const CONTEXT_ORDER = \d+;/.test(agentContext));
+check('上下文必须读当次组装的 agent 会话（按 agent 现算工作区）', /context\?\.agent/.test(agentContext));
+check('上下文求值不得打断组装（try/catch 回退空串）', /catch \{[\s\S]{0,120}return '';/.test(agentContext));
+check('没有实例时上下文必须是空串（空文本会被 systemPrompt 过滤掉）', /if \(live\.length === 0\) return '';/.test(operations));
+check('宿主必须把 context 开关放进 Config', /agentContext: z\.boolean\(\)\.default\(true\)\.volatile\(\)/.test(host));
+check('宿主只在开关打开时注册上下文', /config\.agentContext\.get\(\) !== false/.test(host));
+check('宿主必须把 registry 交给工具（否则实例工具只能看到空列表）', /registerTools\(ctx, \{ store, registry, logTailChars \}\)/.test(host));
+check('ansi 只有一份实现（client 不得再留着旧的 src/client/ansi.js）', !existsSync(join(root, 'src/client/ansi.js')) && /export function plainText/.test(sharedAnsi));
+
 const bundle = read('lib/client.js');
 check('状态文案必须本地化（不能再把状态枚举直接贴到界面上）', /statusStopped/.test(bundle) && !/\{run\.status\}/.test(clientEntry), 'bundle/entry');
 check('客户端产物必须带 __ModuleLoader__ 注册头', bundle.includes('__ModuleLoader__.load'));

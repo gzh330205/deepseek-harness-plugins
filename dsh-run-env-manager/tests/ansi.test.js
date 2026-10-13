@@ -1,6 +1,6 @@
 // 客户端 ANSI 解析测试：颜色/样式片段、丢弃终端行为序列、截断序列、纯文本转换。
 // 运行：node ./tests/ansi.test.js
-import { parseAnsi, plainText, xterm256 } from '../src/client/ansi.js';
+import { parseAnsi, plainText, xterm256 } from '../src/shared/ansi.js';
 
 let passed = 0;
 const failures = [];

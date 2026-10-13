@@ -20,8 +20,36 @@ DSH Web 的「运行环境管理」侧边插件：在右侧栏维护项目的运
   运行配置增删改、**编辑 JSON**（整份工作区配置全量替换）、全局开发环境管理（从 PATH 检测 / 手工添加 / 验证并保存 / 设默认 / 删除）。
 - **设置页**：「全局开发环境」区渲染同一套环境库。
 - **两种运行类型**：`command`（普通长驻命令）与 `tomcat`（每配置独立 `CATALINA_BASE` 的托管启动）。
-- **AI**：复用 DSH 的会话能力——新建绑定该工作区的会话，把提示词发进去；agent 通过本插件注册的
-  `run_env_get` / `run_env_save` 工具读写配置（配置存在 profile 下，不在项目目录里，所以必须经工具）。
+- **AI**：复用 DSH 的会话能力——新建绑定该工作区的会话，把提示词发进去。
+  agent 面有四个工具，全部注册在本插件（配置存在 profile 下，不在项目目录里，所以必须经工具）：
+  - `run_env_get`：配置 + 环境库 + **实例实时状态**（状态、就绪地址、退出码、已跑时长）；
+  - `run_env_save`：写回配置（默认全量替换）；
+  - `run_env_instance`：**启动 / 停止实例**，与面板按钮走同一份实现（`src/host/operations.js`），
+    `start` 幂等——已经在跑就把它还回来，**不会起第二遍**；
+  - `run_env_log`：读实例输出（剥掉终端颜色码），可 `waitForReady` / `waitForText` 等到条件成立，替掉
+    「让模型 sleep 再猜」。
+  - 另外每轮往 agent 的运行时上下文里注入一行「本工作区已有实例：web（ready · http://localhost:5173 · 已跑 3m）」，
+    没有实例时**整段不出现**（空文本会被 systemPrompt 过滤掉）。目的见下面「为什么 agent 会自己起一个」。
+
+## agent 与面板共用同一批实例
+
+要解决的问题：用户在右侧栏把服务起好了，agent 测试时**又用 bash 起了一个**——同一个服务跑两遍、端口打架、
+日志分叉，最后没人分得清哪个实例是真的。
+
+做法（对齐 DSH 插件开发约定 `user-actions` 的「一个操作、两个调用方」）：
+
+1. **一份实现**：启停只写在 `src/host/operations.js`（`prepareRun` / `startRun` / `stopRun` /
+   `waitForRun` / 实例投影 / 上下文文案）。面板的 `POST /start|/stop` 与 agent 的 `run_env_instance`
+   都调它；`scripts/validate.mjs` 断言 `routes.js` 里不得再直接出现 `registry.start(` / `registry.stop(`，
+   谁都不许另起一套。
+2. **每轮把现状告诉 agent**：`src/host/agent-context.js` 用 `ctx.systemPrompt.context({ name, order, text })`
+   注册一段**动态**上下文（`text` 是函数，每次组装现算——与内置 `dsh-sandbox-policy` 同一套写法）。
+   只在真有实例在跑时输出一行，空闲时返回空串（`renderContextSections` 会过滤空文本），所以不占 prompt。
+   `order` 取 130（内置：sandbox 110 / approval 115 / subagent 120），排在策略文本之后。
+3. **工具替它把活干完**：`run_env_instance` 启动后直接回带状态、就绪地址与最近日志；`run_env_log` 可以等
+   就绪或等某段日志出现。agent 没有理由再自己 `npm run dev &`。
+4. **对模型不设审批闸门**（用户的选择）：启停直接执行。可见性由面板承担——agent 起的实例就出现在右侧栏
+   「运行」里，与用户自己起的一模一样（同一个 registry、同一条日志流、同一张卡片）。
 
 ## 进程与清理（最关键的一条）
 
@@ -45,6 +73,8 @@ pnpm → cmd.exe → node` 五层链路在宿主被强杀后全部消失。
    `buffer.toString('utf8')`（硬编码、非 fatal），而中文 Windows 上 Maven / Gradle / javac 写的是
    GB18030 字节流 —— 走 collect 就是满屏 `U+FFFD` 乱码。代价：没有了 collect 的 spill 文件，
    日志只保留内存尾部（`logTailChars`）。解码器在 `src/host/processes.js`，测试见 `tests/decoder.test.js`。
+   另有两个给 agent 面的开关（都是 volatile）：`agentContext`（默认 true，每轮注入实例上下文）、
+   `agentContextMaxInstances`（默认 6，注入里最多列几个实例）。
 5. 客户端插件里，主按钮与选中态要用 **`--dsw-alias-brand-primary`（填充）+ `--dsw-alias-label-primary-inverted`
    （前景）** 这一对 token：前者在本产品里是高对比油墨色（浅色近黑 / 深色近白），硬编码 `#fff` 会在
    深色主题下变成白底白字。
@@ -96,7 +126,7 @@ dsh plugin --profile web add ./dsh-run-env-manager
 ```bash
 pnpm install              # 安装依赖（会自动构建一次）
 pnpm build                # src/client/* → lib/client.js（esbuild，产物需提交）
-pnpm test                 # 纯逻辑单测（环境解析 / Tomcat / 解码 / ANSI / 地址识别 / 浏览器打开命令）
+pnpm test                 # 纯逻辑单测（环境解析 / Tomcat / 解码 / ANSI / 地址识别 / 打开命令 / agent 面）
 pnpm validate             # 脚手架约定校验
 node ./scripts/read-session.mjs <会话id片段> [关键字]   # 读 DSH 会话日志（多帧 zstd，调试 AI 通路用）
 ```
@@ -119,6 +149,8 @@ node ./scripts/read-session.mjs <会话id片段> [关键字]   # 读 DSH 会话�
 | 面板内启动 + 日志 + 设置页「全局开发环境」 | ✅ |
 | **AI 配置**：点按钮 → 新会话 → agent 读项目 → 调 `run_env_save` → 配置出现在面板 | ✅ |
 | **AI 故障排查**：日志预算（总 48000 / 单条 12000 / 取尾部）+「只排查不修改」 | ✅ |
+| agent 工具面：`run_env_get` 带实例状态、`run_env_instance` 幂等启停、`run_env_log` 等待/剥色、每轮实例上下文（`tests/agent.test.js`，37 条） | ✅ |
+| 真机进程闭环：本地用真实子进程跑过 start → `waitForText` 命中 → 再 start 仍只有 1 个实例 → stop → 上下文消失 | ✅（临时冒烟脚本，未进测试套件） |
 | Tomcat 路径：独立 `CATALINA_BASE` + 生成的 `server.xml` + java 启动到主类加载阶段 | ✅（用最小 Tomcat 布局验证） |
 | 「构建失败不启动服务」（构建退出码 3 → 不启动，端口保持空闲） | ✅ |
 | **GB18030 输出**（自写 GBK 字节，模拟 Maven/Gradle）与 **UTF-8 输出**都正确显示，零替换字符 | ✅ |
@@ -133,7 +165,9 @@ node ./scripts/read-session.mjs <会话id片段> [关键字]   # 读 DSH 会话�
 | 默认浏览器真的被调起（本机默认 http 处理器进程在调用后启动） | ✅ |
 | 新组件首屏渲染（卡片结构 / 折叠态 / 链接 HTML / 失败态退出码） | ✅（`react-dom/server` 渲染检查） |
 
-**未验证**：真实 Tomcat 上的完整启动与优雅关闭（本机没装 Tomcat）。托管启动的 `server.xml` 生成、
+**未验证**：真实 Tomcat 上的完整启动与优雅关闭（本机没装 Tomcat）；以及**真机 DSH 里的模型行为**——
+「注入了上下文之后模型是否真的不再自己起后台服务」需要在桌面端实测（本插件的测试只能证明注入文本正确、
+工具可用）。托管启动的 `server.xml` 生成、
 argv 组装、`CATALINA_BASE` 隔离、token 握手都有单测覆盖（`tests/tomcat.test.js`，含用本地 TCP 服务器
 接住 token 的优雅关闭断言），但没有跑过真的 Tomcat 进程。
 另：本次改动后没有在**桌面端 GUI（正在跑旧宿主半）**里点过界面，新宿主半需要重启该 profile 的 DSH Host
@@ -189,7 +223,10 @@ src/host/store.js               volatile Config 读写
 src/host/processes.js           运行实例注册表（按工作区串行锁 / 就绪探测 / 日志 / 构建阶段）
 src/host/open.js                用系统默认浏览器打开地址（按平台选命令，与宿主脱钩）
 src/host/routes.js              单一前缀 + action 判别；status（可 logs=0）/ log / stream / openUrl
-src/host/tools.js               给 AI 的 run_env_get / run_env_save
+src/host/operations.js          实例操作的共享实现（面板与 agent 工具同一份）
+src/host/tools.js               给 AI 的 run_env_get / run_env_save / run_env_instance / run_env_log
+src/host/agent-context.js       每轮的「当前实例」动态上下文（systemPrompt.context）
+src/shared/ansi.js              ANSI 解析（面板渲染 + agent 日志剥色，两半共用）
 src/client/urls.js              日志文本 → 可点链接（纯函数，单测见 tests/urls.test.js）
 src/client/ansi.js              日志 ANSI → 着色片段
 src/client/components/RunPanel.tsx  面板外壳：轮询元数据、AI 入口、配置分页

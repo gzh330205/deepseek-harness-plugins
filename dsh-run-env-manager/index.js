@@ -9,7 +9,10 @@
  *   src/host/environment.js 开发环境发现/校验/注入
  *   src/host/store.js       volatile Config 读写
  *   src/host/processes.js   运行实例注册表
+ *   src/host/operations.js  实例操作的共享实现（面板与 agent 工具同一份）
  *   src/host/routes.js      HTTP 接口
+ *   src/host/tools.js       agent 工具（配置读写 + 实例启停/日志）
+ *   src/host/agent-context.js 每轮的「当前实例」动态上下文
  *
  * 两个必须记住的宿主约束（详见各模块文件头）：
  *   - 运行配置与环境库都存 volatile 字段，否则每次写入都会让 Loader 整插件重挂；
@@ -22,6 +25,8 @@ import { RunRegistry } from './src/host/processes.js';
 import { createStore } from './src/host/store.js';
 import { installRoutes } from './src/host/routes.js';
 import { registerTools } from './src/host/tools.js';
+import { registerAgentContext } from './src/host/agent-context.js';
+import { renderRunningContext } from './src/host/operations.js';
 
 /** 必须等于 cordis.patch.yml 的行 id，也是浏览器半的插件身份。 */
 export const SETTINGS_NAMESPACE = 'run-env-manager';
@@ -83,6 +88,13 @@ export const Config = z.object({
   defaults: EnvironmentBindings.volatile(),
   workspaces: z.array(WorkspaceEntry).default([]).volatile(),
   logTailChars: z.number().default(DEFAULT_LOG_TAIL_CHARS).volatile(),
+  /**
+   * 每轮把「本工作区正在运行的实例」注入 agent 的运行时上下文（有实例才出现）。
+   * 关掉它 agent 就要靠自己想起来调 run_env_get，也就更容易自己再起一个后台服务。
+   */
+  agentContext: z.boolean().default(true).volatile(),
+  /** 注入里最多列几个实例（其余折成「另有 N 个」）。 */
+  agentContextMaxInstances: z.number().default(6).volatile(),
 });
 
 /** 进程能力是硬依赖；webServer 走惰性注入（headless profile 没有它）。 */
@@ -100,13 +112,25 @@ export function apply(ctx, config) {
   ctx.inject(['webServer'], (webCtx) => installRoutes(webCtx, { store, registry, logTailChars }));
 
   // AI 工具：注册在插件自己的上下文，且用 ctx.get('tools')（见 registerTools 注释）。
+  // 实例类工具与面板按钮共用 operations.js —— 一个操作、两个调用方。
   ctx.inject(['tools'], () => {
     try {
-      registerTools(ctx, { store });
+      registerTools(ctx, { store, registry, logTailChars });
     } catch (error) {
       ctx.logger?.warn?.(`run-env-manager: 注册 AI 工具失败：${error instanceof Error ? error.message : String(error)}`);
     }
   });
+
+  // 每轮动态上下文：只在确实有实例在跑时出现（空串会被 systemPrompt 过滤掉）。
+  try {
+    if (config.agentContext.get() !== false) {
+      registerAgentContext(ctx, {
+        render: (root) => renderRunningContext(registry, root, { maxInstances: config.agentContextMaxInstances.get() }),
+      });
+    }
+  } catch (error) {
+    ctx.logger?.warn?.(`run-env-manager: 注册实例上下文失败：${error instanceof Error ? error.message : String(error)}`);
+  }
 
   // 卸载（含宿主有序退出）时收掉所有实例。宿主被强杀的情况由 Win32 Job 容器兜底：
   // runner 的 IPC 断开 → 释放 Job 句柄 → 内核杀掉整棵树（阶段 0 已实测）。
