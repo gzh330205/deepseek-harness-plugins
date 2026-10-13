@@ -227,6 +227,8 @@ export function installRoutes(ctx, { config }) {
         branch: body.branch,
         branchPrefix: branchPrefix(),
         worktreeRoot: worktreeRoot(),
+        // opt-in：面板上默认勾选，宿主侧只在显式要求时才复制（见 worktree.js 的白名单）。
+        copyIgnored: body.copyIgnored === true,
       });
       const worktrees = await readWorktrees(git, repo, { worktreeRoot: worktreeRoot() });
       return { root, created: extra, worktrees: worktrees.worktrees, worktreeTotal: worktrees.total, suggestedRoot: worktrees.suggestedRoot, worktreeTruncated: worktrees.truncated };

@@ -121,8 +121,15 @@ export interface ActionApi {
   abortMerge(root: string): Promise<Snapshot>;
   worktreeAdd(
     root: string,
-    request: { dirName?: string; baseRef?: string; mode?: 'detached' | 'branch'; branch?: string },
-  ): Promise<Snapshot & WorktreeResult & { created?: { path: string; branch: string; mode: string } }>;
+    request: {
+      dirName?: string;
+      baseRef?: string;
+      mode?: 'detached' | 'branch';
+      branch?: string;
+      /** 把主工作区里被忽略的启动文件（.env / .npmrc 等）复制进新树。 */
+      copyIgnored?: boolean;
+    },
+  ): Promise<Snapshot & WorktreeResult & { created?: { path: string; branch: string; mode: string; copied?: string[]; copySkipped?: string[] } }>;
   worktreeRemove(
     root: string,
     request: { path: string; force?: boolean; exportPatch?: boolean },

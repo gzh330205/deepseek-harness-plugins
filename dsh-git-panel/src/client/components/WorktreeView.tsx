@@ -8,7 +8,8 @@ import React from 'react';
 import { basename, dirname } from '../format.js';
 import type { ActionApi, GitApi } from '../api.js';
 import type { BranchListResult, WorktreeInfo, WorktreeResult } from '../types.js';
-import { IconBranch, IconCopy, IconPlus, IconRefresh, IconTrash, IconWorktree } from './icons.jsx';
+import { IconBranch, IconCopy, IconPlus, IconRefresh, IconSession, IconTrash, IconWorktree } from './icons.jsx';
+import type { WorktreeBinding, WorktreeSessionOpener } from '../worktree-session.js';
 
 export interface WorktreeViewProps {
   root: string;
@@ -20,6 +21,11 @@ export interface WorktreeViewProps {
   onNotice: (message: string) => void;
   busy: string;
   setBusy: (label: string) => void;
+  /**
+   * 「在工作树里开会话」的能力（注册工作区 + 打开/新建会话）。缺省时相关入口不渲染——
+   * 旧版 DSH 或精简 profile 上没有 workspaces / uiWorkspace 服务。
+   */
+  worktreeSessions?: WorktreeSessionOpener;
 }
 
 function badgesFor(info: WorktreeInfo, t: WorktreeViewProps['t']): React.ReactNode[] {
@@ -52,7 +58,54 @@ export function WorktreeView(props: WorktreeViewProps) {
   const [removing, setRemoving] = React.useState<WorktreeInfo | null>(null);
   const [force, setForce] = React.useState(false);
   const [exportPatch, setExportPatch] = React.useState(true);
+  const [openInSession, setOpenInSession] = React.useState(true);
+  const [copyStartupFiles, setCopyStartupFiles] = React.useState(true);
+  const [forgetWorkspace, setForgetWorkspace] = React.useState(true);
   const [localBusy, setLocalBusy] = React.useState('');
+
+  /** 服务是惰性可用的（插件热重载会移除重加），所以每次渲染问一次，而不是开始时定死。 */
+  const sessions = props.worktreeSessions;
+  const canOpenSession = sessions !== undefined && sessions.available();
+
+  /** 一个工作树在 DSH 里的登记状态：未注册 / 已注册（几场会话、几场已归档）。 */
+  const bindingOf = (path: string): WorktreeBinding | undefined => {
+    if (!canOpenSession || sessions === undefined) return undefined;
+    try {
+      return sessions.binding(path);
+    } catch {
+      return undefined;
+    }
+  };
+
+  const enterWorktree = async (path: string): Promise<void> => {
+    if (sessions === undefined) return;
+    setLocalBusy(`enter:${path}`);
+    try {
+      const result = await sessions.enter(path);
+      callbacks.current.onNotice(t(result.opened === 'existing' ? 'worktreeSessionOpened' : 'worktreeSessionRegistered', { name: result.title }));
+      setError('');
+    } catch (cause) {
+      callbacks.current.onError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setLocalBusy('');
+      callbacks.current.setBusy('');
+    }
+  };
+
+  const newSessionHere = async (path: string): Promise<void> => {
+    if (sessions === undefined) return;
+    setLocalBusy(`new:${path}`);
+    try {
+      const result = await sessions.newSession(path);
+      callbacks.current.onNotice(t('worktreeSessionNew', { name: result.title }));
+      setError('');
+    } catch (cause) {
+      callbacks.current.onError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setLocalBusy('');
+      callbacks.current.setBusy('');
+    }
+  };
 
   const applyResult = (response: WorktreeResult & { ok?: boolean }) => {
     setData({
@@ -103,15 +156,21 @@ export function WorktreeView(props: WorktreeViewProps) {
         baseRef,
         mode,
         branch: mode === 'branch' && branch.trim() !== '' ? branch.trim() : undefined,
+        copyIgnored: copyStartupFiles,
       });
       applyResult(response);
       callbacks.current.onSnapshot(response);
       const createdPath = response.created?.path ?? '';
-      callbacks.current.onNotice(t('worktreeCreated', { path: createdPath }));
+      const copied = response.created?.copied ?? [];
+      callbacks.current.onNotice(
+        copied.length === 0 ? t('worktreeCreated', { path: createdPath }) : t('worktreeCreatedCopied', { path: createdPath, files: copied.join('、') }),
+      );
       setFormOpen(false);
       setLabel('');
       setBranch('');
       setError('');
+      // 勾了就直接进会话（默认勾选：建树的目的通常就是在那个目录里干活）。
+      if (openInSession && canOpenSession && createdPath !== '') await enterWorktree(createdPath);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -133,6 +192,15 @@ export function WorktreeView(props: WorktreeViewProps) {
         retained === '' ? t('worktreeRemoved') : t('worktreeRemovedBranchKept', { branch: retained }),
       );
       if (patch !== '') callbacks.current.onNotice(t('patchExported', { path: patch }));
+      // 删掉树以后，侧栏那条工作区登记会指向不存在的路径：勾了就一并移除（会话记录保留）。
+      if (forgetWorkspace && canOpenSession && sessions !== undefined) {
+        try {
+          const forgotten = await sessions.forget(removing.path);
+          if (forgotten) callbacks.current.onNotice(t('workspaceForgotten', { name: basename(removing.path) }));
+        } catch (cause) {
+          callbacks.current.onError(cause instanceof Error ? cause.message : String(cause));
+        }
+      }
       setRemoving(null);
       setForce(false);
       setExportPatch(true);
@@ -239,6 +307,16 @@ export function WorktreeView(props: WorktreeViewProps) {
               <input className="dgp-input" placeholder={t('branchNamePlaceholder')} value={branch} onChange={(event) => setBranch(event.target.value)} />
             </label>
           )}
+          <label className="dgp-check">
+            <input type="checkbox" checked={copyStartupFiles} onChange={(event) => setCopyStartupFiles(event.target.checked)} />
+            {t('worktreeCopyIgnored')}
+          </label>
+          {canOpenSession && (
+            <label className="dgp-check">
+              <input type="checkbox" checked={openInSession} onChange={(event) => setOpenInSession(event.target.checked)} />
+              {t('worktreeOpenSession')}
+            </label>
+          )}
           <div className="dgp-formactions">
             <button type="button" className="dgp-primary" disabled={busy} onClick={() => void create()}>
               {localBusy === 'create' ? t('creating') : t('create')}
@@ -256,7 +334,9 @@ export function WorktreeView(props: WorktreeViewProps) {
       {data !== null && data.worktrees.length === 0 && <div className="dgp-empty">{t('noWorktrees')}</div>}
 
       <div className="dgp-rows">
-        {(data?.worktrees ?? []).map((info) => (
+        {(data?.worktrees ?? []).map((info) => {
+          const binding = bindingOf(info.path);
+          return (
           <div className="dgp-wt" key={info.path}>
             <div className="dgp-wthead">
               <IconBranch size={13} />
@@ -265,6 +345,38 @@ export function WorktreeView(props: WorktreeViewProps) {
               </span>
               <span className="dgp-hash">{info.head}</span>
               <span className="dgp-rowactions">
+                {binding !== undefined && (binding.registered
+                  ? (
+                    <span
+                      className="dgp-badge"
+                      title={t('worktreeBindingSessions', { count: binding.sessions, archived: binding.archived })}
+                    >
+                      {binding.sessions === 0 ? t('worktreeBindingNone') : t('worktreeBindingCount', { count: binding.sessions })}
+                    </span>
+                  )
+                  : <span className="dgp-badge">{t('worktreeBindingUnregistered')}</span>)}
+                {canOpenSession && (
+                  <button
+                    type="button"
+                    className="dgp-iconbtn"
+                    title={binding?.registered === true && binding.sessions > 0 ? t('enterWorktreeSession') : t('openSessionHere')}
+                    disabled={busy || !info.exists}
+                    onClick={() => void enterWorktree(info.path)}
+                  >
+                    <IconSession size={13} />
+                  </button>
+                )}
+                {canOpenSession && sessions?.canCreateSession() === true && (
+                  <button
+                    type="button"
+                    className="dgp-iconbtn"
+                    title={t('newSessionHere')}
+                    disabled={busy || !info.exists}
+                    onClick={() => void newSessionHere(info.path)}
+                  >
+                    <IconPlus size={13} />
+                  </button>
+                )}
                 <button type="button" className="dgp-iconbtn" title={t('copyPath')} onClick={() => void copyPath(info.path)}>
                   <IconCopy size={13} />
                 </button>
@@ -306,6 +418,13 @@ export function WorktreeView(props: WorktreeViewProps) {
                     {t('forceRemove')}
                   </label>
                 )}
+                {canOpenSession && (
+                  <label className="dgp-check">
+                    <input type="checkbox" checked={forgetWorkspace} onChange={(event) => setForgetWorkspace(event.target.checked)} />
+                    {t('forgetWorkspace')}
+                  </label>
+                )}
+                {canOpenSession && <div className="dgp-hint">{t('forgetWorkspaceHint')}</div>}
                 <div className="dgp-formactions">
                   <button type="button" className="dgp-dangerbtn dgp-primary" disabled={busy} onClick={() => void remove()}>
                     {localBusy === 'remove' ? t('removing') : t('confirmRemove')}
@@ -317,7 +436,8 @@ export function WorktreeView(props: WorktreeViewProps) {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {data !== null && data.worktreeTruncated && <div className="dgp-truncated">{t('worktreeTruncated', { total: data.worktreeTotal })}</div>}

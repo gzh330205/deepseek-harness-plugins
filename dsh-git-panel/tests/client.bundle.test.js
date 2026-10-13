@@ -169,6 +169,20 @@ const diffSeat = seats.get('main');
 check('中心席位：注册在 root 的 main keyed 席位', diffSeat !== undefined, JSON.stringify([...seats.keys()]));
 check('中心席位：key 是 git-diff', diffSeat?.definition?.key === 'git-diff', String(diffSeat?.definition?.key));
 check('中心席位：组件是函数', typeof diffSeat?.component === 'function');
+check(
+  '正文席位：注入工作树会话能力，且服务缺失时 available() 为 false（不渲染入口而不是点了报错）',
+  (() => {
+    const p = bodySeat?.definition?.inject?.();
+    return typeof p?.worktreeSessions === 'object' && p.worktreeSessions !== null && p.worktreeSessions.available() === false;
+  })(),
+  '',
+);
+// 真 await 一次：断言值不能是 Promise（Promise 永远为真，等于没断言）。
+const enterError = await bodySeat?.definition?.inject?.().worktreeSessions
+  .enter('/ws/wt')
+  .then(() => '(没有抛错)', (error) => String(error?.message ?? ''));
+check('正文席位：服务缺失时 enter() 抛出可读错误（而不是 TypeError）', /注册工作区|workspaces/.test(enterError), enterError);
+
 check('正文席位：注入 openDiffInCenter 与可用标志', (() => { const p = bodySeat?.definition?.inject?.(); return typeof p?.openDiffInCenter === 'function' && p?.diffCenterAvailable === true; })(), '');
 
 const state = { root: 'D:/repo', repoRoot: 'D:/repo', sessionId: 'session-1', items: [{ path: 'src/a.ts', staged: false, untracked: false, kind: 'modified' }], index: 0, contextLines: 3 };

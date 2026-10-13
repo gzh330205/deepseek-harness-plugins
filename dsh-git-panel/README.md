@@ -70,9 +70,24 @@ DSH Web 右侧栏的 **Git 面板**：在一个侧栏页里看当前待提交的
 - 新建：可指定名称、基线（当前 HEAD / 本地分支 / tag）、形态（**detached 默认** /
   新建分支）。基线在创建前先 `rev-parse --verify --end-of-options <ref>^{commit}`
   冻结成 SHA，避免 ref 在 resolve 与 add 之间移动。
+  - **默认勾选「建完直接在新会话里打开」**：一次点击拿到「树 + 侧栏项目行 + 该目录的一场会话」。
+  - **默认勾选「复制被忽略的启动文件」**：新树是干净检出，`.env` / `.npmrc` 不在里面，
+    「建完就在那儿跑」会直接失败。宿主只在仓库根、按固定白名单（`.env`、`.env.*`、
+    `.npmrc`、`.nvmrc`、`.tool-versions`、`.python-version`）、**只复制确实被 git 忽略的
+    普通文件**（≤ 64 KiB，绝不递归、绝不碰 `node_modules`、绝不覆盖新树已有路径）。
+- **工作树 ⇄ 会话**：树默认建在仓库**旁边**（`<仓库父目录>/.dsh-worktrees/<仓库名>/<名字>`），
+  不在任何已注册工作区里，而 DSH 的会话 cwd 在创建时固定在所属工作区的路径上（没有
+  「把会话切到另一个目录」的 API）。所以面板把「在该目录里干活」实现为：
+  **注册工作区（按路径幂等）+ 打开/新建会话**。
+  - 每行常驻两个入口：「回到该工作树的会话」（有会话就回到最近一场，没有/被删/被归档就新建一场）
+    与「新建一场会话」；行上显示绑定状态（未注册 / 无会话 / N 场会话）。
+  - 项目行按 `<仓库名> · <名字>` 命名，侧栏认得出亲缘（Codex 的 worktree 聊天正因为没标注被抱怨）。
+  - 服务缺失（旧 DSH / 精简 profile）时相关入口**不渲染**，而不是点了报错。
 - 删除：主工作区不可删 → 读不到 git 状态就拒绝 → 脏且未强制则拒绝 → 需要时先导出
   `git diff --binary --full-index <merge-base>` 补丁 → `worktree remove [--force]`
   → `worktree prune`；删除后分支**一律保留**，并在提示里说明。
+  另外默认勾选「同时从工作区列表移除」：否则侧栏会留下指向不存在路径的项目行。
+  它**只移除那个项目行，不动会话记录**（DSH 的行为：会话落到「未分类」），所以这一步可逆。
 - 清理失效登记（`worktree prune --verbose`）。
 - 不做「自动合回主干」：那要先在工作树里自动提交、再在主仓库 merge，冲突时会把用户
   留在半完成状态。合并交给用户或 agent 在终端里做。
@@ -195,7 +210,9 @@ dsh plugin --profile web add ./dsh-git-panel
 - 所有 git 调用都带 `--no-optional-locks`：agent 可能正在同一工作区跑回合，普通
   `git status` 会去刷新 index，撞上 `index.lock` 就整条失败。
 - 所有路径都经 `--literal-pathspecs` 与 `--` 传入：形如 `a[1].txt` 的文件名不会被
-  当成 glob。
+  当成 glob。**代价是这个开关会让 `git check-ignore` 直接 fatal**
+  （`pathspec magic not supported by this command: 'literal'`），所以判断「某个文件是否
+  被忽略」必须改用 `git ls-files --others --ignored --exclude-standard -z -- <name>`。
 - 子进程环境固定 `GIT_TERMINAL_PROMPT=0`、`GIT_PAGER=cat`、`GIT_EDITOR=true`：
   绝不弹交互提示、绝不打开编辑器或分页器。
 
@@ -210,7 +227,7 @@ dsh plugin --profile web add ./dsh-git-panel
 | GET | `/dsh-git/branches?root=` | 本地 / 远程 / tag |
 | GET | `/dsh-git/worktrees?root=` | worktree 列表与建议根目录 |
 | POST | `/dsh-git/stage` `/stageAll` `/unstage` `/unstageAll` `/discard` `/commit` `/checkout` `/abortMerge` | 写操作 |
-| POST | `/dsh-git/worktreeAdd` `/worktreeRemove` `/worktreePrune` | worktree 写操作 |
+| POST | `/dsh-git/worktreeAdd` `/worktreeRemove` `/worktreePrune` | worktree 写操作（`worktreeAdd` 可带 `copyIgnored: true`，会附加复制被忽略的启动文件，并在响应里回 `created.copied` / `created.copySkipped`） |
 
 只读接口的载荷**包在与动作同名的字段里**：`/branches` → `{ ok, root, branches: { local, remote, tags, truncated, total } }`，
 `/history` → `…, history`，`/commit` → `…, detail, diff`，`/diff` → `…, diff`；
@@ -279,7 +296,7 @@ pnpm test           # 纯解析 / 泳道 / 契约 / 真实 git 集成 / HTTP 接
 pnpm run validate   # 脚手架约定 + i18n key 完整性回归断言
 ```
 
-测试覆盖（共 9 个文件、418 条断言；没有 git 时集成用例自动 SKIP）：
+测试覆盖（共 9 个文件、441 条断言；没有 git 时集成用例自动 SKIP）：
 
 - `tests/parse.test.js`：porcelain v2 `-z`、`--numstat -z` 的 rename 怪形态、
   `diff-tree --name-status -z`、log 记录、worktree porcelain、for-each-ref、统一 diff

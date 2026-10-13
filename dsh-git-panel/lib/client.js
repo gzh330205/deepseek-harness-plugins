@@ -183,6 +183,22 @@ var zh = {
   worktreeHint: "\u5DE5\u4F5C\u6811\u662F\u540C\u4E00\u4ED3\u5E93\u7684\u53E6\u4E00\u4EFD\u68C0\u51FA\uFF1A\u9002\u5408\u9694\u79BB\u5E76\u884C\u4EFB\u52A1\u3002\u5408\u5E76\u56DE\u4E3B\u5E72\u8BF7\u7528 git \u547D\u4EE4\u6216\u8BA9 agent \u5904\u7406\u2014\u2014\u672C\u9762\u677F\u4E0D\u4F1A\u81EA\u52A8\u5408\u5E76\u3002",
   worktreeIsolationHint: "\u9ED8\u8BA4 detached\uFF1A\u4E0D\u5360\u7528\u5206\u652F\u540D\uFF0C\u968F\u65F6\u53EF\u5220\uFF1B\u9009\u300C\u65B0\u5EFA\u5206\u652F\u300D\u5219\u76EE\u5F55\u540D\u4E0E\u5206\u652F\u540D\u4E00\u81F4\u3002",
   noWorktrees: "\u8FD8\u6CA1\u6709\u989D\u5916\u7684\u5DE5\u4F5C\u6811\u3002",
+  worktreeCopyIgnored: "\u590D\u5236\u88AB\u5FFD\u7565\u7684\u542F\u52A8\u6587\u4EF6\uFF08.env / .npmrc \u7B49\uFF09",
+  worktreeOpenSession: "\u5EFA\u5B8C\u76F4\u63A5\u5728\u65B0\u4F1A\u8BDD\u91CC\u6253\u5F00",
+  openSessionHere: "\u5728\u8FD9\u4E2A\u5DE5\u4F5C\u6811\u91CC\u5F00\u4F1A\u8BDD",
+  worktreeSessionOpened: "\u5DF2\u56DE\u5230\u8BE5\u5DE5\u4F5C\u6811\u7684\u4F1A\u8BDD\uFF1A{name}",
+  worktreeSessionRegistered: "\u5DF2\u628A\u8BE5\u5DE5\u4F5C\u6811\u6DFB\u52A0\u4E3A\u9879\u76EE\u5E76\u6253\u5F00\u4F1A\u8BDD\uFF1A{name}",
+  worktreeSessionNew: "\u5DF2\u65B0\u5EFA\u4E00\u573A\u4F1A\u8BDD\uFF1A{name}",
+  enterWorktreeSession: "\u56DE\u5230\u8BE5\u5DE5\u4F5C\u6811\u7684\u4F1A\u8BDD",
+  newSessionHere: "\u65B0\u5EFA\u4E00\u573A\u4F1A\u8BDD",
+  worktreeBindingUnregistered: "\u672A\u6CE8\u518C",
+  worktreeBindingNone: "\u65E0\u4F1A\u8BDD",
+  worktreeBindingCount: "{count} \u573A\u4F1A\u8BDD",
+  worktreeBindingSessions: "\u8BE5\u9879\u76EE\u4E0B\u6709 {count} \u573A\u4F1A\u8BDD\uFF08\u53E6\u6709 {archived} \u573A\u5DF2\u5F52\u6863\uFF09",
+  forgetWorkspace: "\u540C\u65F6\u4ECE\u5DE5\u4F5C\u533A\u5217\u8868\u79FB\u9664",
+  forgetWorkspaceHint: "\u53EA\u79FB\u9664\u4FA7\u680F\u90A3\u4E2A\u9879\u76EE\u884C\uFF1B\u4F1A\u8BDD\u8BB0\u5F55\u4FDD\u7559\uFF08\u4F1A\u843D\u5230\u300C\u672A\u5206\u7C7B\u300D\uFF09\u3002",
+  workspaceForgotten: "\u5DF2\u4ECE\u5DE5\u4F5C\u533A\u5217\u8868\u79FB\u9664\uFF1A{name}",
+  worktreeCreatedCopied: "\u5DF2\u521B\u5EFA\u5DE5\u4F5C\u6811\uFF1A{path}\uFF08\u5DF2\u590D\u5236 {files}\uFF09",
   worktreeCreated: "\u5DF2\u521B\u5EFA\u5DE5\u4F5C\u6811\uFF1A{path}",
   worktreeRemoved: "\u5DE5\u4F5C\u6811\u5DF2\u5220\u9664\u3002",
   worktreeRemovedBranchKept: "\u5DE5\u4F5C\u6811\u5DF2\u5220\u9664\uFF0C\u5206\u652F {branch} \u4ECD\u4FDD\u7559\u3002",
@@ -336,6 +352,22 @@ var en = {
   worktreeHint: "A worktree is another checkout of the same repository \u2014 good for isolating parallel work. Merge it back with git or the agent; this panel never merges automatically.",
   worktreeIsolationHint: "detached by default: no branch is taken, safe to delete; choosing a branch makes the directory name match the branch.",
   noWorktrees: "No extra worktrees yet.",
+  worktreeCopyIgnored: "Copy ignored startup files (.env, .npmrc, \u2026)",
+  worktreeOpenSession: "Open a session in it right after creating",
+  openSessionHere: "Open a session in this worktree",
+  worktreeSessionOpened: "Back in that worktree session: {name}",
+  worktreeSessionRegistered: "Added as a project and opened its session: {name}",
+  worktreeSessionNew: "Started a new session: {name}",
+  enterWorktreeSession: "Back to that worktree session",
+  newSessionHere: "Start another session",
+  worktreeBindingUnregistered: "Not registered",
+  worktreeBindingNone: "No session",
+  worktreeBindingCount: "{count} session(s)",
+  worktreeBindingSessions: "This project has {count} session(s) ({archived} archived)",
+  forgetWorkspace: "Also remove it from the workspace list",
+  forgetWorkspaceHint: "Only the sidebar project row is removed; sessions are kept (they move to Uncategorized).",
+  workspaceForgotten: "Removed from the workspace list: {name}",
+  worktreeCreatedCopied: "Worktree created: {path} (copied {files})",
   worktreeCreated: "Worktree created: {path}",
   worktreeRemoved: "Worktree removed.",
   worktreeRemovedBranchKept: "Worktree removed; branch {branch} was kept.",
@@ -765,6 +797,9 @@ function IconWorktree({ size = 16, className }) {
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "9.2", y: "9.5", width: "5", height: "4", rx: "1" }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4.3 6.5v3.2c0 .8.6 1.4 1.4 1.4h3.5" })
   ] });
+}
+function IconSession({ size = 16, className }) {
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { ...base(size, className), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M13.6 7.6c0 2.7-2.5 4.9-5.6 4.9-.7 0-1.4-.1-2-.3L2.6 13.2l.9-2.5c-.7-.8-1.1-1.9-1.1-3.1C2.4 4.9 4.9 2.7 8 2.7s5.6 2.2 5.6 4.9Z" }) });
 }
 function IconRefresh({ size = 16, className }) {
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { ...base(size, className), children: [
@@ -1862,7 +1897,48 @@ function WorktreeView(props) {
   const [removing, setRemoving] = import_react5.default.useState(null);
   const [force, setForce] = import_react5.default.useState(false);
   const [exportPatch, setExportPatch] = import_react5.default.useState(true);
+  const [openInSession, setOpenInSession] = import_react5.default.useState(true);
+  const [copyStartupFiles, setCopyStartupFiles] = import_react5.default.useState(true);
+  const [forgetWorkspace, setForgetWorkspace] = import_react5.default.useState(true);
   const [localBusy, setLocalBusy] = import_react5.default.useState("");
+  const sessions = props.worktreeSessions;
+  const canOpenSession = sessions !== void 0 && sessions.available();
+  const bindingOf = (path) => {
+    if (!canOpenSession || sessions === void 0) return void 0;
+    try {
+      return sessions.binding(path);
+    } catch {
+      return void 0;
+    }
+  };
+  const enterWorktree = async (path) => {
+    if (sessions === void 0) return;
+    setLocalBusy(`enter:${path}`);
+    try {
+      const result = await sessions.enter(path);
+      callbacks.current.onNotice(t(result.opened === "existing" ? "worktreeSessionOpened" : "worktreeSessionRegistered", { name: result.title }));
+      setError("");
+    } catch (cause) {
+      callbacks.current.onError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setLocalBusy("");
+      callbacks.current.setBusy("");
+    }
+  };
+  const newSessionHere = async (path) => {
+    if (sessions === void 0) return;
+    setLocalBusy(`new:${path}`);
+    try {
+      const result = await sessions.newSession(path);
+      callbacks.current.onNotice(t("worktreeSessionNew", { name: result.title }));
+      setError("");
+    } catch (cause) {
+      callbacks.current.onError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setLocalBusy("");
+      callbacks.current.setBusy("");
+    }
+  };
   const applyResult = (response) => {
     setData({
       repo: response.repo ?? null,
@@ -1906,16 +1982,21 @@ function WorktreeView(props) {
         dirName: label.trim() === "" ? void 0 : label.trim(),
         baseRef,
         mode,
-        branch: mode === "branch" && branch.trim() !== "" ? branch.trim() : void 0
+        branch: mode === "branch" && branch.trim() !== "" ? branch.trim() : void 0,
+        copyIgnored: copyStartupFiles
       });
       applyResult(response);
       callbacks.current.onSnapshot(response);
       const createdPath = response.created?.path ?? "";
-      callbacks.current.onNotice(t("worktreeCreated", { path: createdPath }));
+      const copied = response.created?.copied ?? [];
+      callbacks.current.onNotice(
+        copied.length === 0 ? t("worktreeCreated", { path: createdPath }) : t("worktreeCreatedCopied", { path: createdPath, files: copied.join("\u3001") })
+      );
       setFormOpen(false);
       setLabel("");
       setBranch("");
       setError("");
+      if (openInSession && canOpenSession && createdPath !== "") await enterWorktree(createdPath);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -1936,6 +2017,14 @@ function WorktreeView(props) {
         retained === "" ? t("worktreeRemoved") : t("worktreeRemovedBranchKept", { branch: retained })
       );
       if (patch !== "") callbacks.current.onNotice(t("patchExported", { path: patch }));
+      if (forgetWorkspace && canOpenSession && sessions !== void 0) {
+        try {
+          const forgotten = await sessions.forget(removing.path);
+          if (forgotten) callbacks.current.onNotice(t("workspaceForgotten", { name: basename(removing.path) }));
+        } catch (cause) {
+          callbacks.current.onError(cause instanceof Error ? cause.message : String(cause));
+        }
+      }
       setRemoving(null);
       setForce(false);
       setExportPatch(true);
@@ -2027,6 +2116,14 @@ function WorktreeView(props) {
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: t("branchName") }),
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { className: "dgp-input", placeholder: t("branchNamePlaceholder"), value: branch, onChange: (event) => setBranch(event.target.value) })
       ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("label", { className: "dgp-check", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { type: "checkbox", checked: copyStartupFiles, onChange: (event) => setCopyStartupFiles(event.target.checked) }),
+        t("worktreeCopyIgnored")
+      ] }),
+      canOpenSession && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("label", { className: "dgp-check", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { type: "checkbox", checked: openInSession, onChange: (event) => setOpenInSession(event.target.checked) }),
+        t("worktreeOpenSession")
+      ] }),
       /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-formactions", children: [
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", className: "dgp-primary", disabled: busy, onClick: () => void create(), children: localBusy === "create" ? t("creating") : t("create") }),
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", disabled: busy, onClick: () => setFormOpen(false), children: t("cancel") })
@@ -2036,51 +2133,89 @@ function WorktreeView(props) {
     error !== "" && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-error", children: error }),
     loading && data === null && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-empty", children: t("loading") }),
     data !== null && data.worktrees.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-empty", children: t("noWorktrees") }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-rows", children: (data?.worktrees ?? []).map((info) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-wt", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-wthead", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconBranch, { size: 13 }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dgp-wtname", title: info.path, children: basename(info.path) }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dgp-hash", children: info.head }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("span", { className: "dgp-rowactions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", className: "dgp-iconbtn", title: t("copyPath"), onClick: () => void copyPath(info.path), children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconCopy, { size: 13 }) }),
-          !info.main && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
-            "button",
-            {
-              type: "button",
-              className: "dgp-iconbtn dgp-dangerbtn",
-              title: t("removeWorktree"),
-              disabled: busy,
-              onClick: () => {
-                setRemoving(info);
-                setForce(false);
-                setExportPatch(info.dirty === true || info.merged === false);
-              },
-              children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconTrash, { size: 13 })
-            }
-          )
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-wtmeta", children: [
-        info.detached ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dgp-chip", children: t("detached") }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dgp-chip dgp-chip-on", children: info.branch }),
-        badgesFor(info, t)
-      ] }),
-      dirname(info.path) !== "" && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-meta dgp-ellipsis", children: info.path }),
-      removing !== null && removing.path === info.path && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-confirm", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-confirmtext", children: t("removeWorktreeConfirm", { path: info.path }) }),
-        (info.dirty === true || info.merged === false) && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("label", { className: "dgp-check", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { type: "checkbox", checked: exportPatch, onChange: (event) => setExportPatch(event.target.checked) }),
-          t("exportPatch")
+    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-rows", children: (data?.worktrees ?? []).map((info) => {
+      const binding = bindingOf(info.path);
+      return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-wt", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-wthead", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconBranch, { size: 13 }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dgp-wtname", title: info.path, children: basename(info.path) }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dgp-hash", children: info.head }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("span", { className: "dgp-rowactions", children: [
+            binding !== void 0 && (binding.registered ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+              "span",
+              {
+                className: "dgp-badge",
+                title: t("worktreeBindingSessions", { count: binding.sessions, archived: binding.archived }),
+                children: binding.sessions === 0 ? t("worktreeBindingNone") : t("worktreeBindingCount", { count: binding.sessions })
+              }
+            ) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dgp-badge", children: t("worktreeBindingUnregistered") })),
+            canOpenSession && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "dgp-iconbtn",
+                title: binding?.registered === true && binding.sessions > 0 ? t("enterWorktreeSession") : t("openSessionHere"),
+                disabled: busy || !info.exists,
+                onClick: () => void enterWorktree(info.path),
+                children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconSession, { size: 13 })
+              }
+            ),
+            canOpenSession && sessions?.canCreateSession() === true && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "dgp-iconbtn",
+                title: t("newSessionHere"),
+                disabled: busy || !info.exists,
+                onClick: () => void newSessionHere(info.path),
+                children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconPlus, { size: 13 })
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", className: "dgp-iconbtn", title: t("copyPath"), onClick: () => void copyPath(info.path), children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconCopy, { size: 13 }) }),
+            !info.main && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "dgp-iconbtn dgp-dangerbtn",
+                title: t("removeWorktree"),
+                disabled: busy,
+                onClick: () => {
+                  setRemoving(info);
+                  setForce(false);
+                  setExportPatch(info.dirty === true || info.merged === false);
+                },
+                children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconTrash, { size: 13 })
+              }
+            )
+          ] })
         ] }),
-        info.dirty === true && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("label", { className: "dgp-check", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { type: "checkbox", checked: force, onChange: (event) => setForce(event.target.checked) }),
-          t("forceRemove")
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-wtmeta", children: [
+          info.detached ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dgp-chip", children: t("detached") }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "dgp-chip dgp-chip-on", children: info.branch }),
+          badgesFor(info, t)
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-formactions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", className: "dgp-dangerbtn dgp-primary", disabled: busy, onClick: () => void remove(), children: localBusy === "remove" ? t("removing") : t("confirmRemove") }),
-          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", disabled: busy, onClick: () => setRemoving(null), children: t("cancel") })
+        dirname(info.path) !== "" && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-meta dgp-ellipsis", children: info.path }),
+        removing !== null && removing.path === info.path && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-confirm", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-confirmtext", children: t("removeWorktreeConfirm", { path: info.path }) }),
+          (info.dirty === true || info.merged === false) && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("label", { className: "dgp-check", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { type: "checkbox", checked: exportPatch, onChange: (event) => setExportPatch(event.target.checked) }),
+            t("exportPatch")
+          ] }),
+          info.dirty === true && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("label", { className: "dgp-check", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { type: "checkbox", checked: force, onChange: (event) => setForce(event.target.checked) }),
+            t("forceRemove")
+          ] }),
+          canOpenSession && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("label", { className: "dgp-check", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { type: "checkbox", checked: forgetWorkspace, onChange: (event) => setForgetWorkspace(event.target.checked) }),
+            t("forgetWorkspace")
+          ] }),
+          canOpenSession && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-hint", children: t("forgetWorkspaceHint") }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "dgp-formactions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", className: "dgp-dangerbtn dgp-primary", disabled: busy, onClick: () => void remove(), children: localBusy === "remove" ? t("removing") : t("confirmRemove") }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { type: "button", disabled: busy, onClick: () => setRemoving(null), children: t("cancel") })
+          ] })
         ] })
-      ] })
-    ] }, info.path)) }),
+      ] }, info.path);
+    }) }),
     data !== null && data.worktreeTruncated && /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-truncated", children: t("worktreeTruncated", { total: data.worktreeTotal }) }),
     /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "dgp-hint", children: t("worktreeHint") })
   ] });
@@ -2355,7 +2490,8 @@ function GitPanel(props) {
           onError: setError,
           onNotice: setNotice,
           setBusy,
-          busy
+          busy,
+          worktreeSessions: props.worktreeSessions
         }
       )
     ] })
@@ -2533,6 +2669,122 @@ function GitPanelSettings({ scope }) {
   );
 }
 
+// src/client/worktree-session.ts
+function samePath(left, right) {
+  const normalize2 = (value) => value.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+  return normalize2(left) === normalize2(right);
+}
+var hasMethod = (target, name) => target !== void 0 && target !== null && typeof target[name] === "function";
+var EMPTY_BINDING = { registered: false, workspaceId: "", title: "", sessions: 0, archived: 0 };
+function createWorktreeSessionOpener(ctx) {
+  const workspaces = () => ctx.get?.("workspaces");
+  const uiWorkspace = () => ctx.get?.("uiWorkspace");
+  const sessions = () => ctx.get?.("sessions");
+  const workspaceAt = (path) => (workspaces()?.list?.getSnapshot?.()?.items ?? []).find((item) => typeof item.path === "string" && samePath(item.path, path));
+  function bindingOf(workspace) {
+    const archived = new Set(workspaces()?.list?.getSnapshot?.()?.archivedSessionIds ?? []);
+    const all = workspace.sessionIds ?? [];
+    return {
+      registered: true,
+      workspaceId: typeof workspace.workspaceId === "string" ? workspace.workspaceId : "",
+      title: typeof workspace.title === "string" ? workspace.title : "",
+      sessions: all.filter((id) => !archived.has(id)).length,
+      archived: all.filter((id) => archived.has(id)).length
+    };
+  }
+  const liveSessions = (workspace) => {
+    const snapshot = sessions()?.list?.getSnapshot?.();
+    const archived = new Set(workspaces()?.list?.getSnapshot?.()?.archivedSessionIds ?? []);
+    const byId = snapshot?.byId ?? {};
+    return (workspace.sessionIds ?? []).filter((id) => !archived.has(id)).map((id) => byId[id] ?? { id }).sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0));
+  };
+  const openSession = (sessionId) => {
+    const ui = uiWorkspace();
+    if (hasMethod(ui, "openSession")) ui.openSession?.(sessionId);
+    else if (hasMethod(sessions(), "open")) sessions().open?.(sessionId);
+  };
+  const startSession = async (workspaceId) => {
+    const ui = uiWorkspace();
+    if (hasMethod(ui, "startSession")) {
+      await ui.startSession?.(workspaceId);
+      return;
+    }
+    const ws = workspaces();
+    if (hasMethod(ws, "startSession")) {
+      await ws.startSession?.(workspaceId);
+      return;
+    }
+    throw new Error("\u5F53\u524D\u90E8\u7F72\u4E0D\u652F\u6301\u6253\u5F00\u4F1A\u8BDD\uFF1AuiWorkspace.startSession / workspaces.startSession \u90FD\u4E0D\u53EF\u7528\u3002");
+  };
+  const ensureRegistered = async (path) => {
+    const ws = workspaces();
+    if (!hasMethod(ws, "create")) throw new Error("\u5F53\u524D\u90E8\u7F72\u4E0D\u652F\u6301\u6CE8\u518C\u5DE5\u4F5C\u533A\uFF1A\u7F3A\u5C11 workspaces.create\u3002");
+    const target = String(path ?? "").trim();
+    if (target === "") throw new Error("\u5DE5\u4F5C\u6811\u8DEF\u5F84\u4E3A\u7A7A\u3002");
+    const existing = workspaceAt(target);
+    if (existing !== void 0) return { binding: bindingOf(existing), created: false };
+    const created = await ws.create?.({ path: target });
+    const workspaceId = typeof created?.workspaceId === "string" ? created.workspaceId : "";
+    if (workspaceId === "") throw new Error("\u6CE8\u518C\u5DE5\u4F5C\u533A\u540E\u6CA1\u6709\u62FF\u5230 workspaceId\uFF0C\u65E0\u6CD5\u5F00\u4F1A\u8BDD\u3002");
+    const label = worktreeLabel(target);
+    if (label !== "" && hasMethod(ws, "rename")) {
+      try {
+        await ws.rename?.(workspaceId, label);
+      } catch {
+      }
+    }
+    return { binding: { ...EMPTY_BINDING, registered: true, workspaceId, title: label, sessions: 0 }, created: true };
+  };
+  return {
+    available() {
+      const ws = workspaces();
+      return hasMethod(ws, "create") && (hasMethod(uiWorkspace(), "startSession") || hasMethod(ws, "startSession"));
+    },
+    canCreateSession: () => hasMethod(sessions(), "create"),
+    binding(path) {
+      const workspace = workspaceAt(path);
+      return workspace === void 0 ? { ...EMPTY_BINDING } : bindingOf(workspace);
+    },
+    async enter(path) {
+      const { binding, created } = await ensureRegistered(path);
+      if (!created) {
+        const workspace = workspaceAt(path);
+        const newest = workspace === void 0 ? void 0 : liveSessions(workspace)[0];
+        if (newest !== void 0 && typeof newest.id === "string") {
+          openSession(newest.id);
+          return { ...binding, opened: "existing", sessionId: newest.id };
+        }
+      }
+      await startSession(binding.workspaceId);
+      return { ...binding, opened: "created", sessionId: "" };
+    },
+    async newSession(path) {
+      const { binding } = await ensureRegistered(path);
+      const session = sessions();
+      if (!hasMethod(session, "create")) throw new Error("\u5F53\u524D\u90E8\u7F72\u4E0D\u652F\u6301\u65B0\u5EFA\u4F1A\u8BDD\uFF1A\u7F3A\u5C11 sessions.create\u3002");
+      const sessionId = await session.create?.({ workspaceId: binding.workspaceId });
+      if (typeof sessionId !== "string" || sessionId === "") throw new Error("\u65B0\u5EFA\u4F1A\u8BDD\u6CA1\u6709\u8FD4\u56DE sessionId\u3002");
+      openSession(sessionId);
+      return { ...binding, opened: "created", sessionId };
+    },
+    async forget(path) {
+      const ws = workspaces();
+      if (!hasMethod(ws, "delete")) return false;
+      const existing = workspaceAt(path);
+      if (existing === void 0 || typeof existing.workspaceId !== "string" || existing.workspaceId === "") return false;
+      await ws.delete?.(existing.workspaceId);
+      return true;
+    }
+  };
+}
+function worktreeLabel(path) {
+  const parts = String(path ?? "").replace(/[\\/]+$/, "").split(/[\\/]/).filter((part) => part !== "");
+  const name = parts[parts.length - 1] ?? "";
+  const repo = parts[parts.length - 2] ?? "";
+  if (name === "") return "";
+  return repo === "" || repo === name ? name : `${repo} \xB7 ${name}`;
+}
+
 // src/shared/kit-tab.ts
 function registerKitTab(ctx, options) {
   const slot = options.slot ?? "settings.pluginKit.tab";
@@ -2578,6 +2830,7 @@ function apply(ctx) {
     const t = ctx.locale.bind(NS);
     const api = createApi();
     const actions = createActions();
+    const worktreeSessions = createWorktreeSessionOpener(ctx);
     const configScope = ctx.configForms.get(SETTINGS_NAMESPACE);
     registerKitTab(ctx, {
       effectName: "git-panel: kit settings tab",
@@ -2660,7 +2913,7 @@ function apply(ctx) {
             name: "sidebar.right.pane.tab",
             key: TAB_ID,
             locale: NS,
-            inject: () => ({ api, actions, t, openDiffInCenter, diffCenterAvailable: centerAvailable() })
+            inject: () => ({ api, actions, t, openDiffInCenter, diffCenterAvailable: centerAvailable(), worktreeSessions })
           },
           GitPanel
         )

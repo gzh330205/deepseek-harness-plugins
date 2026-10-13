@@ -193,6 +193,13 @@ try {
   eq('POST worktreeAdd：200', added.status, 200);
   check('POST worktreeAdd：返回创建路径', typeof added.json.created.path === 'string' && added.json.created.path !== '', JSON.stringify(added.json.created));
   eq('POST worktreeAdd：列表里有两棵', added.json.worktrees.length, 2);
+  // 复制被忽略的启动文件：默认不复制；只有显式 copyIgnored 才动手（opt-in 的 wire 契约）。
+  eq('POST worktreeAdd：默认不带 copyIgnored 时不复制', added.json.created.copied, []);
+  const copied = await post('worktreeAdd', { root, dirName: 'route-copy', mode: 'detached', copyIgnored: true });
+  eq('POST worktreeAdd：带 copyIgnored=true 时走到复制逻辑', copied.status, 200);
+  check('POST worktreeAdd：响应里回 copied/copySkipped 两个数组', Array.isArray(copied.json.created.copied) && Array.isArray(copied.json.created.copySkipped), JSON.stringify(copied.json.created).slice(0, 200));
+  await post('worktreeRemove', { root, path: copied.json.created.path, force: true });
+
   cleanups.push(added.json.created.path);
 
   const removed = await post('worktreeRemove', { root, path: added.json.created.path, force: true, exportPatch: false });

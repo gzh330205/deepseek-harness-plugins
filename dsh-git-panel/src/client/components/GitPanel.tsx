@@ -11,6 +11,7 @@ import { absolutePath, basename, fileAddressFor } from '../format.js';
 import type { ActionApi, GitApi } from '../api.js';
 import { errText } from '../api.js';
 import { getDiffTarget, subscribeDiffTarget, type DiffItem, type DiffTargetState } from '../diff-target.js';
+import type { WorktreeSessionOpener } from '../worktree-session.js';
 import { useFileDiff } from '../use-diff.js';
 import type { Snapshot } from '../types.js';
 import { ChangesView, type Selection } from './ChangesView.jsx';
@@ -31,6 +32,8 @@ export interface GitPanelProps {
   openDiffInCenter?: (state: DiffTargetState) => void;
   /** 中心窗口是否可用（`ctx.layout` 在场）。 */
   diffCenterAvailable?: boolean;
+  /** 「在工作树里开会话」的能力；缺失时工作树页不渲染相关入口。 */
+  worktreeSessions?: WorktreeSessionOpener;
 }
 
 const NO_SUBSCRIPTION = () => undefined;
@@ -367,6 +370,7 @@ export function GitPanel(props: GitPanelProps) {
             onNotice={setNotice}
             setBusy={setBusy}
             busy={busy}
+            worktreeSessions={props.worktreeSessions}
           />
         )}
       </div>

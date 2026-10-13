@@ -21,6 +21,7 @@ import { GitPanelSettings } from './components/GitPanelSettings';
 import { IconGit } from './components/icons.jsx';
 import { fileAddressFor } from './format.js';
 import { getDiffTarget, setDiffTarget, type DiffItem, type DiffTargetState } from './diff-target.js';
+import { createWorktreeSessionOpener } from './worktree-session.js';
 import { registerKitTab } from '../shared/kit-tab';
 
 /** 中心窗口差异页在 root `main` 席位里的 key（同时也是 selectPanel 的 id）。 */
@@ -46,6 +47,9 @@ function apply(ctx: any) {
     const t = ctx.locale.bind(NS);
     const api = createApi();
     const actions = createActions();
+    // 「在工作树里开会话」：注册工作区 + 打开/新建会话。服务全部惰性取（见模块注释），
+    // 缺失时组件不渲染入口，而不是点了报错。
+    const worktreeSessions = createWorktreeSessionOpener(ctx);
 
     // 设置面：合集在场时贡献「设置 → 插件合集 → Git 面板」一个页签；合集缺席
     // （单独安装本插件）时本插件没有设置入口，与改动前一致。
@@ -143,7 +147,7 @@ function apply(ctx: any) {
               name: 'sidebar.right.pane.tab',
               key: TAB_ID,
               locale: NS,
-              inject: () => ({ api, actions, t, openDiffInCenter, diffCenterAvailable: centerAvailable() }),
+              inject: () => ({ api, actions, t, openDiffInCenter, diffCenterAvailable: centerAvailable(), worktreeSessions }),
             },
             GitPanel,
           ),

@@ -312,6 +312,113 @@ export async function mountWorktrees(result: unknown): Promise<string> {
   return html;
 }
 
+/**
+ * 工作树页的会话入口（F1–F5）：用一个假 opener 走完整交互——
+ *   1. 建树表单里两个默认勾选项（复制忽略文件 / 建完进会话）；
+ *   2. 创建成功后真的去「注册 + 开会话」，并且用的是宿主返回的 created.path；
+ *   3. 每行常驻「进入 / 再来一场」，已注册的树显示会话数；
+ *   4. 删除确认里的「同时从工作区列表移除」；
+ *   5. 会话消失（归档/删除）后再点「进入」→ opener 收到的是同一路径（由 opener 决定重建）。
+ */
+export async function clickWorktreeSession(options: {
+  worktrees: unknown[];
+  createdPath?: string;
+  copied?: string[];
+  openResult?: unknown;
+  createResult?: unknown;
+}): Promise<{
+  html: string;
+  afterCreateHtml: string;
+  afterEnterHtml: string;
+  afterRemoveHtml: string;
+  log: string[];
+}> {
+  const ReactDomClient: typeof import('react-dom/client') = await import('react-dom/client');
+  const testUtils = (await import('react-dom/test-utils')) as unknown as { act: (task: () => void | Promise<void>) => Promise<void> };
+  const act = (React as unknown as { act?: (task: () => void | Promise<void>) => Promise<void> }).act ?? testUtils.act;
+  const log: string[] = [];
+  const dom = globalThis as unknown as { document: Document; window: Window & typeof globalThis };
+  const createdPath = options.createdPath ?? '/ws/.dsh-worktrees/repo/wt1';
+  const list = () => ({ ok: true, repo: null, worktrees: options.worktrees, worktreeTotal: options.worktrees.length, worktreeTruncated: false, suggestedRoot: '/ws/.dsh-worktrees/repo', defaultBranchPrefix: 'dsh/', configuredRoot: '' });
+  const api = { worktrees: async () => list(), branches: async () => ({ ok: true, root: '/repo', branches: { local: [], remote: [], tags: [], truncated: false, total: { local: 0, remote: 0, tags: 0 } } }) };
+  const actions = {
+    ...({} as Record<string, unknown>),
+    worktreeAdd: async (_root: string, request: Record<string, unknown>) => {
+      log.push(`add:${String(request.copyIgnored)}`);
+      return { ...list(), created: { path: createdPath, branch: '', mode: String(request.mode), copied: options.copied ?? [] } };
+    },
+    worktreeRemove: async () => {
+      log.push('remove');
+      return { ...list(), removedWorktree: { path: createdPath, patchPath: '', retainedBranch: '', dirty: 0 } };
+    },
+  };
+  const opener = {
+    available: () => true,
+    canCreateSession: () => true,
+    binding: (path: string) => (path === '/ws/.dsh-worktrees/repo/registered' ? { registered: true, workspaceId: 'w1', title: 'repo · registered', sessions: 2, archived: 1 } : { registered: false, workspaceId: '', title: '', sessions: 0, archived: 0 }),
+    enter: async (path: string) => {
+      log.push(`enter:${path}`);
+      return { registered: true, workspaceId: 'w1', title: 'repo · wt1', sessions: 1, archived: 0, opened: 'created', sessionId: 's-new', ...(options.openResult as Record<string, unknown> ?? {}) };
+    },
+    newSession: async (path: string) => {
+      log.push(`newSession:${path}`);
+      return { registered: true, workspaceId: 'w1', title: 'repo · wt1', sessions: 2, archived: 0, opened: 'created', sessionId: 's-2' };
+    },
+    forget: async (path: string) => {
+      log.push(`forget:${path}`);
+      return true;
+    },
+  };
+  const container = dom.document.createElement('div');
+  dom.document.body.appendChild(container);
+  const root = ReactDomClient.createRoot(container);
+  const flush = async () => {
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  };
+  const click = async (element: Element | undefined | null) => {
+    if (element === undefined || element === null) return;
+    await act(async () => {
+      element.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+    await flush();
+  };
+  const byTitle = (label: string) => [...container.querySelectorAll('button')].find((button) => button.getAttribute('title') === label);
+
+  await act(async () => {
+    root.render(React.createElement(WorktreeView, { root: '/repo', api, actions, t, onSnapshot: noop, onError: (message: string) => log.push(`error:${message}`), onNotice: (message: string) => log.push(`notice:${message}`), busy: '', setBusy: noop, worktreeSessions: opener } as never));
+  });
+  await flush();
+  const html = container.innerHTML;
+
+  // 1/2：打开表单 → 两个复选框默认已勾 → 创建
+  await click(byTitle('新建工作树'));
+  const formHtml = container.innerHTML;
+  await click([...container.querySelectorAll('button')].find((button) => (button.textContent ?? '').includes('创建')));
+  const afterCreateHtml = container.innerHTML;
+  log.push(`checkboxesChecked:${(formHtml.match(/<input type="checkbox"[^>]*checked/g) ?? []).length}`);
+
+  // 3：每行「回到该工作树的会话」
+  await click(byTitle('回到该工作树的会话'));
+  const afterEnterHtml = container.innerHTML;
+  await click(byTitle('新建一场会话'));
+
+  // 4：删除确认里的「同时从工作区列表移除」
+  await click(byTitle('删除工作树'));
+  await click([...container.querySelectorAll('button')].find((button) => (button.textContent ?? '').includes('确认删除')));
+  const afterRemoveHtml = container.innerHTML;
+
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+  return { html, afterCreateHtml, afterEnterHtml, afterRemoveHtml, log };
+}
+
 export function renderPanel(props: Record<string, unknown>): string {
   return render(React.createElement(GitPanel, { api, actions, t, sessionId: 'session-1', ...props } as never));
 }

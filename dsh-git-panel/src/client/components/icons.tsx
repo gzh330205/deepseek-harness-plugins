@@ -73,6 +73,15 @@ export function IconWorktree({ size = 16, className }: IconProps) {
   );
 }
 
+/** 「在这个工作树里开会话」：一个对话气泡（与「打开文件」的箭头图标区分开）。 */
+export function IconSession({ size = 16, className }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <path d="M13.6 7.6c0 2.7-2.5 4.9-5.6 4.9-.7 0-1.4-.1-2-.3L2.6 13.2l.9-2.5c-.7-.8-1.1-1.9-1.1-3.1C2.4 4.9 4.9 2.7 8 2.7s5.6 2.2 5.6 4.9Z" />
+    </svg>
+  );
+}
+
 export function IconRefresh({ size = 16, className }: IconProps) {
   return (
     <svg {...base(size, className)}>

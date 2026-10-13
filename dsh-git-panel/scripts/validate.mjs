@@ -135,6 +135,29 @@ for (const match of stylesCode.matchAll(/(^|\})([^{}@]+)\{/g)) {
   check(`.dgp-commitinfo 承担纵向留白（当前 padding: ${infoPad}）`, /^\d/.test(infoPad) && !infoPad.startsWith('0'), infoPad);
 }
 
+/* ── 工作树与会话：注册工作区 + 打开/新建会话（F1–F5） ───────────────── */
+
+const worktreeSession = read('src/client/worktree-session.ts');
+const worktreeView = read('src/client/components/WorktreeView.tsx');
+const worktreeHost = read('src/host/worktree.js');
+check('缺少文件 src/client/worktree-session.ts', existsSync(join(root, 'src/client/worktree-session.ts')));
+check('会话入口必须惰性取服务（插件热重载会移除重加）', worktreeSession.includes("ctx.get?.('workspaces')") && worktreeSession.includes("ctx.get?.('uiWorkspace')"));
+check('会话入口不得在 apply 期间缓存服务对象', !/const workspaces = ctx\.get/.test(worktreeSession));
+check('注册必须按路径幂等（先查已有工作区）', /workspaceAt\(target\)/.test(worktreeSession) && /registered: false|created: false/.test(worktreeSession));
+check('打开会话要有三级回退（uiWorkspace → workspaces → sessions.create）', /uiWorkspace\.startSession/.test(worktreeSession) && /workspaces\.startSession|hasMethod\(ws, 'startSession'\)/.test(worktreeSession) && /sessions\.create|sessions\(\)\?\.create|hasMethod\(session, 'create'\)/.test(worktreeSession));
+check('进入会话要跳过已归档的会话（否则会打开一场打不开的）', /archivedSessionIds/.test(worktreeSession) && /archived\.has\(id\)/.test(worktreeSession));
+check('必须能显式新建一场会话（会话失效后重建的入口）', /async newSession\(path\)/.test(worktreeSession));
+check('项目行标签必须带仓库前缀（`<repo> · <name>`，否则侧栏认不出亲缘）', /worktreeLabel/.test(worktreeSession) && /·/.test(worktreeSession));
+check('删除工作树时能移除工作区登记（且会话记录不受影响）', /async forget\(path\)/.test(worktreeSession) && /workspaces\(\)\?\.delete|hasMethod\(ws, 'delete'\)/.test(worktreeSession));
+check('视图不得自己去拿 ctx（能力必须由 props 注入，才能单测）', !/ctx\.get/.test(worktreeView));
+check('创建表单默认勾选「建完进会话」与「复制忽略文件」', worktreeView.includes('const [openInSession, setOpenInSession] = React.useState(true)') && worktreeView.includes('const [copyStartupFiles, setCopyStartupFiles] = React.useState(true)'));
+check('每行都要有常驻的会话入口（不只建完那一次）', /onClick=\{\(\) => void enterWorktree\(info\.path\)\}/.test(worktreeView));
+check('删除确认里要有「同时从工作区列表移除」', /forgetWorkspace/.test(worktreeView) && /t\('forgetWorkspaceHint'\)/.test(worktreeView));
+check('复制忽略文件必须是宿主侧行为（客户端不读文件系统）', /copyIgnoredStartupFiles/.test(worktreeHost) && !/readdirSync|copyFileSync/.test(worktreeView));
+check('复制只认白名单 + 只复制被忽略的普通文件', /COPY_IGNORED_PATTERNS/.test(worktreeHost) && /--ignored/.test(worktreeHost) && /isFile\(\)/.test(worktreeHost));
+check('不得真的调用 check-ignore（--literal-pathspecs 会让它 fatal，注释里提到不算）', !/'check-ignore'/.test(worktreeHost));
+check('复制必须是 opt-in（不勾选时不复制）', /request\.copyIgnored === true/.test(worktreeHost));
+
 /* ── i18n：组件里用到的字面量 key 必须在两套词典里都存在 ───────────────── */
 
 const dictionaries = read('src/client/locales.ts');

@@ -340,6 +340,37 @@ try {
   check('非仓库：给出引导而不是崩掉', nonRepo.includes('不是 Git 仓库') && nonRepo.includes('dgp-head'), nonRepo.slice(0, 300));
   check('非仓库：没有分支行', !nonRepo.includes('dgp-branchrow'), '');
 
+  /* ── 工作树的会话入口（F1–F5） ─────────────────────────────────────── */
+
+  const row = (path, name) => ({
+    path, name, head: 'aaaaaaa', headFull: 'a'.repeat(40),
+    branch: `dsh/${name}`, detached: false, bare: false, locked: false, lockReason: '', prunable: false, pruneReason: '',
+    main: false, current: false, exists: true, dirty: false, dirtyCount: 0, ancestor: false, merged: false,
+  });
+  const sessionFlow = await suite.clickWorktreeSession({
+    worktrees: [row('/ws/.dsh-worktrees/repo/registered', 'registered'), row('/ws/.dsh-worktrees/repo/fresh', 'fresh')],
+    createdPath: '/ws/.dsh-worktrees/repo/wt1',
+    copied: ['.env'],
+  });
+  check('工作树：表单默认勾选「复制忽略文件」与「建完进会话」', sessionFlow.log.includes('checkboxesChecked:2'), JSON.stringify(sessionFlow.log.slice(0, 6)));
+  check('工作树：创建时把 copyIgnored 交给宿主', sessionFlow.log.includes('add:true'), JSON.stringify(sessionFlow.log));
+  check('工作树：创建成功后按宿主返回的 created.path 开会话', sessionFlow.log.includes('enter:/ws/.dsh-worktrees/repo/wt1'), JSON.stringify(sessionFlow.log));
+  check('工作树：创建提示里带上被复制的文件', sessionFlow.log.some((item) => item.startsWith('notice:') && item.includes('.env')), JSON.stringify(sessionFlow.log));
+  check('工作树：已注册的行显示会话数徽标', sessionFlow.html.includes('2 场会话'), sessionFlow.html.slice(0, 600));
+  check('工作树：未注册的行显示「未注册」（另一行显示会话数）', sessionFlow.html.includes('未注册') && sessionFlow.html.includes('2 场会话'), sessionFlow.html.slice(0, 600));
+  check('工作树：每行有「进入会话」与「新建一场」两个常驻入口', sessionFlow.html.includes('回到该工作树的会话') || sessionFlow.html.includes('在这个工作树里开会话'), '');
+  check('工作树：进入会话用的是该行路径（会话失效后同样走这条路重建）', sessionFlow.log.includes('enter:/ws/.dsh-worktrees/repo/registered'), JSON.stringify(sessionFlow.log));
+  check('工作树：显式新建一场走的是 newSession', sessionFlow.log.includes('newSession:/ws/.dsh-worktrees/repo/registered'), JSON.stringify(sessionFlow.log));
+  check('工作树：删除时按勾选移除工作区登记', sessionFlow.log.includes('forget:/ws/.dsh-worktrees/repo/registered'), JSON.stringify(sessionFlow.log));
+  check('工作树：会话入口在服务缺失时不渲染', !sessionFlow.html.includes('dgp-branchcaret') && sessionFlow.html.includes('dgp-wt'), '');
+
+  const noSessionServices = await suite.mountWorktrees({
+    repo: null, suggestedRoot: '/ws/.dsh-worktrees/repo', defaultBranchPrefix: 'dsh/', configuredRoot: '',
+    worktreeTotal: 1, worktreeTruncated: false,
+    worktrees: [{ path: '/ws/.dsh-worktrees/repo/x', name: 'x', head: 'aaaaaaa', headFull: 'a'.repeat(40), branch: 'dsh/x', detached: false, bare: false, locked: false, lockReason: '', prunable: false, pruneReason: '', main: false, current: false, exists: true, dirty: false, dirtyCount: 0, ancestor: false, merged: false }],
+  });
+  check('工作树：没有 opener 时不出现会话入口与登记徽标', !noSessionServices.includes('未注册') && !noSessionServices.includes('在这个工作树里开会话'), noSessionServices.slice(0, 400));
+
   /* ── 数据形态自检：宿主给的 stats 一定被 UI 用到 ───────────────────── */
 
   const entry = snapshot.changes.find((item) => item.path === 'a.txt');

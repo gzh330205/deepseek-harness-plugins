@@ -10,7 +10,7 @@
  *  - **默认 detached**：一棵工作树一个分支会让「同一分支不能在两处 checkout」
  *    这条 git 规则变成用户的负担；需要分支时显式选 branch 形态。
  */
-import { mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, lstatSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { LIMITS, assertBranch, assertRef, badRequest, slugify, worktreeDirectory, worktreeRootDir } from './contract.js';
 import { GitError } from './git.js';
@@ -31,6 +31,85 @@ function statExists(path) {
   } catch {
     return false;
   }
+}
+
+/**
+ * 新建工作树时默认带过去的「启动文件」白名单。
+ *
+ * 新工作树是**干净检出**：被 gitignore 的 `.env`、私有 registry 的 `.npmrc` 都不在里面，
+ * 于是「建完直接在那个目录里跑 dev」会立刻失败。Claude Code 用 `.worktreeinclude`
+ * （gitignore 语法的白名单文件）解决同一件事，这里取一个**保守的固定名单**：
+ * 只在这些名字（仓库根、普通文件、≤ 64 KiB、且确实被 git 忽略）里复制，
+ * 绝不递归、绝不碰 node_modules —— 复制是 opt-in（面板上的复选框）。
+ */
+const COPY_IGNORED_PATTERNS = [
+  /^\.env$/,
+  /^\.env\..+$/,
+  /^\.npmrc$/,
+  /^\.nvmrc$/,
+  /^\.tool-versions$/,
+  /^\.python-version$/,
+];
+const COPY_IGNORED_MAX_BYTES = 64 * 1024;
+
+/**
+ * 把主工作区里「被忽略的启动文件」复制进新工作树。
+ *
+ * 只做四件事：列仓库根目录、按白名单筛、确认它确实被 git 忽略（跟踪文件本来就在新树里）、
+ * 复制。任何一步不确定就跳过并在返回值里说明，绝不覆盖新树里已有的路径。
+ *
+ * @returns `{ copied, skipped }`，路径都是仓库相对路径（POSIX 分隔符）。
+ */
+export async function copyIgnoredStartupFiles(git, repoRoot, worktreePath) {
+  const copied = [];
+  const skipped = [];
+  let names = [];
+  try {
+    names = readdirSync(repoRoot);
+  } catch {
+    return { copied, skipped };
+  }
+  for (const name of names) {
+    if (!COPY_IGNORED_PATTERNS.some((pattern) => pattern.test(name))) continue;
+    const source = join(repoRoot, name);
+    let info;
+    try {
+      info = lstatSync(source);
+    } catch {
+      continue;
+    }
+    // 只复制普通文件：符号链接指向哪儿都可能，目录（哪怕名字像 .env）一律跳过。
+    if (!info.isFile()) {
+      skipped.push(`${name}（不是普通文件）`);
+      continue;
+    }
+    if (info.size > COPY_IGNORED_MAX_BYTES) {
+      skipped.push(`${name}（超过 ${Math.round(COPY_IGNORED_MAX_BYTES / 1024)} KiB）`);
+      continue;
+    }
+    // 跟踪文件本来就会被 checkout 到新树里；只有「被忽略」才需要复制。
+    // 注意**不能用 `git check-ignore`**：BASE_ARGS 里的 `--literal-pathspecs` 会让它直接
+    // 报 `fatal: pathspec magic not supported by this command: 'literal'`（实测），
+    // 于是每次都判成「没被忽略」。`ls-files -o -i --exclude-standard` 不受影响：
+    // 被忽略时打印路径，未跟踪但没被忽略、以及已跟踪的文件都什么都不打印。
+    const ignored = await git.probe(['ls-files', '--others', '--ignored', '--exclude-standard', '-z', '--', name], { cwd: repoRoot });
+    if (ignored === undefined || ignored.stdout.split('\0').filter((token) => token !== '').length === 0) {
+      skipped.push(`${name}（没有被 git 忽略）`);
+      continue;
+    }
+    const target = join(worktreePath, name);
+    if (statExists(target)) {
+      skipped.push(`${name}（新树里已存在）`);
+      continue;
+    }
+    try {
+      copyFileSync(source, target);
+      copied.push(name);
+    } catch (error) {
+      skipped.push(`${name}（复制失败：${error instanceof Error ? error.message : String(error)}）`);
+    }
+  }
+  return { copied, skipped };
 }
 
 /** 路径比较：Windows 大小写不敏感，两种分隔符等价，忽略末尾分隔符。 */
@@ -138,7 +217,8 @@ function nextDirectory({ repoRoot, worktreeRoot, label }) {
 
 /**
  * 新建工作树。
- * @param request - `{ dirName?, baseRef?, mode?: 'detached'|'branch', branch?, branchPrefix?, worktreeRoot? }`
+ * @param request - `{ dirName?, baseRef?, mode?: 'detached'|'branch', branch?, branchPrefix?, worktreeRoot?, copyIgnored? }`
+ *   `copyIgnored` 为 true 时，把主工作区里被忽略的启动文件（见 COPY_IGNORED_PATTERNS）复制进新树。
  */
 export async function addWorktree(git, repo, request = {}) {
   const mode = request.mode === 'branch' ? 'branch' : 'detached';
@@ -164,7 +244,21 @@ export async function addWorktree(git, repo, request = {}) {
   const added = await git.run(args, { cwd: repo.repoRoot, timeoutMs: 120000 });
   if (!added.ok) throw new GitError('创建 worktree 失败', { args, ...added });
 
-  return { path, dirName, branch, mode, base: baseHash, baseRef, root: worktreeRootFor(repo.repoRoot, request.worktreeRoot) };
+  // 复制失败不影响「树已经建好」这个事实：只把结果如实带回去，由面板提示。
+  const copied = request.copyIgnored === true
+    ? await copyIgnoredStartupFiles(git, repo.repoRoot, path)
+    : { copied: [], skipped: [] };
+  return {
+    path,
+    dirName,
+    branch,
+    mode,
+    base: baseHash,
+    baseRef,
+    root: worktreeRootFor(repo.repoRoot, request.worktreeRoot),
+    copied: copied.copied,
+    copySkipped: copied.skipped,
+  };
 }
 
 /** 把工作树里的全部改动（含未提交）导出成补丁文件。 */

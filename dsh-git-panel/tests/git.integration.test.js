@@ -244,6 +244,39 @@ try {
   eq('工作树：分支名去掉 refs/heads 前缀', branchEntry.branch, 'dsh/feat');
   await removeWorktree(gitRunner, repo, { path: branchWorktree.path, force: true, worktreeRoot: join(repoDir, '..', `${'wt-root-'}${process.pid}`) });
 
+  /* ── 新建工作树时复制「被忽略的启动文件」 ──────────────────────────────
+        新树是干净检出：`.env` / `.npmrc` 不在里面，于是「建完就在那儿跑 dev」会直接失败。
+        白名单 + 只复制被 git 忽略的普通文件 + 绝不覆盖新树里已有的路径。 */
+
+  // 「被忽略」是硬条件：复制一个未被忽略的文件会让新树直接变脏（?? .env），
+  // 那还不如不复制——所以夹具必须真有一个 .gitignore。
+  writeFileSync(join(repoDir, '.gitignore'), '.env\n.npmrc\n');
+  writeFileSync(join(repoDir, '.env'), 'TOKEN=local-only\n');
+  writeFileSync(join(repoDir, '.npmrc'), 'registry=https://example.invalid/\n');
+  writeFileSync(join(repoDir, 'copy-me.txt'), 'tracked\n');
+  git(repoDir, ['add', '.gitignore', 'copy-me.txt']);
+  git(repoDir, ['commit', '-qm', 'ignore rules and a tracked file for the copy test']);
+  const withCopy = await addWorktree(gitRunner, repo, {
+    dirName: 'copy-ignored',
+    worktreeRoot: join(repoDir, '..', `${'wt-root-'}${process.pid}`),
+    mode: 'detached',
+    copyIgnored: true,
+  });
+  cleanup.push(withCopy.path);
+  eq('工作树：复制了 .env 与 .npmrc', [...withCopy.copied].sort(), ['.env', '.npmrc']);
+  check('工作树：复制的是内容而不是空文件', readFileSync(join(withCopy.path, '.env'), 'utf8').includes('TOKEN=local-only'), '');
+  check('工作树：跟踪文件不靠复制（它本来就在检出里）', existsSync(join(withCopy.path, 'copy-me.txt')) && !withCopy.copied.includes('copy-me.txt'), JSON.stringify(withCopy.copied));
+  check('工作树：未忽略的普通文件不动（不按白名单乱复制）', !withCopy.copied.includes('a.txt'), JSON.stringify(withCopy.copied));
+
+  const noCopy = await addWorktree(gitRunner, repo, {
+    dirName: 'no-copy',
+    worktreeRoot: join(repoDir, '..', `${'wt-root-'}${process.pid}`),
+    mode: 'detached',
+  });
+  cleanup.push(noCopy.path);
+  eq('工作树：没勾选时不复制任何东西', noCopy.copied, []);
+  check('工作树：没勾选时新树里确实没有 .env', !existsSync(join(noCopy.path, '.env')), '');
+
   /* ── 未跟踪状态下 cancel 全部暂存 ─────────────────────────────────── */
 
   writeFileSync(join(root, 'x.txt'), 'x\n');
