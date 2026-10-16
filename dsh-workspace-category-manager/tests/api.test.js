@@ -748,8 +748,8 @@ assert(textIn(todayWrap, 'wcm-folderCount')[0] === '4', `only registered session
 assert(JSON.stringify(idsIn(todayWrap)) === JSON.stringify(['s-listed', 's-viewed', 's-blank-current', 's-running']), `registry membership regressed, got ${JSON.stringify(idsIn(todayWrap))}`);
 assert(!idsIn(todayWrap).includes('s-history'), 'a session that was never registered must never show, no matter how fresh its activity is');
 assert(!idsIn(todayWrap).includes('s-dead'), 'a registered id that no longer exists in the snapshot must not render');
-assert(JSON.stringify(textIn(todayWrap, 'wcm-todayGroupLabel')) === JSON.stringify(['Proj A', 'beta']), `groups must lead with the most recently touched project, got ${JSON.stringify(textIn(todayWrap, 'wcm-todayGroupLabel'))}`);
-assert(JSON.stringify(textIn(todayWrap, 'wcm-todayGroupCount')) === JSON.stringify(['3', '1']), `each group must count its own rows, got ${JSON.stringify(textIn(todayWrap, 'wcm-todayGroupCount'))}`);
+assert(JSON.stringify(textIn(todayWrap, 'wcm-projectLabel')) === JSON.stringify(['Proj A', 'beta']), `groups must lead with the most recently touched project, got ${JSON.stringify(textIn(todayWrap, 'wcm-todayGroupLabel'))}`);
+assert(JSON.stringify(textIn(todayWrap, 'wcm-projectCount')) === JSON.stringify(['3', '1']), `each group must count its own rows, got ${JSON.stringify(textIn(todayWrap, 'wcm-todayGroupCount'))}`);
 assert(JSON.stringify(textIn(todayWrap, 'wcm-sessionTitle')) === JSON.stringify(['中午发过话', '看过结果了', 'newSession', '还在跑']), `rows must stay newest-first inside their group, got ${JSON.stringify(textIn(todayWrap, 'wcm-sessionTitle'))}`);
 const yesterdayStamp = (() => { const date = new Date(dayAt(-1, 22)); return `${date.getMonth() + 1}/${date.getDate()}`; })();
 assert(JSON.stringify(textIn(todayWrap, 'wcm-todayTime')) === JSON.stringify(['12:00', '10:00', '08:00', yesterdayStamp]), `clock while today, date otherwise, got ${JSON.stringify(textIn(todayWrap, 'wcm-todayTime'))}`);
@@ -768,8 +768,26 @@ rowIn(rowsP, 's-listed').props.onClick({ stopPropagation() {}, preventDefault() 
 assert(calls.some(([kind, id]) => kind === 'uiWorkspace.openSession' && id === 's-listed'), 'clicking a Current row must open its session');
 
 /* 分组标题可折叠且折叠状态落盘（键是工作区身份 / 目录路径，不是显示名）。 */
-const groupOf = (rendered, label) => collectIn(wrapOf(rendered).el, 'wcm-todayGroup').find((node) => collectIn(node, 'wcm-todayGroupLabel').map((child) => [].concat(child.props.children).join('')).includes(label));
+/* 分组标题现在就是分类栏里那个项目行（同款类名），所以按项目行来找。 */
+const groupOf = (rendered, label) => collectIn(wrapOf(rendered).el, 'wcm-projectRow').find((node) => collectIn(node, 'wcm-projectLabel').map((child) => [].concat(child.props.children).join('')).includes(label));
 assert(groupOf(rowsP, 'Proj A'), 'each project group must expose a foldable header');
+/* 分组标题上是**静态**聚合点（与组内会话行、分类行、项目行同一套语言，不是运行动画）：
+ * warning > running > done；组内没有状态就不渲染（不给空位）。「当前」这一行本身不带点。 */
+const groupDot = (rendered, label) => { const header = groupOf(rendered, label); return { done: collectIn(header, 'wcm-ws-done').length, warning: collectIn(header, 'wcm-ws-warning').length, running: collectIn(header, 'wcm-ws-running').length, animation: collectIn(header, 'wcm-dotMatrix').length }; };
+assert(JSON.stringify(groupDot(rowsP, 'Proj A')) === JSON.stringify({ done: 0, warning: 0, running: 0, animation: 0 }), 'a group with no status must not render a dot');
+svcP.statuses.set('s-listed', { completionUnread: true });
+assert(groupDot(renderToday(propsP, todayNoon), 'Proj A').done === 1, 'a group holding a finished-unread session must show the done dot');
+svcP.statuses.set('s-listed', { running: true });
+assert(JSON.stringify(groupDot(renderToday(propsP, todayNoon), 'Proj A')) === JSON.stringify({ done: 0, warning: 0, running: 1, animation: 0 }), 'a running session must outrank the done dot, and the group dot must stay static');
+svcP.statuses.set('s-blank-current', { pendingInteraction: { kind: 'approval' } });
+assert(JSON.stringify(groupDot(renderToday(propsP, todayNoon), 'Proj A')) === JSON.stringify({ done: 0, warning: 1, running: 0, animation: 0 }), 'a waiting-for-human session must outrank running');
+assert(groupDot(renderToday(propsP, todayNoon), 'beta').running === 1, 'a group holding a running session must show the running dot (the snapshot flag alone is enough)');
+/* 「当前」这一行本身不带任何状态点（用户决定：运行情况看下面的项目分组标题）。 */
+const currentRowDot = (rendered) => { const row = rendered.find((entry) => String(entry.cls).includes('wcm-todayRow')).el; return collectIn(row, 'wcm-wsBadge').length + collectIn(row, 'wcm-wsDot').length + collectIn(row, 'wcm-dotMatrix').length; };
+svcP.statuses.set('s-running', { running: true });
+assert(currentRowDot(renderToday(propsP, todayNoon)) === 0, 'the Current row itself must not carry a status dot');
+svcP.statuses.clear();
+svcP.statuses.clear();
 calls.length = 0;
 groupOf(rowsP, 'Proj A').props.onClick({ stopPropagation() {}, preventDefault() {} });
 const groupWrites = calls.filter(([kind, key]) => kind === 'scope.set' && key === 'collapsedTodayGroups').map(([, , value]) => value);
@@ -778,6 +796,19 @@ rowsP = renderToday(propsP, todayNoon);
 const foldedHeader = groupOf(rowsP, 'Proj A');
 assert(foldedHeader && !foldedHeader.props.className.includes('wcm-open'), 'the clicked project group must repaint folded immediately');
 assert(collectIn(wrapOf(rowsP).el, 'wcm-session').length === 4, 'a folded group must still render its rows for the CSS transition');
+/* 「当前」里的项目和会话必须和分类栏用**同一套样式**：分组标题就是那个项目行，
+ * 会话行共用同一个渲染函数，折叠容器也是同一个 .wcm-sessions。 */
+const groupHeader = groupOf(rowsP, 'Proj A');
+assert(String(groupHeader.props.className).includes('wcm-projectRow') && !String(groupHeader.props.className).includes('wcm-todayGroup'), 'the group header must be the same project row the category tree uses');
+assert(collectIn(groupHeader, 'wcm-projectLine').length === 1 && collectIn(groupHeader, 'wcm-projectLabel').length === 1 && collectIn(groupHeader, 'wcm-rowIconSlot').length === 1, 'the group header must reuse the project row structure (line / label / icon slot)');
+assert(collectIn(groupHeader, 'wcm-projectCount').length === 1, 'the group header keeps a per-project count');
+assert(collectIn(groupHeader, 'wcm-projectAdd').length === 0 && groupHeader.props.onContextMenu === undefined, 'the group header stays action-free: no new-session button, no project menu');
+assert(collectIn(wrapOf(rowsP).el, 'wcm-todayGroupCaret').length === 0 && collectIn(wrapOf(rowsP).el, 'wcm-todayGroupLabel').length === 0, 'the bespoke group-header classes must be gone');
+const groupRowsContainer = collectIn(wrapOf(rowsP).el, 'wcm-currentGroup')[0];
+assert(collectIn(groupRowsContainer, 'wcm-sessions').length === 1 && collectIn(groupRowsContainer, 'wcm-sessionsInner').length === 1, 'group rows must live in the same collapsible container the tree uses');
+/* 会话行：与分类栏里的是同一个渲染函数（同样的状态点 + 标题），只是多了时刻与两个动作。 */
+const sessionClasses = [].concat(rowIn(rowsP, 's-listed').props.children).filter((child) => child && typeof child === 'object').map((child) => String(child.props.className));
+assert(sessionClasses.some((name) => name.includes('wcm-sessionStatus')) && sessionClasses.some((name) => name.includes('wcm-sessionTitle')), `the Current session row must reuse the shared session row (status + title), got ${JSON.stringify(sessionClasses)}`);
 
 /* P2: 「隐藏」= 从注册表里删掉这一条。 */
 setHistoryList();

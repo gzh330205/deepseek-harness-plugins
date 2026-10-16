@@ -69,15 +69,6 @@ var styles_default = `\r
 .wcm-todayTime{flex:none;min-width:34px;padding-right:2px;font-size:11px;line-height:1;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary)}\r
 /* \u300C\u4ECA\u5929\u300D\u6309\u9879\u76EE\u5206\u7EC4\uFF1A\u5206\u7EC4\u6807\u9898\u662F\u6309\u94AE\uFF08\u53EF\u6298\u53E0\uFF09\uFF0C\u7EC4\u5185\u884C\u53EA\u7559 \u72B6\u6001\u70B9 + \u65F6\u523B + \u6807\u9898 +\r
    \u60AC\u505C\u51FA\u73B0\u7684\u9690\u85CF\u6309\u94AE\u2014\u2014\u9879\u76EE\u540D\u4E0D\u518D\u9010\u884C\u91CD\u590D\u3002\u5206\u7EC4\u884C\u4E0E\u7EC4\u5185\u884C\u90FD\u590D\u7528\u73B0\u6709\u5C55\u5F00\u52A8\u753B\u3002 */\r
-.wcm-todayGroup{display:flex;align-items:center;gap:4px;width:100%;height:24px;box-sizing:border-box;padding:0 4px!important;border:0!important;border-radius:6px!important;font:inherit;font-size:11px!important;font-weight:600;text-align:left;color:var(--dsw-alias-label-secondary)!important;background:transparent!important;cursor:pointer}\r
-.wcm-todayGroup:hover{background:var(--dsw-alias-interactive-bg-hover)!important}\r
-.wcm-todayGroupCaret{display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--dsw-alias-label-tertiary);transition:transform .12s}\r
-.wcm-todayGroup.wcm-open .wcm-todayGroupCaret{transform:rotate(90deg)}\r
-.wcm-todayGroupLabel{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\r
-.wcm-todayGroupCount{flex:none;padding-right:8px;font-size:10px;color:var(--dsw-alias-label-tertiary)}\r
-.wcm-todayGroupRows{display:flex;flex-direction:column;gap:1px;overflow:hidden;padding-left:10px;transition:height .18s ease,padding .18s ease,margin .18s ease,opacity .18s ease}\r
-.wcm-todayGroupRows.wcm-closed{height:0;padding-top:0;padding-bottom:0;padding-left:10px;margin-top:0;margin-bottom:0;opacity:0;pointer-events:none}\r
-@media (prefers-reduced-motion:reduce){.wcm-todayGroupRows{transition:none}}\r
 .wcm-todayEmpty{margin:2px 0 2px 4px;font-size:12px;color:var(--dsw-alias-label-tertiary)}\r
 /* \u300C\u6298\u53E0\u76EE\u5F55\u300D\uFF1A\u9875\u5934\u6309\u94AE\u91CC\u7684\u56FE\u6807\u968F\u72B6\u6001\u7FFB\u8F6C\u3002 */\r
 /* \u5206\u7C7B\u76EE\u5F55\u6574\u6BB5\u6298\u53E0\u3002\u7ED3\u6784\u548C\u5176\u5B83\u6298\u53E0\u9762\u677F\u4E00\u81F4\uFF1A\u5916\u5C42\u53EA\u627F\u62C5 height/\u900F\u660E\u5EA6\u8FC7\u6E21\uFF0C\u884C\u90FD\u5728\u552F\u4E00\u7684\r
@@ -95,6 +86,8 @@ var styles_default = `\r
 @media (prefers-reduced-motion:reduce){.wcm-session.wcm-locateHit{animation:none;background-color:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 2px var(--dsw-alias-brand-primary)}}\r
 .wcm-todayHide:hover{color:var(--dsw-alias-label-primary)!important;background:var(--dsw-alias-interactive-bg-hover)!important}\r
 \r
+/* \u5206\u7EC4\u6807\u9898\u4E0A\u7684\u6761\u6570\uFF1A\u548C\u5206\u7C7B\u884C\u7684\u6570\u5B57\u540C\u4E00\u5957\u6392\u7248\uFF0810px\u3001\u4E09\u7EA7\u8272\u3001\u53F3\u4FA7\u7559\u767D\uFF09\u3002 */\r
+.wcm-projectCount{flex:none;padding-right:8px;font-size:10px;color:var(--dsw-alias-label-tertiary)}\r
 .wcm-folderCount{padding-right:8px}`;
 
 // src/client/constants.ts
@@ -1112,33 +1105,55 @@ function CategorySidebar({ api, wide, expandSidebar, t, now }) {
           else if (expandSidebar !== void 0) expandSidebar();
         }
       } },
-      statusIconSlot(aggregateStatus(todayRows.map((row) => sessionStatusOf(row.summary, sessionStatuses))), (0, import_react10.createElement)(IconClock16)),
+      /* 「当前」这一行本身不带状态点（用户决定）：运行情况看下面的项目分组标题。 */
+      statusIconSlot(void 0, (0, import_react10.createElement)(IconClock16)),
       (0, import_react10.createElement)("span", { className: "wcm-folderLabel" }, t("today")),
       (0, import_react10.createElement)("span", { className: "wcm-folderCount" }, todayRows.length)
     ),
+    /* 下面是「当前」里的项目与会话：**直接用分类栏那一套样式** —— 同一个项目行结构
+     * （`.wcm-projectRow` / `.wcm-projectLine` / 文件夹图标 + 状态徽标 + 名称）、同一个会话
+     * 行渲染函数、同一个 `.wcm-sessions` 折叠容器。两栏因此看起来是一套东西，折叠动画、
+     * 悬停、状态点语言都自动一致；唯一刻意的差别是不给项目操作按钮（重命名 / 删除工作区
+     * 仍然只在分类树里右键项目行）。 */
     (0, import_react10.createElement)(
       "div",
       { className: `wcm-sessions${todayOpen ? "" : " wcm-closed"}` },
       (0, import_react10.createElement)("div", { className: "wcm-sessionsInner" }, todayRows.length > 0 ? todayGroups.map((group) => {
         const open = wide && !isGroupCollapsed(group.key);
         const label = group.label === "" ? t("uncategorized") : group.label;
-        return (0, import_react10.createElement)("div", { className: "wcm-todayGroupWrap", key: group.key }, (0, import_react10.createElement)("button", { className: `wcm-todayGroup${open ? " wcm-open" : ""}`, type: "button", title: `${label} \xB7 ${group.rows.length}`, "aria-expanded": open, onClick: (event) => {
-          event.stopPropagation();
-          toggleTodayGroup(group.key);
-        } }, (0, import_react10.createElement)("span", { className: "wcm-todayGroupCaret" }, (0, import_react10.createElement)(IconTriangleRightFill14)), (0, import_react10.createElement)("span", { className: "wcm-todayGroupLabel" }, label), (0, import_react10.createElement)("span", { className: "wcm-todayGroupCount" }, group.rows.length)), (0, import_react10.createElement)("div", { className: `wcm-todayGroupRows${open ? "" : " wcm-closed"}` }, group.rows.map((row) => {
-          const rowLabel = projectLabelOf(row.summary.cwd, list);
-          const tooltip = rowLabel === "" ? row.summary.cwd : `${rowLabel} \xB7 ${row.summary.cwd ?? ""}${row.unseen === true ? ` \xB7 ${t("unseenHint")}` : ""}`;
-          return sessionRow(row.summary, { tooltip, unseen: row.unseen === true, leading: [(0, import_react10.createElement)("span", { className: "wcm-todayTime", key: "time" }, formatStamp(row.at, dayStart))], trailing: [wide && workspaceBySession.has(row.id) ? (0, import_react10.createElement)("button", { className: "wcm-sessionLocate", key: "locate", type: "button", title: t("locateSession"), "aria-label": t("locateSession"), onClick: (event) => {
-            event.stopPropagation();
-            locateSession(row.id);
-          } }, (0, import_react10.createElement)(IconLocate16)) : null, wide ? (0, import_react10.createElement)("button", { className: "wcm-todayHide", key: "hide", type: "button", title: t("todayHide"), "aria-label": t("todayHide"), onClick: (event) => {
-            event.stopPropagation();
-            hideFromToday(row);
-          } }, (0, import_react10.createElement)(IconEyeOffOutline16)) : null] });
-        })));
+        const groupStatus = aggregateStatus(group.rows.map((row) => sessionStatusOf(row.summary, sessionStatuses)));
+        return (0, import_react10.createElement)(
+          "div",
+          { className: "wcm-currentGroup", key: group.key },
+          (0, import_react10.createElement)(
+            "div",
+            { className: `wcm-projectRow${open ? " wcm-open" : ""}`, role: "button", tabIndex: 0, title: `${label} \xB7 ${group.rows.length}`, "aria-expanded": open, onClick: (event) => {
+              event.stopPropagation();
+              toggleTodayGroup(group.key);
+            }, onKeyDown: (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggleTodayGroup(group.key);
+              }
+            } },
+            (0, import_react10.createElement)("div", { className: "wcm-projectLine" }, statusIconSlot(groupStatus, open ? (0, import_react10.createElement)(IconFolderOpen16) : (0, import_react10.createElement)(IconFolderClose16)), (0, import_react10.createElement)("span", { className: "wcm-projectLabel" }, label), (0, import_react10.createElement)("span", { className: "wcm-projectCount" }, group.rows.length))
+          ),
+          (0, import_react10.createElement)("div", { className: `wcm-sessions${open ? "" : " wcm-closed"}` }, (0, import_react10.createElement)("div", { className: "wcm-sessionsInner" }, group.rows.map(todayRow)))
+        );
       }) : sessionsReady ? (0, import_react10.createElement)("p", { className: "wcm-todayEmpty", key: "today-empty" }, t("todayEmpty")) : null)
     )
   );
+  function todayRow(row) {
+    const rowLabel = projectLabelOf(row.summary.cwd, list);
+    const tooltip = rowLabel === "" ? row.summary.cwd : `${rowLabel} \xB7 ${row.summary.cwd ?? ""}${row.unseen === true ? ` \xB7 ${t("unseenHint")}` : ""}`;
+    return sessionRow(row.summary, { tooltip, unseen: row.unseen === true, leading: [(0, import_react10.createElement)("span", { className: "wcm-todayTime", key: "time" }, formatStamp(row.at, dayStart))], trailing: [wide && workspaceBySession.has(row.id) ? (0, import_react10.createElement)("button", { className: "wcm-sessionLocate", key: "locate", type: "button", title: t("locateSession"), "aria-label": t("locateSession"), onClick: (event) => {
+      event.stopPropagation();
+      locateSession(row.id);
+    } }, (0, import_react10.createElement)(IconLocate16)) : null, wide ? (0, import_react10.createElement)("button", { className: "wcm-todayHide", key: "hide", type: "button", title: t("todayHide"), "aria-label": t("todayHide"), onClick: (event) => {
+      event.stopPropagation();
+      hideFromToday(row);
+    } }, (0, import_react10.createElement)(IconEyeOffOutline16)) : null] });
+  }
   const folderTree = expansionReady ? (0, import_react10.createElement)("div", { className: "wcm-folders" }, todayNode, folders.map(folder)) : null;
   const sortItem = (mode, label) => (0, import_react10.createElement)("button", { className: `wcm-menuItem${orderBy === mode ? " wcm-menuItemOn" : ""}`, onClick: () => {
     setOrderBy(mode);

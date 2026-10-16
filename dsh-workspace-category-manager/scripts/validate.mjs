@@ -96,6 +96,26 @@ if (!utils.includes('else if (known !== undefined && justOpened)')) {
  * 就会丢折叠状态，分组键还会被 retainIds 当成死 id 剪掉。 */
 if (!host.includes('collapsedTodayGroups: z.array(z.string())')) throw new Error('The Host Config is missing the collapsedTodayGroups suppression list.');
 if (sidebar.includes('wcm-todayProject')) throw new Error('The project name must live on the group header, never repeated on every row.');
+/* 分组标题也要能看出运行情况：把组内会话的状态聚合上来（同一套 warning > running > done），
+ * 少了这一句，用户就只能逐个展开分组去找谁在跑 —— 这正是被反馈过的问题。 */
+if (!sidebar.includes('const groupStatus = aggregateStatus(group.rows.map((row) => sessionStatusOf(row.summary, sessionStatuses)))') || !sidebar.includes('statusIconSlot(groupStatus,')) {
+  throw new Error('Every project group header must carry the aggregated STATIC status dot.');
+}
+/* 分组标题就是分类栏里那个项目行（同款类名与结构），会话也用同一个折叠容器 ——
+ * 这样两栏的样式、折叠动画、悬停、状态点语言天然一致，不再各写一套。 */
+for (const token of ['wcm-projectRow', 'wcm-projectLine', 'wcm-projectLabel', 'wcm-projectCount']) {
+  if (!sidebar.includes(token)) throw new Error(`The Current groups must reuse the category-tree project row styling: missing ${token}`);
+}
+if (/wcm-todayGroup/.test(sidebar) || /wcm-todayGroup/.test(css)) throw new Error('The bespoke group-header styling was removed: reuse the project row instead.');
+const groupBlock = /const groupStatus = aggregateStatus\(group\.rows[\s\S]{0,2000}?group\.rows\.map\(todayRow\)/.exec(sidebar);
+if (groupBlock === null || groupBlock[0].includes('wcm-projectAdd') || groupBlock[0].includes('onContextMenu')) {
+  throw new Error('The group header must stay action-free (no + button, no project menu), only folding.');
+}
+if (sidebar.includes('sessionStatusDot(groupStatus)')) throw new Error('The group marker must be a static dot, not the running animation.');
+/* 「当前」这一行本身不带状态点（用户决定）：运行情况看下面的项目分组标题。 */
+if (!sidebar.includes('statusIconSlot(undefined, h(IconClock16))')) {
+  throw new Error('The Current row itself must not carry a status dot.');
+}
 if (!sidebar.includes('COLLAPSED_TODAY_GROUPS_FIELD') || !sidebar.includes('idsOfTodayGroups') || !sidebar.includes('universeOf(entry.field)')) {
   throw new Error('Folding a project group must ride the shared override machinery with its own id universe.');
 }

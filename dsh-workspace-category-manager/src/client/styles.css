@@ -31,15 +31,6 @@
 .wcm-todayTime{flex:none;min-width:34px;padding-right:2px;font-size:11px;line-height:1;font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary)}
 /* 「今天」按项目分组：分组标题是按钮（可折叠），组内行只留 状态点 + 时刻 + 标题 +
    悬停出现的隐藏按钮——项目名不再逐行重复。分组行与组内行都复用现有展开动画。 */
-.wcm-todayGroup{display:flex;align-items:center;gap:4px;width:100%;height:24px;box-sizing:border-box;padding:0 4px!important;border:0!important;border-radius:6px!important;font:inherit;font-size:11px!important;font-weight:600;text-align:left;color:var(--dsw-alias-label-secondary)!important;background:transparent!important;cursor:pointer}
-.wcm-todayGroup:hover{background:var(--dsw-alias-interactive-bg-hover)!important}
-.wcm-todayGroupCaret{display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--dsw-alias-label-tertiary);transition:transform .12s}
-.wcm-todayGroup.wcm-open .wcm-todayGroupCaret{transform:rotate(90deg)}
-.wcm-todayGroupLabel{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.wcm-todayGroupCount{flex:none;padding-right:8px;font-size:10px;color:var(--dsw-alias-label-tertiary)}
-.wcm-todayGroupRows{display:flex;flex-direction:column;gap:1px;overflow:hidden;padding-left:10px;transition:height .18s ease,padding .18s ease,margin .18s ease,opacity .18s ease}
-.wcm-todayGroupRows.wcm-closed{height:0;padding-top:0;padding-bottom:0;padding-left:10px;margin-top:0;margin-bottom:0;opacity:0;pointer-events:none}
-@media (prefers-reduced-motion:reduce){.wcm-todayGroupRows{transition:none}}
 .wcm-todayEmpty{margin:2px 0 2px 4px;font-size:12px;color:var(--dsw-alias-label-tertiary)}
 /* 「折叠目录」：页头按钮里的图标随状态翻转。 */
 /* 分类目录整段折叠。结构和其它折叠面板一致：外层只承担 height/透明度过渡，行都在唯一的
@@ -57,4 +48,6 @@
 @media (prefers-reduced-motion:reduce){.wcm-session.wcm-locateHit{animation:none;background-color:var(--dsw-alias-interactive-bg-hover);box-shadow:inset 0 0 0 2px var(--dsw-alias-brand-primary)}}
 .wcm-todayHide:hover{color:var(--dsw-alias-label-primary)!important;background:var(--dsw-alias-interactive-bg-hover)!important}
 
+/* 分组标题上的条数：和分类行的数字同一套排版（10px、三级色、右侧留白）。 */
+.wcm-projectCount{flex:none;padding-right:8px;font-size:10px;color:var(--dsw-alias-label-tertiary)}
 .wcm-folderCount{padding-right:8px}

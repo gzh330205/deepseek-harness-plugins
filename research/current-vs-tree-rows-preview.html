@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>「当前」与分类栏：同一套行样式 —— 预览</title>
+<style>
+  :root { color-scheme: dark light; }
+  body { margin: 0; padding: 26px 30px; font: 14px/1.5 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+         background: #1b1c1f; color: #e8e9eb; }
+  h1 { font-size: 17px; margin: 0 0 4px; font-weight: 600; }
+  p.sub { margin: 0 0 22px; color: #9aa0a6; font-size: 13px; }
+  .cols { display: flex; gap: 26px; flex-wrap: wrap; align-items: flex-start; }
+  .col { width: 300px; }
+  .col h2 { font-size: 12.5px; font-weight: 600; color: #9aa0a6; margin: 0 0 8px; letter-spacing: .3px; }
+  .panel { border: 1px solid #34363c; border-radius: 10px; background: #212226; padding: 6px 4px 10px; }
+
+  /* 真实实现的关键 CSS（照抄 src/client/styles.css） */
+  .wcm-folderWrap, .wcm-projectRow, .wcm-currentGroup { display: flex; flex-direction: column; }
+  .wcm-folderRow, .wcm-projectRow { display: flex; align-items: center; gap: 4px; min-height: 26px; padding: 0 4px; border-radius: 6px;
+                                    box-sizing: border-box; color: #c9ccd1; cursor: default; }
+  .wcm-projectRow { padding-left: 6px; }
+  .wcm-projectRow.wcm-open, .wcm-folderRow.wcm-open { color: #e8e9eb; }
+  .wcm-projectLine { display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; }
+  .wcm-rowIconSlot { position: relative; flex: none; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; }
+  .wcm-rowIcon { display: inline-flex; align-items: center; justify-content: center; }
+  .wcm-rowChevron { display: none; }
+  .wcm-folderLabel, .wcm-projectLabel { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .wcm-folderCount, .wcm-projectCount { flex: none; padding-right: 8px; font-size: 10px; color: #7f858c; font-variant-numeric: tabular-nums; }
+  .wcm-sessions { overflow: hidden; margin-left: 12px; padding-left: 6px; }
+  .wcm-sessionsInner { display: flex; flex-direction: column; gap: 1px; }
+  .wcm-session { display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 4px 0 2px; border-radius: 6px; color: #c9ccd1; }
+  .wcm-session.wcm-current { background: #2b2d31; color: #e8e9eb; }
+  .wcm-sessionStatus { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 14px; }
+  .wcm-sessionTitle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .wcm-sessionTitle.wcm-unseen { font-weight: 600; color: #e8e9eb; }
+  .wcm-todayTime { flex: none; font-size: 11px; color: #7f858c; font-variant-numeric: tabular-nums; }
+  .wcm-rowAction { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; color: #8a9099; }
+  .wcm-wsDot { position: relative; width: 10px; height: 10px; flex: none; display: inline-block; }
+  .wcm-wsDot::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: currentColor; opacity: .14; }
+  .wcm-wsDot::after { content: ""; position: absolute; inset: 25%; border-radius: 50%; background: currentColor; }
+  .wcm-wsDot.wcm-wsBadge { position: absolute; top: 0; right: 0; width: 8px; height: 8px; }
+  .wcm-ws-running { color: #4f8cff; }
+  .wcm-ws-warning { color: #e5a53a; }
+  .wcm-ws-done { color: #3fb950; }
+  .legend { margin: 22px 0 0; font-size: 12.5px; color: #9aa0a6; line-height: 1.95; }
+  .legend b { color: #e8e9eb; font-weight: 600; }
+  code { background: #2b2d31; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+  <h1>「当前」栏目里的项目与会话 = 分类栏里的同款</h1>
+  <p class="sub">同一套类名与结构：项目行（<code>wcm-projectRow</code>）＝ 文件夹图标 + 角标状态点 + 名称 + 条数；会话行共用同一个渲染函数；折叠容器同为 <code>.wcm-sessions</code>。</p>
+
+  <div class="cols">
+    <div class="col">
+      <h2>当前</h2>
+      <div class="panel" id="current"></div>
+    </div>
+    <div class="col">
+      <h2>分类栏</h2>
+      <div class="panel" id="tree"></div>
+    </div>
+  </div>
+
+  <p class="legend">
+    <b>两者唯一的差别</b>：「当前」的项目行不给项目操作按钮（没有 <code>＋ 新会话</code>、没有右键项目菜单）—— 这是你早先明确要求过的。<br>
+    <b>状态点</b>：项目行右上角是聚合状态角标（蓝＝运行中、绿＝跑完未看、琥珀＝待处理），静态点不是动画；组内没有状态就不画。<br>
+    <b>会话行</b>：同一个 <code>sessionRow</code>；「当前」里的多一个时刻（HH:mm / M/D）与两个悬停动作（定位、隐藏）。
+  </p>
+
+<script>
+  const svg = (paths, size = 16) => {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    el.setAttribute('width', size); el.setAttribute('height', size);
+    el.setAttribute('viewBox', '0 0 16 16'); el.setAttribute('fill', 'none');
+    paths.forEach((entry) => { const { d, fill } = typeof entry === 'string' ? { d: entry } : entry;
+      const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      p.setAttribute('d', d);
+      if (fill) { p.setAttribute('fill', 'currentColor'); } else {
+        p.setAttribute('stroke', 'currentColor'); p.setAttribute('stroke-width', '1.25');
+        p.setAttribute('stroke-linejoin', 'round'); p.setAttribute('stroke-linecap', 'round');
+      }
+      el.appendChild(p);
+    });
+    return el;
+  };
+  /* 预览用的轮廓：与真实 IconFolderOpen16 / IconFolderClose16 同形的简化版 */
+  const FOLDER_OPEN = ['M1.8 6.4h12.2l-1.2 6.2H3z', 'M1.8 6.4V4.7a1 1 0 0 1 1-1h3l1.3 1.5h5a1 1 0 0 1 1 1v.2'];
+  const FOLDER_CLOSED = ['M2.1 5.6a1 1 0 0 1 1-1h2.8l1.3 1.5h5.6a1 1 0 0 1 1 1v5.2a1 1 0 0 1-1 1H3.1a1 1 0 0 1-1-1z'];
+  const CLOCK = null; /* 当前行用时钟图标：这里用一个简化的圆点代替，不影响对比 */
+
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+
+  const iconSlot = (status, icon) => {
+    const slot = el('span', 'wcm-rowIconSlot');
+    const box = el('span', 'wcm-rowIcon');
+    if (icon) box.appendChild(icon);
+    slot.appendChild(box);
+    if (status) {
+      const dot = el('span', 'wcm-wsDot wcm-wsBadge wcm-ws-' + status);
+      dot.style.color = status === 'warning' ? '#e5a53a' : status === 'done' ? '#3fb950' : '#4f8cff';
+      slot.appendChild(dot);
+    }
+    return slot;
+  };
+  const statusDot = (status) => {
+    if (!status) return null;
+    const dot = el('span', 'wcm-wsDot wcm-ws-' + status);
+    dot.style.color = status === 'warning' ? '#e5a53a' : status === 'done' ? '#3fb950' : '#4f8cff';
+    return dot;
+  };
+  const projectRow = (label, count, status, open, extras = []) => {
+    const row = el('div', 'wcm-projectRow' + (open ? ' wcm-open' : ''));
+    const line = el('div', 'wcm-projectLine');
+    line.appendChild(iconSlot(status, svg(open ? FOLDER_OPEN : FOLDER_CLOSED)));
+    line.appendChild(el('span', 'wcm-projectLabel', label));
+    line.appendChild(el('span', 'wcm-projectCount', String(count)));
+    extras.forEach((extra) => line.appendChild(extra));
+    row.appendChild(line);
+    return row;
+  };
+  const sessions = (rows) => {
+    const box = el('div', 'wcm-sessions');
+    const inner = el('div', 'wcm-sessionsInner');
+    rows.forEach((row) => inner.appendChild(row));
+    box.appendChild(inner);
+    return box;
+  };
+  const sessionRow = (status, title, { time, unseen, actions, current } = {}) => {
+    const row = el('div', 'wcm-session' + (current ? ' wcm-current' : ''));
+    const slot = el('span', 'wcm-sessionStatus');
+    const dot = statusDot(status);
+    if (dot) slot.appendChild(dot);
+    row.appendChild(slot);
+    if (time) row.appendChild(el('span', 'wcm-todayTime', time));
+    row.appendChild(el('span', 'wcm-sessionTitle' + (unseen ? ' wcm-unseen' : ''), title));
+    (actions || []).forEach((glyph) => row.appendChild(el('span', 'wcm-rowAction', glyph)));
+    return row;
+  };
+
+  /* ---- 当前 ---- */
+  const currentPane = document.getElementById('current');
+  const currentRow = el('div', 'wcm-folderRow wcm-open');
+  const clockSlot = iconSlot(null, null);
+  clockSlot.querySelector('.wcm-rowIcon').appendChild(svg(['M8 3.4a4.6 4.6 0 1 0 0 9.2 4.6 4.6 0 0 0 0-9.2', 'M8 5.6v2.6l1.9 1.1']));
+  currentRow.appendChild(clockSlot);
+  currentRow.appendChild(el('span', 'wcm-folderLabel', '当前'));
+  currentRow.appendChild(el('span', 'wcm-folderCount', '5'));
+  currentPane.appendChild(currentRow);
+
+  const groupOne = el('div', 'wcm-currentGroup');
+  groupOne.appendChild(projectRow('rea', 3, 'warning', true));
+  groupOne.appendChild(sessions([
+    sessionRow('running', '优化插件今日运行会话视图', { time: '10:48', actions: ['⌖', '⊘'] }),
+    sessionRow('done', '修复RPA网关消息乱序问题', { time: '09:12', unseen: true, actions: ['⌖', '⊘'] }),
+  ]));
+  currentPane.appendChild(groupOne);
+
+  const groupTwo = el('div', 'wcm-currentGroup');
+  groupTwo.appendChild(projectRow('one-lab', 2, 'done', false));
+  currentPane.appendChild(groupTwo);
+
+  /* ---- 分类栏 ---- */
+  const treePane = document.getElementById('tree');
+  const folderRow = el('div', 'wcm-folderRow wcm-open');
+  folderRow.appendChild(iconSlot(null, svg(FOLDER_OPEN)));
+  folderRow.appendChild(el('span', 'wcm-folderLabel', '客户项目'));
+  folderRow.appendChild(el('span', 'wcm-folderCount', '3'));
+  treePane.appendChild(folderRow);
+
+  const treeProject = projectRow('rea', 3, 'warning', true, [el('span', 'wcm-rowAction', '＋')]);
+  treePane.appendChild(treeProject);
+  treePane.appendChild(sessions([
+    sessionRow('running', '优化插件今日运行会话视图'),
+    sessionRow('done', '修复RPA网关消息乱序问题', {}),
+  ]));
+
+  const other = projectRow('one-lab', 2, 'done', false, [el('span', 'wcm-rowAction', '＋')]);
+  treePane.appendChild(other);
+</script>
+</body>
+</html>
